@@ -43,8 +43,6 @@ et-xmlfile
 exceptiongroup
 executing
 filelock
-frida
-frida-tools
 google-api-core
 google-api-python-client
 google-auth
@@ -66,6 +64,7 @@ ipython
 itemadapter
 itemloaders
 jedi
+Jinja2
 jmespath
 kombu
 lxml
@@ -124,6 +123,7 @@ sniffio
 snowflake-connector-python
 sortedcontainers
 soupsieve
+SQLAlchemy
 sqlparse
 stack-data
 tabulate
