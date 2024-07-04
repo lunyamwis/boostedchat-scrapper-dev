@@ -26,6 +26,7 @@ SECRET_KEY = 'django-insecure-utr163745j!iq*)7h-+g6_!y+z$mkmcx3x2ouv$gq$8-42)yn+
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
+
 ALLOWED_HOSTS = [
     f"{os.environ.get('DOMAIN1', '')}.boostedchat.com",
     f"{os.environ.get('DOMAIN2', '')}.boostedchat.com",
@@ -59,7 +60,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'api.instagram',
-    'api.scout',
+    'api.scout', # had some issues
     'api.helpers',
     'rest_framework',
     'django_celery_beat',
