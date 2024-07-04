@@ -21,7 +21,7 @@ from datetime import datetime, timedelta
 from django.utils import timezone
 from django.conf import settings
 from urllib.parse import urlparse
-from kafka import KafkaProducer
+#from kafka import KafkaProducer
 from collections import ChainMap
 from .constants import STYLISTS_WORDS,STYLISTS_NEGATIVE_WORDS
 from sqlalchemy import create_engine, text,Table,MetaData,select,update
