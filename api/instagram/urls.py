@@ -32,4 +32,5 @@ urlpatterns = [
     path('sendDirectAnswer/',views.SendDirectAnswer.as_view()),
     path('qualifyingPayload/',views.PayloadQualifyingAgent.as_view()),
     path('assignmentPayload/',views.PayloadAssignmentAgent.as_view()),
+    path('scrapingPayload/',views.PayloadScrappingAgent.as_view()),
 ]
