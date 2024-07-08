@@ -418,7 +418,9 @@ class PayloadQualifyingAgent(APIView):
 class PayloadScrappingAgent(APIView):
     def post(self, request):
         payloads = []
-        payload = {"Start":{
+        payload = {
+            "department":"Scraping Department",
+            "Start":{
                 "mediaId":"",
                 "comment":"",
                 "number_of_leads":1,
