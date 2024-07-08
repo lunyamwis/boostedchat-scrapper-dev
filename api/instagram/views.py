@@ -415,6 +415,27 @@ class PayloadQualifyingAgent(APIView):
         return Response({"data":payloads}, status=status.HTTP_200_OK)
 
 
+class PayloadScrappingAgent(APIView):
+    def post(self, request):
+        payloads = []
+        payload = {"Start":{
+                "mediaId":"",
+                "comment":"",
+                "number_of_leads":1,
+                "relevant_information":{
+                    "dummy":"dummy"
+                },
+                "Relevant Information":{
+                    "dummy":"dummy"
+                },
+                "outsourced_info":{"dummy":"dummy"}
+            }
+        }
+
+        payloads.append(payload)
+        return Response({"data":payloads}, status=status.HTTP_200_OK)
+
+
 class PayloadAssignmentAgent(APIView):
     def post(self, request):
         "this payload helps"
