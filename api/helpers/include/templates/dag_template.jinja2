@@ -161,6 +161,8 @@ def process_json_response_{{i}}(**context):
                                     else:
                                         print(index['url'])
                                         chunk = data_list[i:i + chunk_size]
+                                        if isinstance(chunk,list):
+                                            chunk  = chunk.pop()
                                         print(chunk)
                                         # Send the chunk of requests
                                         response = requests.post(url=index['url'], json=chunk)
@@ -206,12 +208,23 @@ process_response_{{i}}_task = PythonOperator(
 
 {% endif %}
 
+
 # Set up task dependencies with dynamic delay durations
+
 {% if loop.index > 1 and operators[loop.index].data is not none%}
 check_api >> http_task_{{ loop.index - 1 }} >> http_task_{{ loop.index }}
 {% elif loop.index|string not in delay_durations and loop.index > 1 and operators[loop.index].data is none %}
 http_task_{{ loop.index - 1 }} >> http_task_{{ loop.index }} >> process_response_{{loop.index}}_task 
 {% endif %}
+
+# extra condition to check for length of operator with 1
+
+{% if loop.length == 1 and operators[loop.index].data is not none %}
+check_api >> http_task_{{ loop.index }}
+{% elif loop.index|string not in delay_durations and loop.length and operators[loop.index].data is none %}
+http_task_{{ loop.index }} >> process_response_{{loop.index}}_task
+{% endif %}
+
 
 {% endfor %}
 {% endif %}
