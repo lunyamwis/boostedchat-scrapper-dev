@@ -409,12 +409,8 @@ class PayloadQualifyingAgent(APIView):
                 "department":"Qualifying Department",
                 "Scraped":{
                     "username":user.username,
-                    "relevant_information":{
-                        "dummy":"dummy"
-                    },
-                    "Relevant Information":{
-                        "dummy":"dummy"
-                    },
+                    "relevant_information":user.info,
+                    "Relevant Information":user.info,
                     "outsourced_info":user.info
                 }
             }
