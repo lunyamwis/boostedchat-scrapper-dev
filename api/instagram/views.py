@@ -42,21 +42,19 @@ class InstagramLeadViewSet(viewsets.ModelViewSet):
 
     @action(detail=False,methods=['post'],url_path='qualify-account')
     def qualify_account(self, request, pk=None):
-        accounts = InstagramUser.objects.filter(username = request.data.get('username'))
+        account = InstagramUser.objects.filter(username = request.data.get('username')).latest('created_at')
         accounts_qualified = []
-        if accounts.exists():
-            for account in accounts:
-                if account.info:
-                    account.qualified = request.data.get('qualify_flag')
-                    account.save()
-                    accounts_qualified.append(
-                        {
-                            "qualified":account.qualified,
-                            "account_id":account.id
-                        }
-                    )
-                else:
-                    return Response({"message":"user has not outsourced information"})
+        if account.info:
+            account.qualified = request.data.get('qualify_flag')
+            account.save()
+            accounts_qualified.append(
+                {
+                    "qualified":account.qualified,
+                    "account_id":account.id
+                }
+            )
+        else:
+            return Response({"message":"user has not outsourced information"})
         
         return Response(accounts_qualified, status=status.HTTP_200_OK)
 
