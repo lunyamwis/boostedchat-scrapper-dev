@@ -13,6 +13,7 @@ from rest_framework.pagination import PageNumberPagination
 from rest_framework import status
 from django.conf import settings
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 from .tasks import scrap_followers,scrap_info,scrap_users,insert_and_enrich,scrap_mbo
 from api.helpers.dag_generator import generate_dag
 from api.helpers.date_helper import datetime_to_cron_expression
@@ -394,8 +395,14 @@ class SendDirectAnswer(APIView):
 
 class PayloadQualifyingAgent(APIView):
     def post(self, request):
+        yesterday = timezone.now().date() - timezone.timedelta(days=1)
+        yesterday_start = timezone.make_aware(timezone.datetime.combine(yesterday, timezone.datetime.min.time()))
+
+        # Filter accounts that are qualified and created from yesterday onwards
         round_ = request.data.get("round",1209)
-        scrapped_users = InstagramUser.objects.filter(round=round_)
+        scrapped_users = InstagramUser.objects.filter(
+            Q(created_at__gte=yesterday_start)
+        )
         payloads = []
         for user in scrapped_users:
             payload = {
@@ -442,7 +449,11 @@ class PayloadAssignmentAgent(APIView):
     def post(self, request):
         "this payload helps"
         round_ = request.data.get("round",1209)
-        qualified_users = InstagramUser.objects.filter(Q(round=round_) & Q(qualified=True))
+        yesterday = timezone.now().date() - timezone.timedelta(days=1)
+        yesterday_start = timezone.make_aware(timezone.datetime.combine(yesterday, timezone.datetime.min.time()))
+
+        qualified_users = InstagramUser.objects.filter(
+            Q(created_at__gte=yesterday_start) & Q(qualified=True))
         payloads = []
         for user in qualified_users:
             payload =  {

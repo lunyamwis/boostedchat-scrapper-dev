@@ -86,7 +86,9 @@ def login_user(scout: Scout):
         cl.set_user_agent(f"Instagram {device.app_version} Android ({device.android_version}/{device.android_release}; {device.dpi}; {device.resolution}; {device.manufacturer}; {device.device}; {device.model}; {device.cpu}; en_US; {device.version_code})",reset=True)
         cl.set_country(device.scout.country)
         cl.set_country_code(device.scout.code)
-    
+
+        
+    # cl.login_by_sessionid()
     # index = 1
     # before_ip = cl._send_public_request("https://api.ipify.org/")
     cl.set_proxy(
