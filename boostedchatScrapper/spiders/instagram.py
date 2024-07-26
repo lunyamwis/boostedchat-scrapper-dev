@@ -284,14 +284,14 @@ class InstagramSpider:
                 try:
 
                     info_dict = client.user_info_by_username(user.username).dict()
-                    try:
-                        user_medias = client.user_medias(info_dict.get("pk"),amount=1)
-                        # comment = self.generate_comment(user_medias[0],user.username)
-                        # info_dict.update({"media_comment":comment})
-                        info_dict.update({"media_id":user_medias[0].id})
-                    except Exception as error:
-                        info_dict.update({"media_id":""})
-                        print(error)
+                    # try:
+                    #     user_medias = client.user_medias(info_dict.get("pk"),amount=1)
+                    #     # comment = self.generate_comment(user_medias[0],user.username)
+                    #     # info_dict.update({"media_comment":comment})
+                    #     info_dict.update({"media_id":user_medias[0].id})
+                    # except Exception as error:
+                    #     info_dict.update({"media_id":""})
+                    #     print(error)
                     user.info = info_dict
                     user.save()
                 except Exception as error:
