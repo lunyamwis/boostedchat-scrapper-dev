@@ -271,7 +271,9 @@ class InstagramSpider:
                 print(error)
             print(error)
         
-        instagram_users = InstagramUser.objects.filter(round=round)
+        yesterday = timezone.now().date() - timezone.timedelta(days=1)
+        yesterday_start = timezone.make_aware(timezone.datetime.combine(yesterday, timezone.datetime.min.time()))
+        instagram_users = InstagramUser.objects.filter(created_at__gte=yesterday_start)
         print(len(instagram_users))
         # val = 10 + 31 + 45 + 3 + 35 + 6
         
