@@ -88,6 +88,8 @@ class InstagramUser(BaseModel):
     outsourced_id_pointer = models.BooleanField(default=False)
     qualified_keywords = models.TextField(null=True, blank=True)
     qualified = models.BooleanField(default=False)
+    scraped = models.BooleanField(default=False)
+    relevant_information = models.JSONField(null=True,blank=True)
     influencer_source_key = models.CharField(max_length=255,null=True,blank=True)
     thread_id = models.CharField(max_length=255,null=True,blank=True)
     item_id = models.CharField(max_length=255,null=True,blank=True)
