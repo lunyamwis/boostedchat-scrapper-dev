@@ -47,7 +47,7 @@ class InstagramLeadViewSet(viewsets.ModelViewSet):
         if account.info:
             account.qualified = request.data.get('qualify_flag')
             account.relevant_information = request.data.get("relevant_information")
-            account.scraped = request.data.get("scraped")
+            account.scraped = True
             account.save()
             accounts_qualified.append(
                 {
