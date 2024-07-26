@@ -59,7 +59,7 @@ hyperlink
 identify
 idna
 incremental
-instagrapi
+instagrapi==1.19.1
 ipython
 itemadapter
 itemloaders
@@ -94,7 +94,7 @@ pyasn1
 pyasn1-modules
 pycparser
 pycryptodomex
-pydantic
+pydantic==1.10.9
 PyDispatcher
 Pygments
 PyJWT
@@ -123,7 +123,7 @@ sniffio
 snowflake-connector-python
 sortedcontainers
 soupsieve
-SQLAlchemy
+SQLAlchemy==1.4.51
 sqlparse
 stack-data
 tabulate
