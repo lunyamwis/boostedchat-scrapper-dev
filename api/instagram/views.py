@@ -401,8 +401,7 @@ class PayloadQualifyingAgent(APIView):
         # Filter accounts that are qualified and created from yesterday onwards
         round_ = request.data.get("round",1209)
         scrapped_users = InstagramUser.objects.filter(
-            Q(created_at__gte=yesterday_start)
-        )
+            Q(created_at__gte=yesterday_start) & Q(scraped=True))
         payloads = []
         for user in scrapped_users:
             payload = {
