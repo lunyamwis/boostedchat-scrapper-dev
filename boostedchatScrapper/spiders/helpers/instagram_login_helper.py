@@ -93,15 +93,16 @@ def login_user(scout: Scout):
     # before_ip = cl._send_public_request("https://api.ipify.org/")
     cl.set_proxy(
         # f"https://lunyamwi;country=KE;city=Nairobi:8213ae-6228c7-550488-c480ad-0f7eb4@premium.residential.proxyrack.net:10000"
-        f"http://Sql8t2uRG3XRvQrO:wifi;{device.scout.country.lower()};starlink;;{device.scout.city.lower()}@proxy.soax.com:9000"
+        # f"http://Sql8t2uRG3XRvQrO:wifi;{device.scout.country.lower()};starlink;;{device.scout.city.lower()}@proxy.soax.com:9000"
         # "http://NQkWIMtrprYfgFH5:mobile;ke;safaricom;;nairobi@proxy.soax.com:9000"
+        "http://Sql8t2uRG3XRvQrO:wifi;ke;starlink;nairobi+county;nairobi@proxy.soax.com:9004"
     )
     # after_ip = cl._send_public_request("https://api.ipify.org/")
     # print(f"Before: {before_ip}")
     # print(f"After: {after_ip}")
     # cl.challenge_code_handler = challenge_code_handler(device.scout.username, 1)
     cl.delay_range = [5, 8]
-    max_attempts = 3
+    max_attempts = 2
     session_file_path = Path(f"{device.scout.username}.json")
     if os.path.exists(session_file_path):
         for attempt in range(1, max_attempts + 1):
