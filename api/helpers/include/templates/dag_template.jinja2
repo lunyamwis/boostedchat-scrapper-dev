@@ -212,6 +212,13 @@ process_response_{{i}}_task = PythonOperator(
 # Set up task dependencies with dynamic delay durations
 
 
+
+
+{% endfor %}
+
+
+{% for i in range(1, operators|length) %}
+
 {% if loop.index > 1 and operators[loop.index].data is not none%}
 check_api >> http_task_{{ loop.index - 1 }} >> http_task_{{ loop.index }}
 {% elif loop.index|string not in delay_durations and loop.index > 1 and operators[loop.index].data is none %}
@@ -230,6 +237,6 @@ check_api >> http_task_{{ loop.index }}
 http_task_{{ loop.index }} >> process_response_{{loop.index}}_task
 {% endif %}
 
-
 {% endfor %}
+
 {% endif %}
