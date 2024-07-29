@@ -456,7 +456,7 @@ class PayloadAssignmentAgent(APIView):
                     "username":user.username,
                     "salesrep_capacity":2,
                     "Influencer":"",
-                    "outsourced_information":user.info,
+                    "outsourced_info":user.info,
                     "relevant_Information":user.relevant_information,
                     "Relevant Information":user.relevant_information,
                     "relevant_information":user.relevant_information
