@@ -442,7 +442,6 @@ class PayloadScrappingAgent(APIView):
 
 class PayloadAssignmentAgent(APIView):
     def post(self, request):
-        "this payload helps"
         round_ = request.data.get("round",1209)
         yesterday = timezone.now().date() - timezone.timedelta(days=1)
         yesterday_start = timezone.make_aware(timezone.datetime.combine(yesterday, timezone.datetime.min.time()))
@@ -458,13 +457,9 @@ class PayloadAssignmentAgent(APIView):
                     "salesrep_capacity":2,
                     "Influencer":"",
                     "outsourced_information":user.info,
-                    "relevant_Information":{
-                        "dummy":"dummy"
-                    },
-                    "Relevant Information":{
-                        "dummy":"dummy"
-                    },
-                    "relevant_information":user.info
+                    "relevant_Information":user.relevant_information,
+                    "Relevant Information":user.relevant_information,
+                    "relevant_information":user.relevant_information
                 }
             }
             payloads.append(payload)
