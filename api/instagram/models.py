@@ -97,7 +97,7 @@ class InstagramUser(BaseModel):
     item_type = models.CharField(max_length=255,null=True,blank=True)
     timestamp = models.CharField(max_length=255,null=True,blank=True)
     cursor = models.TextField(null=True,blank=True)
-    attached_salesrep = models.CharField(max_length=255,null=True,blank=True)
+    is_manually_triggered = models.BooleanField(default=False)
     
 
     def __str__(self) -> str:

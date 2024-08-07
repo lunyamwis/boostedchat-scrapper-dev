@@ -273,9 +273,53 @@ class InstagramSpider:
         
         yesterday = timezone.now().date() - timezone.timedelta(days=1)
         yesterday_start = timezone.make_aware(timezone.datetime.combine(yesterday, timezone.datetime.min.time()))
-        instagram_users = InstagramUser.objects.filter(Q(created_at__gte=yesterday_start))
+        # the instagram users who are manually triggered need to be given first priority
+        instagram_users = InstagramUser.objects.filter(Q(created_at__gte=yesterday_start) & Q(is_manually_triggered=True))
+        if instagram_users.exists():
+            # manually qualify and assign those accounts
+            headers = {
+                'Content-Type': 'application/json'
+            }
+            for user in instagram_users:
+                # manually trigger, qualify, and assign
+                # perform inbound triggering
+                inbound_trigger_data = {
+                    "username": user.username
+                }
+                response = requests.post("https://api.booksy.us.boostedchat.com/v1/instagram/account/manually-trigger/",data=inbound_trigger_data)
+                if response.status_code in [200,201]:
+                    print(f"Account-----{user.username} successfully triggered")
+
+                # perform inbound qualifying
+                inbound_qualify_data = {
+                    "username": user.username,
+                    "qualify_flag": True,
+                    "relevant_information": user.relevant_information,
+                    "scraped":True
+                }
+                response = requests.post("https://api.booksy.us.boostedchat.com/v1/instagram/account/qualify-account/",data=inbound_qualify_data)
+                if response.status_code in [200,201]:
+                    print(f"Account-----{user.username} successfully qualified")
+
+                # perform outbound qualifying
+                user.qualified = True
+                user.save()
+
+
+                # perform salesrep assignment
+                endpoint = "https://api.booksy.us.boostedchat.com/v1/sales/assign-salesrep/"
+                payload = {"username": ""}
+                try:
+                    response = requests.post(endpoint, data=json.dumps(payload), headers=headers)
+                    response.raise_for_status()  # Raise an exception for HTTP errors
+                    print(f"Account-----{user.username} successfully assigned")
+                except requests.exceptions.RequestException as e:
+                    print( {"error": str(e)})
+        else:
+            # pick the automatically generated ones
+            instagram_users = InstagramUser.objects.filter(Q(created_at__gte=yesterday_start))
+
         print(len(instagram_users))
-        # val = 10 + 31 + 45 + 3 + 35 + 6
         
         for i, user in enumerate(instagram_users[index:], start=1):
             print(i)
