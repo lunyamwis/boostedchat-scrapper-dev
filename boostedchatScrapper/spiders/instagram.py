@@ -251,6 +251,111 @@ class InstagramSpider:
         client = login_user(scout)
         client.direct_answer(thread_id,message)
 
+    def extract_direct_inbox_data(self, data):
+        headers = {
+            'Content-Type': 'application/json'
+        }
+        
+        threads = data
+        result = []
+
+        for thread in threads:
+            users = thread.get('users', [])
+            for user in users:
+                username = user.get('username')
+                thread_id = thread.get('thread_id')
+                items = thread.get('items', [])
+
+                for item in items:
+                    item_id = item.get('item_id')
+                    user_id = item.get('user_id')
+                    item_type = item.get('item_type')
+                    timestamp = item.get('timestamp')
+                    message = item.get('text')
+
+                    data_dict = {
+                        'username': username,
+                        'item_id': item_id,
+                        'user_id': user_id,
+                        'item_type': item_type,
+                        'timestamp': timestamp,
+                        'round': 1908,
+                        'pending': True,
+                        'is_manually_triggered':True,
+                        'info': {**user}
+                    }
+
+                    # Save the lead information to the lead database - scrapping microservice
+                    response = requests.post(
+                        "https://scrapper.booksy.us.boostedchat.com/instagram/instagramLead/",
+                        headers=headers,
+                        data=json.dumps(data_dict)
+                    )
+                    if response.status_code in [200, 201]:
+                        print("right track")
+
+                    if item_type == 'text':
+                        # Save the message
+                        # Create an account for it/ also equally save outsourced info for it
+                        account_dict = {
+
+                            "igname": username,
+                            "is_manually_triggered":True
+                        }
+                        # Save account data
+                        response = requests.post(
+                            "https://api.booksy.us.boostedchat.com/v1/instagram/account/",
+                            headers=headers,
+                            data=json.dumps(account_dict)
+                        )
+                        account = response.json()
+                        # Save outsourced data
+                        outsourced_dict = {
+                            "results": {
+                                **user
+                            },
+                            "source": "instagram"
+                        }
+                        response = requests.post(
+                            f"https://api.booksy.us.boostedchat.com/v1/instagram/account/{account['id']}/add-outsourced/",
+                            headers=headers,
+                            data=json.dumps(outsourced_dict)
+                        )
+                        # Create a thread and store the message
+                        data_dict['thread_id'] = thread_id
+                        data_dict['message'] = message
+                        
+                        thread_dict = {
+                            "thread_id": thread_id,
+                            "account_id": account['id'],
+                            "unread_message_count": 0,
+                            "last_message_content": message,
+                            "last_message_at": datetime.now().isoformat()
+                        }
+                        response = requests.post(
+                            "https://api.booksy.us.boostedchat.com/v1/instagram/dm/create-with-account/",
+                            headers=headers,
+                            data=json.dumps(thread_dict)
+                        )
+
+                        thread_pk = response.json()['id']
+
+                        # Save the message in the thread
+                        message_dict = {
+                            "content": message,
+                            "sent_by": "Client",
+                            "thread": thread_pk,
+                            "sent_on": datetime.now().isoformat()
+                        }
+                        response = requests.post(
+                            "https://api.booksy.us.boostedchat.com/v1/instagram/message/",
+                            headers=headers,
+                            data=json.dumps(message_dict)
+                        )
+                    
+                    result.append(data_dict)
+
+        return result
 
     def scrap_info(self,delay_before_requests,delay_after_requests,step,accounts,round,index=0):
         scouts = Scout.objects.filter(available=True)
@@ -281,40 +386,68 @@ class InstagramSpider:
                 'Content-Type': 'application/json'
             }
             for user in instagram_users:
-                # manually trigger, qualify, and assign
-                # perform inbound triggering
-                inbound_trigger_data = {
+                # check if account or thread exists otherwise pull the inbox afresh
+                check_accounts_endpoint = "https://api.booksy.us.boostedchat.com/v1/instagram/checkAccountExists/"
+                check_threads_endpoint = "https://api.booksy.us.boostedchat.com/v1/instagram/checkThreadExists/"
+                check_data = {
                     "username": user.username
                 }
-                response = requests.post("https://api.booksy.us.boostedchat.com/v1/instagram/account/manually-trigger/",data=inbound_trigger_data)
-                if response.status_code in [200,201]:
-                    print(f"Account-----{user.username} successfully triggered")
+                check_account_response = requests.post(check_accounts_endpoint,data=check_data)
+                check_thread_response = requests.post(check_threads_endpoint,data=check_data)
+                if check_account_response.json()['exists'] and check_thread_response.json()['exists']:
+                    # manually trigger, qualify, and assign
+                    # perform inbound triggering
+                    inbound_trigger_data = {
+                        "username": user.username
+                    }
+                    response = requests.post("https://api.booksy.us.boostedchat.com/v1/instagram/account/manually-trigger/",data=inbound_trigger_data)
+                    if response.status_code in [200,201]:
+                        print(f"Account-----{user.username} successfully triggered")
 
-                # perform inbound qualifying
-                inbound_qualify_data = {
-                    "username": user.username,
-                    "qualify_flag": True,
-                    "relevant_information": user.relevant_information,
-                    "scraped":True
-                }
-                response = requests.post("https://api.booksy.us.boostedchat.com/v1/instagram/account/qualify-account/",data=inbound_qualify_data)
-                if response.status_code in [200,201]:
-                    print(f"Account-----{user.username} successfully qualified")
+                    # perform inbound qualifying
+                    inbound_qualify_data = {
+                        "username": user.username,
+                        "qualify_flag": True,
+                        "relevant_information": user.relevant_information,
+                        "scraped":True
+                    }
+                    response = requests.post("https://api.booksy.us.boostedchat.com/v1/instagram/account/qualify-account/",data=inbound_qualify_data)
+                    if response.status_code in [200,201]:
+                        print(f"Account-----{user.username} successfully qualified")
 
-                # perform outbound qualifying
-                user.qualified = True
-                user.save()
+                    # perform outbound qualifying
+                    user.qualified = True
+                    user.save()
 
 
-                # perform salesrep assignment
-                endpoint = "https://api.booksy.us.boostedchat.com/v1/sales/assign-salesrep/"
-                payload = {"username": ""}
-                try:
-                    response = requests.post(endpoint, data=json.dumps(payload), headers=headers)
-                    response.raise_for_status()  # Raise an exception for HTTP errors
-                    print(f"Account-----{user.username} successfully assigned")
-                except requests.exceptions.RequestException as e:
-                    print( {"error": str(e)})
+                    # perform salesrep assignment
+                    endpoint = "https://api.booksy.us.boostedchat.com/v1/sales/assign-salesrep/"
+                    payload = {"username": ""}
+                    try:
+                        response = requests.post(endpoint, data=json.dumps(payload), headers=headers)
+                        response.raise_for_status()  # Raise an exception for HTTP errors
+                        print(f"Account-----{user.username} successfully assigned")
+                    except requests.exceptions.RequestException as e:
+                        print( {"error": str(e)})
+                else:
+                    # fetch the direct inbox items
+
+                    username = 'blendscrafters'
+                    endpoint = "https://mqtt.booksy.us.boostedchat.com"
+                    # Send a POST request to the fetchDirectInbox endpoint
+                    response = requests.post(f'{endpoint}/fetchDirectInbox', json={'username_from': username})
+                    
+                    # Check the status code of the response
+                    if response.status_code == 200:
+                        # Print the response JSON
+                        print("all is well")
+                        print(json.dumps(response.json(), indent=2))
+                        inbox_data = response.json()
+                        inbox_dataset = self.extract_direct_inbox_data(inbox_data)
+                        print(inbox_dataset)
+                        
+                    else:
+                        print(f'Request failed with status code {response.status_code}')
         else:
             # pick the automatically generated ones
             instagram_users = InstagramUser.objects.filter(Q(created_at__gte=yesterday_start))
