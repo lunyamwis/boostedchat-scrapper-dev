@@ -257,10 +257,12 @@ class InstagramSpider:
         }
         
         threads = data
+        
         result = []
 
         for thread in threads:
             users = thread.get('users', [])
+            
             for user in users:
                 username = user.get('username')
                 thread_id = thread.get('thread_id')
@@ -435,19 +437,30 @@ class InstagramSpider:
                     username = 'blendscrafters'
                     endpoint = "https://mqtt.booksy.us.boostedchat.com"
                     # Send a POST request to the fetchDirectInbox endpoint
-                    response = requests.post(f'{endpoint}/fetchDirectInbox', json={'username_from': username})
+                    inbound_qualify_data = {
+                        "username": user.username,
+                        "qualify_flag": True,
+                        "relevant_information": user.relevant_information,
+                        "scraped":True
+                    }
+                    response = requests.post("https://api.booksy.us.boostedchat.com/v1/instagram/account/qualify-account/",data=inbound_qualify_data)
+
+                    if response.status_code in [200,201]:
+                        print(f"Account-----{user.username} successfully qualified")
+
+                    # response = requests.post(f'{endpoint}/fetchDirectInbox', json={'username_from': username})
                     
-                    # Check the status code of the response
-                    if response.status_code == 200:
-                        # Print the response JSON
-                        print("all is well")
-                        print(json.dumps(response.json(), indent=2))
-                        inbox_data = response.json()
-                        inbox_dataset = self.extract_direct_inbox_data(inbox_data)
-                        print(inbox_dataset)
+                    # # Check the status code of the response
+                    # if response.status_code == 200:
+                    #     # Print the response JSON
+                    #     print("all is well")
+                    #     print(json.dumps(response.json(), indent=2))
+                    #     inbox_data = response.json()
+                    #     inbox_dataset = self.extract_direct_inbox_data(inbox_data)
+                    #     print(inbox_dataset)
                         
-                    else:
-                        print(f'Request failed with status code {response.status_code}')
+                    # else:
+                    #     print(f'Request failed with status code {response.status_code}')
         else:
             # pick the automatically generated ones
             instagram_users = InstagramUser.objects.filter(Q(created_at__gte=yesterday_start))

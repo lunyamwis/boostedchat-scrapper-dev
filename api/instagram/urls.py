@@ -33,4 +33,5 @@ urlpatterns = [
     path('qualifyingPayload/',views.PayloadQualifyingAgent.as_view()),
     path('assignmentPayload/',views.PayloadAssignmentAgent.as_view()),
     path('scrapingPayload/',views.PayloadScrappingAgent.as_view()),
+    path('encPass/',views.GeneratePasswordEnc.as_view())
 ]
