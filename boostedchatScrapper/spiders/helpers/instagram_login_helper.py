@@ -91,9 +91,12 @@ def login_user(scout: Scout):
     # cl.login_by_sessionid()
     # index = 1
     # before_ip = cl._send_public_request("https://api.ipify.org/")
-    username = 'user-sp8zty8v3u-sessionduration-1-country-us-zip-02893'
+    # username = 'user-sp8zty8v3u-sessionduration-1-country-us-zip-02893'
+    # password = 'ysg6wa+6pGs6CG9Pde'
+    # proxy = f"http://{username}:{password}@gate.smartproxy.com:10001"
+    username = 'user-sp8zty8v3u-sessionduration-1'
     password = 'ysg6wa+6pGs6CG9Pde'
-    proxy = f"http://{username}:{password}@gate.smartproxy.com:10001"
+    proxy = f"http://{username}:{password}@ke.smartproxy.com:45001"
     
     cl.set_proxy(
         # f"https://lunyamwi;country=KE;city=Nairobi:8213ae-6228c7-550488-c480ad-0f7eb4@premium.residential.proxyrack.net:10000"
