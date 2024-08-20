@@ -25,6 +25,7 @@ from .models import InstagramUser
 
 from rest_framework import viewsets
 from boostedchatScrapper.models import ScrappedData
+from instagrapi import Client
 
 from .models import Score, QualificationAlgorithm, Scheduler, InstagramUser, LeadSource,DagModel,SimpleHttpOperatorModel,WorkflowModel
 from .serializers import ScoreSerializer, InstagramLeadSerializer,  QualificationAlgorithmSerializer, SchedulerSerializer, LeadSourceSerializer, SimpleHttpOperatorModelSerializer, WorkflowModelSerializer
@@ -467,3 +468,12 @@ class PayloadAssignmentAgent(APIView):
         return Response({"data":payloads}, status=status.HTTP_200_OK)
 
 
+
+
+class GeneratePasswordEnc(APIView):
+    def post(self, request, *args, **kwargs):
+        password = request.data.get("password")
+        cl = Client()
+        return Response({
+            "enc_pass":cl.password_encrypt(password)
+        })
