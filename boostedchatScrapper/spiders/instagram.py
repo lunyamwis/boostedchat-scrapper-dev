@@ -432,45 +432,13 @@ class InstagramSpider:
                     except requests.exceptions.RequestException as e:
                         print( {"error": str(e)})
                 else:
+                    pass
                     # fetch the direct inbox items
 
                     # username = 'blendscrafters'
                     # endpoint = "https://mqtt.booksy.us.boostedchat.com"
                     # Send a POST request to the fetchDirectInbox endpoint
-                    account_dict = {
-                        "igname": user.username,
-                        "is_manually_triggered":True
-                    }
-                    # Save account data
-                    response = requests.post(
-                        "https://api.booksy.us.boostedchat.com/v1/instagram/account/",
-                        headers=headers,
-                        data=json.dumps(account_dict)
-                    )
-                    account = response.json()
-                    # Save outsourced data
-                    outsourced_dict = {
-                        "results": {
-                            **user.info
-                        },
-                        "source": "instagram"
-                    }
-                    response = requests.post(
-                        f"https://api.booksy.us.boostedchat.com/v1/instagram/account/{account['id']}/add-outsourced/",
-                        headers=headers,
-                        data=json.dumps(outsourced_dict)
-                    )
-                    inbound_qualify_data = {
-                        "username": user.username,
-                        "qualify_flag": True,
-                        "relevant_information": user.relevant_information,
-                        "scraped":True
-                    }
-                    response = requests.post("https://api.booksy.us.boostedchat.com/v1/instagram/account/qualify-account/",data=inbound_qualify_data)
-
-                    if response.status_code in [200,201]:
-                        print(f"Account-----{user.username} successfully qualified")
-
+                    
                     # response = requests.post(f'{endpoint}/fetchDirectInbox', json={'username_from': username})
                     
                     # # Check the status code of the response
@@ -513,7 +481,45 @@ class InstagramSpider:
                         info_dict.update({"media_id":""})
                         print(error)
                     user.info = info_dict
+
                     user.save()
+                    try:
+                        account_dict = {
+                            "igname": user.username,
+                            "is_manually_triggered":True
+                        }
+                        # Save account data
+                        response = requests.post(
+                            "https://api.booksy.us.boostedchat.com/v1/instagram/account/",
+                            headers=headers,
+                            data=json.dumps(account_dict)
+                        )
+                        account = response.json()
+                        # Save outsourced data
+                        outsourced_dict = {
+                            "results": {
+                                **user.info
+                            },
+                            "source": "instagram"
+                        }
+                        response = requests.post(
+                            f"https://api.booksy.us.boostedchat.com/v1/instagram/account/{account['id']}/add-outsourced/",
+                            headers=headers,
+                            data=json.dumps(outsourced_dict)
+                        )
+                        inbound_qualify_data = {
+                            "username": user.username,
+                            "qualify_flag": True,
+                            "relevant_information": user.relevant_information,
+                            "scraped":True
+                        }
+                        response = requests.post("https://api.booksy.us.boostedchat.com/v1/instagram/account/qualify-account/",data=inbound_qualify_data)
+
+                        if response.status_code in [200,201]:
+                            print(f"Account-----{user.username} successfully qualified")
+                    except Exception as error:
+                        print(error)
+                        
                 except Exception as error:
                     user.outsourced_id_pointer=True
                     user.save()
