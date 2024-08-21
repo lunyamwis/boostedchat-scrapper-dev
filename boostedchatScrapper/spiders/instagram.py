@@ -434,9 +434,32 @@ class InstagramSpider:
                 else:
                     # fetch the direct inbox items
 
-                    username = 'blendscrafters'
-                    endpoint = "https://mqtt.booksy.us.boostedchat.com"
+                    # username = 'blendscrafters'
+                    # endpoint = "https://mqtt.booksy.us.boostedchat.com"
                     # Send a POST request to the fetchDirectInbox endpoint
+                    account_dict = {
+                        "igname": user.username,
+                        "is_manually_triggered":True
+                    }
+                    # Save account data
+                    response = requests.post(
+                        "https://api.booksy.us.boostedchat.com/v1/instagram/account/",
+                        headers=headers,
+                        data=json.dumps(account_dict)
+                    )
+                    account = response.json()
+                    # Save outsourced data
+                    outsourced_dict = {
+                        "results": {
+                            **user.info
+                        },
+                        "source": "instagram"
+                    }
+                    response = requests.post(
+                        f"https://api.booksy.us.boostedchat.com/v1/instagram/account/{account['id']}/add-outsourced/",
+                        headers=headers,
+                        data=json.dumps(outsourced_dict)
+                    )
                     inbound_qualify_data = {
                         "username": user.username,
                         "qualify_flag": True,
@@ -475,10 +498,17 @@ class InstagramSpider:
 
                     info_dict = client.user_info_by_username(user.username).dict()
                     try:
-                        user_medias = client.user_medias(info_dict.get("pk"),amount=1)
+                        user_medias = client.user_medias(info_dict.get("pk"),amount=5)
                         # comment = self.generate_comment(user_medias[0],user.username)
                         # info_dict.update({"media_comment":comment})
-                        info_dict.update({"media_id":user_medias[0].id})
+                        for user_media in user_medias:
+                            if user_media:
+                                media_info_ = client.media_info(user_media.id)
+                                info_dict.update({
+                                    "media_id":media_info_.id,
+                                    "media_url":media_info_.thumbnail_url,
+                                    "media_caption":media_info_.caption_text
+                                })
                     except Exception as error:
                         info_dict.update({"media_id":""})
                         print(error)
