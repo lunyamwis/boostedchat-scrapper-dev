@@ -469,14 +469,16 @@ class InstagramSpider:
                         user_medias = client.user_medias(info_dict.get("pk"),amount=5)
                         # comment = self.generate_comment(user_medias[0],user.username)
                         # info_dict.update({"media_comment":comment})
+                        media_res = []
                         for user_media in user_medias:
                             if user_media:
                                 media_info_ = client.media_info(user_media.id)
-                                info_dict.update({
+                                media_res.append({
                                     "media_id":media_info_.id,
                                     "media_url":media_info_.thumbnail_url,
                                     "media_caption":media_info_.caption_text
                                 })
+                        info_dict.update({"medias":media_res})
                     except Exception as error:
                         info_dict.update({"media_id":""})
                         print(error)
