@@ -476,7 +476,8 @@ class InstagramSpider:
                                 media_res.append({
                                     "media_id":media_info_.id,
                                     "media_url":media_info_.thumbnail_url,
-                                    "media_caption":media_info_.caption_text
+                                    "media_caption":media_info_.caption_text,
+                                    "media_taken_at":media_info_.taken_at
                                 })
                         info_dict.update({"medias":media_res})
                     except Exception as error:
@@ -485,42 +486,42 @@ class InstagramSpider:
                     user.info = info_dict
 
                     user.save()
-                    try:
-                        account_dict = {
-                            "igname": user.username,
-                            "is_manually_triggered":True
-                        }
-                        # Save account data
-                        response = requests.post(
-                            "https://api.booksy.us.boostedchat.com/v1/instagram/account/",
-                            headers=headers,
-                            data=json.dumps(account_dict)
-                        )
-                        account = response.json()
-                        # Save outsourced data
-                        outsourced_dict = {
-                            "results": {
-                                **user.info
-                            },
-                            "source": "instagram"
-                        }
-                        response = requests.post(
-                            f"https://api.booksy.us.boostedchat.com/v1/instagram/account/{account['id']}/add-outsourced/",
-                            headers=headers,
-                            data=json.dumps(outsourced_dict)
-                        )
-                        inbound_qualify_data = {
-                            "username": user.username,
-                            "qualify_flag": True,
-                            "relevant_information": user.relevant_information,
-                            "scraped":True
-                        }
-                        response = requests.post("https://api.booksy.us.boostedchat.com/v1/instagram/account/qualify-account/",data=inbound_qualify_data)
+                    # try:
+                    #     account_dict = {
+                    #         "igname": user.username,
+                    #         "is_manually_triggered":True
+                    #     }
+                    #     # Save account data
+                    #     response = requests.post(
+                    #         "https://api.booksy.us.boostedchat.com/v1/instagram/account/",
+                    #         headers=headers,
+                    #         data=json.dumps(account_dict)
+                    #     )
+                    #     account = response.json()
+                    #     # Save outsourced data
+                    #     outsourced_dict = {
+                    #         "results": {
+                    #             **user.info
+                    #         },
+                    #         "source": "instagram"
+                    #     }
+                    #     response = requests.post(
+                    #         f"https://api.booksy.us.boostedchat.com/v1/instagram/account/{account['id']}/add-outsourced/",
+                    #         headers=headers,
+                    #         data=json.dumps(outsourced_dict)
+                    #     )
+                    #     inbound_qualify_data = {
+                    #         "username": user.username,
+                    #         "qualify_flag": True,
+                    #         "relevant_information": user.relevant_information,
+                    #         "scraped":True
+                    #     }
+                    #     response = requests.post("https://api.booksy.us.boostedchat.com/v1/instagram/account/qualify-account/",data=inbound_qualify_data)
 
-                        if response.status_code in [200,201]:
-                            print(f"Account-----{user.username} successfully qualified")
-                    except Exception as error:
-                        print(error)
+                    #     if response.status_code in [200,201]:
+                    #         print(f"Account-----{user.username} successfully qualified")
+                    # except Exception as error:
+                    #     print(error)
                         
                 except Exception as error:
                     user.outsourced_id_pointer=True
