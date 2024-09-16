@@ -59,7 +59,6 @@ hyperlink
 identify
 idna
 incremental
-instagrapi==1.19.1
 ipython
 itemadapter
 itemloaders

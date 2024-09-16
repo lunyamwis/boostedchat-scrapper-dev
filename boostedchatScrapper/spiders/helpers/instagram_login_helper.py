@@ -94,8 +94,10 @@ def login_user(scout: Scout):
     #username = 'user-sp8zty8v3u-sessionduration-1-country-us-zip-02893'
     #password = 'ysg6wa+6pGs6CG9Pde'
     #proxy = f"http://{username}:{password}@gate.smartproxy.com:10001"
-    username = 'user-sp8zty8v3u-sessionduration-1'
-    password = 'ysg6wa+6pGs6CG9Pde'
+    # username = 'user-sp8zty8v3u-sessionduration-1'
+    # password = 'ysg6wa+6pGs6CG9Pde'
+    username = 'instagramUser'
+    password = 'ww~IsJcgn87EqD0s4d'
     proxy = f"http://{username}:{password}@ke.smartproxy.com:45001"
     
     cl.set_proxy(
