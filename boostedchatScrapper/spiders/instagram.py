@@ -399,38 +399,39 @@ class InstagramSpider:
                 if check_account_response.json()['exists'] and check_thread_response.json()['exists']:
                     # manually trigger, qualify, and assign
                     # perform inbound triggering
-                    inbound_trigger_data = {
-                        "username": user.username
-                    }
-                    response = requests.post("https://api.booksy.us.boostedchat.com/v1/instagram/account/manually-trigger/",data=inbound_trigger_data)
-                    if response.status_code in [200,201]:
-                        print(f"Account-----{user.username} successfully triggered")
+                    # inbound_trigger_data = {
+                    #     "username": user.username
+                    # }
+                    # response = requests.post("https://api.booksy.us.boostedchat.com/v1/instagram/account/manually-trigger/",data=inbound_trigger_data)
+                    # if response.status_code in [200,201]:
+                    #     print(f"Account-----{user.username} successfully triggered")
 
-                    # perform inbound qualifying
-                    inbound_qualify_data = {
-                        "username": user.username,
-                        "qualify_flag": True,
-                        "relevant_information": user.relevant_information,
-                        "scraped":True
-                    }
-                    response = requests.post("https://api.booksy.us.boostedchat.com/v1/instagram/account/qualify-account/",data=inbound_qualify_data)
-                    if response.status_code in [200,201]:
-                        print(f"Account-----{user.username} successfully qualified")
+                    # # perform inbound qualifying
+                    # inbound_qualify_data = {
+                    #     "username": user.username,
+                    #     "qualify_flag": True,
+                    #     "relevant_information": user.relevant_information,
+                    #     "scraped":True
+                    # }
+                    # response = requests.post("https://api.booksy.us.boostedchat.com/v1/instagram/account/qualify-account/",data=inbound_qualify_data)
+                    # if response.status_code in [200,201]:
+                    #     print(f"Account-----{user.username} successfully qualified")
 
                     # perform outbound qualifying
+                    print("user in database")
                     user.qualified = True
                     user.save()
 
 
                     # perform salesrep assignment
-                    endpoint = "https://api.booksy.us.boostedchat.com/v1/sales/assign-salesrep/"
-                    payload = {"username": ""}
-                    try:
-                        response = requests.post(endpoint, data=json.dumps(payload), headers=headers)
-                        response.raise_for_status()  # Raise an exception for HTTP errors
-                        print(f"Account-----{user.username} successfully assigned")
-                    except requests.exceptions.RequestException as e:
-                        print( {"error": str(e)})
+                    # endpoint = "https://api.booksy.us.boostedchat.com/v1/sales/assign-salesrep/"
+                    # payload = {"username": ""}
+                    # try:
+                    #     response = requests.post(endpoint, data=json.dumps(payload), headers=headers)
+                    #     response.raise_for_status()  # Raise an exception for HTTP errors
+                    #     print(f"Account-----{user.username} successfully assigned")
+                    # except requests.exceptions.RequestException as e:
+                    #     print( {"error": str(e)})
                 else:
                     pass
                     # fetch the direct inbox items
@@ -477,15 +478,19 @@ class InstagramSpider:
                                     "media_id":media_info_.id,
                                     "media_url":media_info_.thumbnail_url,
                                     "media_caption":media_info_.caption_text,
-                                    "media_taken_at":media_info_.taken_at
+                                    # "media_taken_at":media_info_.taken_at
                                 })
                         info_dict.update({"medias":media_res})
                     except Exception as error:
                         info_dict.update({"media_id":""})
                         print(error)
-                    user.info = info_dict
 
-                    user.save()
+
+                    user.info = info_dict
+                    try:    
+                        user.save()
+                    except Exception as err:
+                        print(f"failed to save user------>{err}")
                     # try:
                     #     account_dict = {
                     #         "igname": user.username,
@@ -525,9 +530,12 @@ class InstagramSpider:
                         
                 except Exception as error:
                     user.outsourced_id_pointer=True
-                    user.save()
                     print(error)
-                
+                    try:
+                        user.save()
+                    except Exception as err:
+                        print(f"failed to save user------>{err}")
+                        
                 if i % step == 0:
                     try:
                         scout_index = (scout_index + 1) % len(scouts)
