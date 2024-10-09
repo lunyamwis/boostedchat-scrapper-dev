@@ -39,3 +39,7 @@ def scrap_mbo():
     except Exception as e:
         print(e)
     
+@shared_task()
+def scrap_media(media_links):
+    inst = InstagramSpider(load_tables=load_tables,db_url=db_url)
+    inst.scrap_media(media_links)

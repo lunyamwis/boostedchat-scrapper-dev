@@ -99,6 +99,9 @@ def login_user(scout: Scout):
     username = 'instagramUser'
     password = 'ww~IsJcgn87EqD0s4d'
     proxy = f"http://{username}:{password}@ke.smartproxy.com:45001"
+    # username = 'user-instagramUser-country-us-zip-02893'
+    # password = 'ww~IsJcgn87EqD0s4d'
+    # proxy = f"http://{username}:{password}@us.smartproxy.com:10001"
     
     cl.set_proxy(
         # f"https://lunyamwi;country=KE;city=Nairobi:8213ae-6228c7-550488-c480ad-0f7eb4@premium.residential.proxyrack.net:10000"

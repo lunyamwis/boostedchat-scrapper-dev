@@ -14,7 +14,7 @@ from rest_framework import status
 from django.conf import settings
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
-from .tasks import scrap_followers,scrap_info,scrap_users,insert_and_enrich,scrap_mbo
+from .tasks import scrap_followers,scrap_info,scrap_users,insert_and_enrich,scrap_mbo,scrap_media
 from api.helpers.dag_generator import generate_dag
 from api.helpers.date_helper import datetime_to_cron_expression
 from boostedchatScrapper.spiders.helpers.thecut_scrapper import scrap_the_cut
@@ -255,6 +255,8 @@ class ScrapUsers(APIView):
             
         return Response({"success":True},status=status.HTTP_200_OK)
 
+
+
 class ScrapInfo(APIView):
     def post(self,request):
         delay_before_requests = int(request.data.get("delay_before_requests"))
@@ -269,6 +271,17 @@ class ScrapInfo(APIView):
             scrap_info.delay(delay_before_requests,delay_after_requests,step,accounts,round_number)
         return Response({"success":True},status=status.HTTP_200_OK)
     
+
+
+class ScrapMedia(APIView):
+    def post(self,request):
+        media_links = request.data.get("media_links")
+        chain = request.data.get("chain")
+        if chain:
+            scrap_media(media_links)
+        else:
+            scrap_media.delay(media_links)
+        return Response({"success":True},status=status.HTTP_200_OK)
 
 
 
