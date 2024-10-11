@@ -361,7 +361,7 @@ class InstagramSpider:
 
 
     def scrap_media(self, media_links):
-        latest_scout = Scout.objects.filter(available=True).latest('created_at')
+        latest_scout = Scout.objects.filter(available=True).first()
         client = login_user(latest_scout)
 
         # Initialize the CSV file with headers
@@ -373,51 +373,32 @@ class InstagramSpider:
                 media_pk = client.media_pk_from_url(media_link)
             except Exception as error:
                 print(error)
-                continue
-
+                
             try:
                 media_info = client.media_info(media_pk)
             except Exception as error:
                 print(error)
-                continue
-
+                
             try:
                 media_comments = client.media_comments(media_pk)
             except Exception as error:
                 print(error)
-                continue
-
+                
             try:
                 media_likers = client.media_likers(media_pk)
             except Exception as error:
                 print(error)
-                continue
-
-            try:
-                media_responders = client.media_responders(media_pk)
-            except Exception as error:
-                print(error)
-                continue
-
-            try:
-                media_commenters = client.media_commenters(media_pk)
-            except Exception as error:
-                print(error)
-                continue
-
+                
+            # Create a DataFrame for the likers and comments    
             df_likers = pd.DataFrame([{**liker.dict(), "media_link": media_info.id, "media_caption_text": media_info.caption_text} for liker in media_likers])
             df_comments = pd.DataFrame([{**comment.dict(), "media_link": media_info.id, "media_caption_text": media_info.caption_text} for comment in media_comments])
-            df_responders = pd.DataFrame([{**responder.dict(), "media_link": media_info.id, "media_caption_text": media_info.caption_text} for responder in media_responders])
-            df_commenters = pd.DataFrame([{**commenter.dict(), "media_link": media_info.id, "media_caption_text": media_info.caption_text} for commenter in media_commenters])
-
-            df_combined = pd.concat([df_likers, df_comments, df_responders, df_commenters])
-            df = pd.concat([df_combined.drop(['user'], axis=1), df_combined['user'].apply(pd.Series)], axis=1)
-
+            df_comments['username'] = df_comments['user'].apply(lambda x: x['username'] if isinstance(x, dict) else None)
+            df = pd.concat([df_likers, df_comments],ignore_index=True)
             # Append the results to the CSV file
             df.to_csv("prequalified.csv", index=False, mode='a', header=False)
             for i, row in df.iterrows():
                 try:
-                    InstagramUser.objects.create(username=row['username'], info=row.to_dict(), is_manually_triggered=True, source="instagram")   
+                    InstagramUser.objects.create(username=row['username'], info=row.to_dict(), is_manually_triggered=True)   
                 except Exception as error:
                     print(error)
 
