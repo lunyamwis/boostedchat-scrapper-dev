@@ -107,8 +107,9 @@ def load_info_to_database():
                 account = response.json()
                 print(account)
                 # Save outsourced data
+                
                 outsourced_dict = {
-                    "results": json.dumps(user.info),
+                    "results": json.dumps({**user.info,"media_id":user.item_id}), # yet to test
                     "source": "instagram"
                 }
                 # import pdb;pdb.set_trace()

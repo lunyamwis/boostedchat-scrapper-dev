@@ -398,7 +398,7 @@ class InstagramSpider:
             df.to_csv("prequalified.csv", index=False, mode='a', header=False)
             for i, row in df.iterrows():
                 try:
-                    InstagramUser.objects.create(username=row['username'], info=row.to_dict(), is_manually_triggered=True)   
+                    InstagramUser.objects.create(username=row['username'], item_id=media_info.id, is_manually_triggered=True)   
                 except Exception as error:
                     print(error)
 
