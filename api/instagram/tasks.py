@@ -142,6 +142,16 @@ def load_info_to_database():
                     print("failed to qualify")
             except Exception as err:
                 print(err, f"---->error in posting user {user.username}")
+        try:
+            # assigning salesreps
+            response = requests.post(
+                    "https://api.booksy.us.boostedchat.com/v1/sales/assign-salesrep/",
+                    headers=headers,
+                    data={"foo":"bar"}
+            )
+            print(response.json())
+        except Exception as err:
+            print(err)
     except Exception as err:
         print(err, "---->error in posting data")
 
