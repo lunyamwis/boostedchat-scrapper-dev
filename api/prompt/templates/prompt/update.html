@@ -1,0 +1,12 @@
+{% extends 'workflows/main.html' %}
+{% load crispy_forms_tags %}
+
+{% block content %}
+<h1>Update Prompt</h1>
+<form method="post" action="">
+  {% csrf_token %}
+  {{ form|crispy }}
+  <button type="submit">Update Prompt</button>
+</form>
+<a href="{% url 'prompt_index' %}">Back to Index</a>
+{% endblock %}

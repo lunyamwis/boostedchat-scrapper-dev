@@ -155,7 +155,12 @@ def load_info_to_database():
 
 
 @shared_task()
-def scrap_media(media_links):
+def scrap_media(media_links=None):
     inst = InstagramSpider(load_tables=load_tables,db_url=db_url)
     inst.scrap_media(media_links)
     
+
+@shared_task()
+def fetch_request(url):
+    response = requests.Request(url)
+    return response.json()

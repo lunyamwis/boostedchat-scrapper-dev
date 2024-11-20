@@ -1,0 +1,20 @@
+{% extends 'workflows/main.html' %}
+
+{% block title %}Index - Django CRUD{% endblock %}
+
+{% block content %}
+<h1>Detail</h1>
+<ul>
+        <li>
+            {{ prompt.name }}
+            {{ prompt.data }}
+            {{ prompt.text_data }}
+           
+            <a href="{% url 'update' prompt.id %}">Update</a>
+            <a href="{% url 'delete' prompt.id %}">Delete</a>
+        </li>
+    
+</ul>
+<a href="{% url 'add' %}">Add Prompt</a>
+<a href="{% url 'prompt_index' %}">Back to Index</a>
+{% endblock %}

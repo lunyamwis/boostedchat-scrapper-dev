@@ -1,6 +1,8 @@
 from django.db import models
 from api.helpers.models import BaseModel
 from django.contrib.postgres.fields import ArrayField
+from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.contenttypes.models import ContentType
 from api.scout.models import Scout
 import pytz
 
@@ -105,6 +107,20 @@ class InstagramUser(BaseModel):
         return self.username if self.username else 'cursor'
 
 
+class AirflowCreds(BaseModel):
+    username = models.CharField(max_length=255)
+    password = models.CharField(max_length=255)
+    schema_name = models.CharField(max_length=255)
+    airflow_base_url = models.URLField()
+
+    def __str__(self) -> str:
+        return self.schema_name
+
+class WorkflowModel(BaseModel):
+    name = models.CharField(max_length=255,null=True, blank=True)
+    delay_durations = models.JSONField(null=True,blank=True)
+    airflow_creds = models.ForeignKey(AirflowCreds,on_delete=models.CASCADE,null=True, blank=True)
+    workflow_type = models.CharField(max_length=255, choices=(("simple_httpoperators_sequential_run","chain the endpoints and run them sequentially in a linear fashion"),("simple_httpoperators_parallel_run","chain the endpoints and run them in a parallel manner")), default="simple_httpoperators_sequential_run")
 
 class DagModel(BaseModel):
     dag_id = models.CharField(max_length=255)
@@ -140,12 +156,61 @@ class DagModel(BaseModel):
     owner_links = models.JSONField(null=True,blank=True)
     auto_register = models.BooleanField(default=False)
     fail_stop = models.BooleanField(default=False)
-    trigger_url = models.URLField(null=True, blank=True)
-    trigger_url_expected_response = models.TextField(null=True,blank=True)
+    trigger_url = models.URLField(null=True, blank=True,default="https://example.com")
+    trigger_url_expected_response = models.TextField(null=True,blank=True,default='{"status": "ok"}')
+    workflow = models.ForeignKey(WorkflowModel,on_delete=models.CASCADE,null=True, blank=True)
 
     def __str__(self) -> str:
         return self.dag_id
     
+
+class HttpOperatorConnectionModel(BaseModel):
+    connection_id = models.CharField(max_length=255)
+    conn_type = models.CharField(max_length=255)
+    host = models.CharField(max_length=255)
+    port = models.IntegerField(null=True,blank=True)
+    login = models.CharField(max_length=255)
+    password = models.CharField(max_length=255)
+
+    def __str__(self) -> str:
+        return self.connection_id
+    
+
+class CustomField(BaseModel):
+    name = models.CharField(max_length=255)
+    data_type = models.CharField(max_length=50, choices=[
+        ('text', 'Text'),
+        ('number', 'Number'),
+        ('date', 'Date'),
+        ('boolean', 'Boolean'),
+        ('json', 'JSON')
+    ])
+
+    def __str__(self):
+        return self.name
+
+class CustomFieldValue(BaseModel):
+    field = models.ForeignKey(CustomField, on_delete=models.CASCADE)
+    content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
+    object_id = models.CharField(null=True, blank=True, max_length=255)
+    content_object = GenericForeignKey('content_type', 'object_id')
+    value = models.JSONField()
+
+    def __str__(self):
+        return f"{self.field.name}: {self.value}"
+
+    
+class Endpoint(BaseModel):
+    base_url = models.URLField(null=True,blank=True)
+    url = models.CharField(null=True,blank=True)
+    method = models.CharField(max_length=10, choices=(('GET','GET'), ('POST','POST')),default='GET')
+    
+    def __str__(self):
+        return self.url
+
+    @property
+    def custom_fields(self):
+        return CustomFieldValue.objects.filter(content_type=ContentType.objects.get_for_model(self), object_id=self.id)
 
 class SimpleHttpOperatorModel(BaseModel):
     METHODS = (
@@ -153,7 +218,9 @@ class SimpleHttpOperatorModel(BaseModel):
         ("POST","POST")
     )
     task_id = models.CharField(max_length=255,null=True, blank=True)
+    connection = models.ForeignKey(HttpOperatorConnectionModel,on_delete=models.CASCADE,null=True, blank=True)
     http_conn_id=models.CharField(max_length=144,default="your_http_connection")
+    endpointurl = models.ForeignKey(Endpoint,on_delete=models.CASCADE,null=True, blank=True)
     endpoint = models.CharField(max_length=255)
     method = models.CharField(max_length=20, choices=METHODS, default="POST")
     data = models.JSONField(null=True,blank=True)
@@ -163,13 +230,30 @@ class SimpleHttpOperatorModel(BaseModel):
     xcom_push = models.BooleanField(default=True)
     log_response = models.BooleanField(default=False)
     urls = ArrayField(models.JSONField(null=True, blank=True), blank=True, null=True)
-    
+    dag = models.ForeignKey(DagModel,on_delete=models.CASCADE,null=True, blank=True)
+
     def __str__(self) -> str:
         return self.endpoint
 
 
-class WorkflowModel(BaseModel):
-    name = models.CharField(max_length=255,null=True, blank=True)
-    simplehttpoperators = models.ManyToManyField(SimpleHttpOperatorModel)
-    dag = models.ForeignKey(DagModel,on_delete=models.CASCADE,null=True, blank=True)
-    delay_durations = models.JSONField(null=True,blank=True)
+
+class Media(BaseModel):
+    MEDIA_TYPES = (
+        ('image', 'Image'),
+        ('video', 'Video'),
+        ('carousel', 'Carousel'),
+        ('story', 'Story'),
+        ('igtv', 'IGTV'),
+    )
+    media_type = models.CharField(max_length=255, choices=MEDIA_TYPES)
+    media_url = models.URLField()
+    caption = models.TextField()
+    user = models.ForeignKey(InstagramUser, on_delete=models.CASCADE)
+    timestamp = models.DateTimeField()
+    item_id = models.CharField(max_length=255,null=True,blank=True)
+    item_type = models.CharField(max_length=255,null=True,blank=True)
+    download_url = models.URLField(null=True,blank=True)
+    
+
+    def __str__(self) -> str:
+        return self.media_url
