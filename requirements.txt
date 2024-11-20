@@ -85,7 +85,6 @@ docstring_parser==0.16
 docutils==0.20.1
 docx2txt==0.8
 email_validator==2.2.0
-embedchain==0.1.88
 et-xmlfile==1.1.0
 exceptiongroup==1.2.0
 executing==2.0.1
