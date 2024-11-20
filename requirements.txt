@@ -87,8 +87,6 @@ docx2txt==0.8
 et-xmlfile==1.1.0
 exceptiongroup==1.2.0
 executing==2.0.1
-fastapi==0.111.0
-fastapi-cli==0.0.4
 fastavro==1.9.7
 filelock==3.13.1
 Flask==2.2.5
