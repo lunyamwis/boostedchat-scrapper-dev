@@ -43,34 +43,44 @@ ALLOWED_HOSTS = [
     "booksy.us.boostedchat.com",
     "scrapper.booksy.boostedchat.com",
     "airflow.booksy.boostedchat.com",
+    "lunyamwi.localhost",
 ]
 CSRF_TRUSTED_ORIGINS = [
     f"https://api.{os.environ.get('DOMAIN1', '')}.boostedchat.com",
     f"https://api.{os.environ.get('DOMAIN2', '')}.boostedchat.com",
     f"https://scrapper.{os.environ.get('DOMAIN1', '')}.boostedchat.com",
     f"https://scrapper.{os.environ.get('DOMAIN2', '')}.boostedchat.com",
-    "http://34.28.104.255"]
+    "http://34.28.104.255",
+    "http://lunyamwi.localhost/",
+    "http://lunyamwi.localhost"
+]
 
 # Application definition
 
-INSTALLED_APPS = [
+SHARED_APPS = [
+    'django_tenants',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'api.instagram',
-    'api.scout', # had some issues
-    'api.helpers',
     'rest_framework',
     'django_celery_beat',
     'softdelete',
     'boostedchatScrapper',
     'sitemaps',
+    "crispy_forms",
+    "crispy_bootstrap5",
 ]
 
+TENANT_APPS = ['api.instagram','api.scout', 'api.helpers','api.prompt','api.analyst']
+INSTALLED_APPS = SHARED_APPS + [app for app in TENANT_APPS if app not in SHARED_APPS]
+TENANT_MODEL = "boostedchatScrapper.Client"
+TENANT_DOMAIN_MODEL = "boostedchatScrapper.Domain"
+
 MIDDLEWARE = [
+    'django_tenants.middleware.main.TenantMainMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     "corsheaders.middleware.CorsMiddleware",
@@ -82,7 +92,12 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = 'api.urls'
+PUBLIC_SCHEMA_URLCONF = 'boostedchatScrapper.urls'
 
+STATICFILES_FINDERS = (
+    'django.contrib.staticfiles.finders.FileSystemFinder',
+    'django.contrib.staticfiles.finders.AppDirectoriesFinder',
+)
 
 TEMPLATES = [
     {
@@ -96,6 +111,9 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
             ],
+            'libraries': {
+                'crispy_forms_tags': 'crispy_forms.templatetags.crispy_forms_tags',
+            },
         },
     },
 ]
@@ -109,7 +127,7 @@ AIRFLOW_API_BASE_URL = 'http://localhost:8080/api/v1'
 
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.postgresql",
+        "ENGINE": "django_tenants.postgresql_backend",
         "NAME": os.getenv("POSTGRES_DBNAME_ETL").strip(),
         "USER": os.getenv("POSTGRES_USERNAME_ETL").strip(),
         "PASSWORD": os.getenv("POSTGRES_PASSWORD_ETL").strip(),
@@ -117,6 +135,10 @@ DATABASES = {
         "PORT": os.getenv("POSTGRES_PORT_ETL").strip(),
     }
 }
+
+DATABASE_ROUTERS = (
+    "django_tenants.routers.TenantSyncRouter",
+) 
 
 # Password validation
 # https://docs.djangoproject.com/en/5.0/ref/settings/#auth-password-validators
@@ -136,10 +158,11 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL")
-CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND")
+CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL_")
+CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND_")
 CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
-CRISPY_TEMPLATE_PACK = "bootstrap4"
+CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
+CRISPY_TEMPLATE_PACK = "bootstrap5"
 MAILCHIMP_API_KEY = os.getenv("MAILCHIMP_API_KEY").strip()
 MAILCHIMP_DATA_CENTER = os.getenv("MAILCHIMP_DATA_CENTER").strip()
 MAILCHIMP_EMAIL_LIST_ID = os.getenv("MAILCHIMP_EMAIL_LIST_ID").strip()
