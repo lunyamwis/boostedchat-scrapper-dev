@@ -1,5 +1,4 @@
 from django.shortcuts import render
-from django_pandas.io import read_frame
 from .models import DatabaseCred, DataEntry
 import pandas as pd
 import numpy as np
