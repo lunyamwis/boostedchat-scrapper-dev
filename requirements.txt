@@ -39,7 +39,6 @@ certifi==2023.11.17
 cffi==1.16.0
 charset-normalizer==3.3.2
 chroma-hnswlib==0.7.3
-chromadb==0.4.24
 click==8.1.7
 click-didyoumean==0.3.0
 click-plugins==1.1.1
@@ -253,7 +252,6 @@ PyDispatcher==2.0.7
 Pygments==2.17.2
 PyJWT==2.8.0
 pyparsing==3.1.1
-pypdf==5.0.1
 PyPika==0.48.9
 pyproject_hooks==1.1.0
 pyright==1.1.386
