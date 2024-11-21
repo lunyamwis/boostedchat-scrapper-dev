@@ -149,6 +149,7 @@ urllib3
 vine
 virtualenv
 w3lib
+wandb
 wcwidth
 webdriver-manager
 wsproto
