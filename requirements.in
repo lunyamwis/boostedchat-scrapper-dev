@@ -10,7 +10,7 @@ billiard
 cachetools
 SQLAlchemy>=1.4.49,<2.0.30  # Ensure compatibility with langchain
 crewai==0.67.1  # Ensure compatibility with langchain
-crewai-tools==0.8.0  # Adjusted for compatibility
+crewai-tools==0.8.3  # Adjusted for compatibility
 # langchain==0.2.1 # Ensure compatibility with crewai and embedchain
 paramiko
 matplotlib
