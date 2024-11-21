@@ -7,6 +7,7 @@ import requests
 import pandas as pd
 import subprocess
 from requests.auth import HTTPBasicAuth
+from rest_framework import generics
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.decorators import action
