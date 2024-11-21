@@ -8,10 +8,10 @@ Automat
 beautifulsoup4
 billiard
 cachetools
-crewai>=0.67.0,<0.70.0
-SQLAlchemy>=1.4.49,<2.0  # Ensure compatibility with langchain
-crewai-tools>=0.8.0,<0.9.0  # Adjusted version for compatibility
-langchain>=0.2.1,<0.4.0  # Ensure compatibility with crewai-tools and SQLAlchemy
+SQLAlchemy>=1.4.49,<2.0.30  # Ensure compatibility with langchain
+crewai==0.67.1  # Ensure compatibility with langchain
+crewai-tools==0.8.0  # Adjusted for compatibility
+# langchain==0.2.1 # Ensure compatibility with crewai and embedchain
 paramiko
 matplotlib
 bokeh
@@ -29,6 +29,7 @@ click-repl
 colorama
 constantly
 coverage
+crispy-bootstrap5
 cron-descriptor
 cryptography
 cssselect
@@ -44,6 +45,7 @@ django-cors-headers
 django-role-permissions
 django-snowflake
 django-softdelete
+django-crispy-forms
 django-timezone-field
 djangorestframework
 djangorestframework-simplejwt
