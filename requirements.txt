@@ -186,7 +186,7 @@ crashtest==0.4.1
     #   poetry
 crewai==0.67.1
     # via -r requirements.in
-crewai-tools==0.8.0
+crewai-tools==0.8.3
     # via -r requirements.in
 crispy-bootstrap5==2024.10
     # via -r requirements.in
