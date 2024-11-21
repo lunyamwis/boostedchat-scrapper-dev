@@ -51,7 +51,7 @@ from langchain_openai import ChatOpenAI
 from .constants import MSSQL_AGENT_FORMAT_INSTRUCTIONS,MSSQL_AGENT_PREFIX
 
 
-from crewai_tools import DirectoryReadTool, FileReadTool, SerperDevTool,BaseTool
+from crewai_tools import BaseTool
 #from crewai_tools import tool
 from crewai import Agent, Task, Crew, Process
 from django.core.mail import send_mail
@@ -709,9 +709,9 @@ class WorkflowTool(BaseTool):
     
 
 TOOLS = {
-    "directory_read_tool": DirectoryReadTool(directory='prompt/instructions'),
-    "file_read_tool": FileReadTool(),
-    "search_internet_tool" : SerperDevTool(),
+    "directory_read_tool": LeadScreeningTool(),
+    "file_read_tool": LeadScreeningTool(),
+    "search_internet_tool" : LeadScreeningTool(),
     "sentiment_analysis_tool" : SentimentAnalysisTool(),
     "workflow_tool" : WorkflowTool(),
     "scrapping_thecut_tool" : ScrappingTheCutTool(),
