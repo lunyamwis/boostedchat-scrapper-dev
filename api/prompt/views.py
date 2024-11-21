@@ -275,15 +275,6 @@ class generateResponse(APIView):
         }, status=status.HTTP_200_OK)
 
 
-class SentimentAnalysisTool(BaseTool):
-    name: str ="Sentiment Analysis Tool"
-    description: str = ("Analyzes the sentiment of text "
-         "to ensure positive and engaging communication.")
-    
-    def _run(self, text: str) -> str:
-        # Your custom code tool goes here
-        return "positive"
-    
 
 class ScrappingTheCutTool(BaseTool):
     name: str = "scrapping_thecut_tool"
@@ -709,10 +700,6 @@ class WorkflowTool(BaseTool):
     
 
 TOOLS = {
-    "directory_read_tool": LeadScreeningTool(),
-    "file_read_tool": LeadScreeningTool(),
-    "search_internet_tool" : LeadScreeningTool(),
-    "sentiment_analysis_tool" : SentimentAnalysisTool(),
     "workflow_tool" : WorkflowTool(),
     "scrapping_thecut_tool" : ScrappingTheCutTool(),
     "fetch_lead_tool":FetchLeadTool(),
