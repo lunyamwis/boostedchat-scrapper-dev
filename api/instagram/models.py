@@ -245,11 +245,11 @@ class Media(BaseModel):
         ('story', 'Story'),
         ('igtv', 'IGTV'),
     )
-    media_type = models.CharField(max_length=255, choices=MEDIA_TYPES)
-    media_url = models.URLField()
-    caption = models.TextField()
-    user = models.ForeignKey(InstagramUser, on_delete=models.CASCADE)
-    timestamp = models.DateTimeField()
+    media_type = models.CharField(max_length=255, choices=MEDIA_TYPES,default='image')
+    media_url = models.URLField(null=True,blank=True)
+    caption = models.TextField(null=True,blank=True)
+    user = models.ForeignKey(InstagramUser, on_delete=models.CASCADE,null=True,blank=True)
+    timestamp = models.DateTimeField(null=True,blank=True)
     item_id = models.CharField(max_length=255,null=True,blank=True)
     item_type = models.CharField(max_length=255,null=True,blank=True)
     download_url = models.URLField(null=True,blank=True)
