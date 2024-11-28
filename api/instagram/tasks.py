@@ -8,6 +8,7 @@ from boostedchatScrapper.spiders.instagram import InstagramSpider
 from boostedchatScrapper.spiders.helpers.instagram_login_helper import login_user
 from django.utils import timezone
 from .models import InstagramUser
+from django_tenants.utils import schema_context
 from boostedchatScrapper.spiders.constants import STYLISTS_WORDS,STYLISTS_NEGATIVE_WORDS
 
 
@@ -66,6 +67,8 @@ def qualify_algo(client_info,keywords_to_check):
             keyword_found = any(count >= 1 for count in keyword_counts.values())
     return keyword_found
 
+@shared_task()
+@schema_context(os.getenv("SCHEMA_NAME"))
 def load_info_to_csv():
     try:
         prequalified = pd.read_csv('prequalified.csv')
@@ -89,6 +92,9 @@ def load_info_to_csv():
         print(err,"file not found")  
 
 
+
+@shared_task()
+@schema_context(os.getenv("SCHEMA_NAME"))
 def load_info_to_database():
     headers = {
         'Content-Type': 'application/json'
@@ -97,7 +103,7 @@ def load_info_to_database():
         yesterday = timezone.now() - timezone.timedelta(days=1)
         yesterday_start = timezone.make_aware(timezone.datetime.combine(yesterday,timezone.datetime.min.time()))
 
-        instagram_users = InstagramUser.objects.filter(created_at__gte=yesterday_start)
+        instagram_users = InstagramUser.objects.filter(created_at__gte=yesterday_start).distinct('username')
         for user in instagram_users:
             try:
                 account_dict = {
@@ -113,11 +119,18 @@ def load_info_to_database():
                 account = response.json()
                 print(account)
                 # Save outsourced data
-                
-                outsourced_dict = {
-                    "results": {**user.info,"media_id":user.item_id}, # yet to test
-                    "source": "instagram"
-                }
+                outsourced_dict = None
+
+                if user.info:
+                    outsourced_dict = {
+                        "results": {**user.info, "media_id": user.item_id},  # yet to test
+                        "source": "instagram"
+                    }
+                else:
+                    outsourced_dict = {
+                        "results": {"username":user.username,"media_id": user.item_id},
+                        "source": "instagram"
+                    }
                 # import pdb;pdb.set_trace()
                 response = requests.post(
                     f"https://api.booksy.us.boostedchat.com/v1/instagram/account/{account['id']}/add-outsourced/",

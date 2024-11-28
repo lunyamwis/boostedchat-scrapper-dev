@@ -16,7 +16,7 @@ from rest_framework import status
 from django.conf import settings
 from django.utils import timezone
 from django.contrib import messages
-from .tasks import scrap_followers,scrap_info,scrap_users,insert_and_enrich,scrap_mbo,scrap_media
+from .tasks import scrap_followers,scrap_info,scrap_users,insert_and_enrich,scrap_mbo,scrap_media,load_info_to_database
 from api.helpers.dag_generator import generate_dag
 from api.helpers.dag_file_handler import push_file,push_file_gcp
 from api.helpers.date_helper import datetime_to_cron_expression
@@ -113,6 +113,17 @@ class WorkflowRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
     queryset = WorkflowModel.objects.all()
     serializer_class = WorkflowModelSerializer
 
+
+class LoadInfoToDatabase(APIView):
+    def post(self,request):
+        
+        try:
+            load_info_to_database.delay()
+            return Response({"success":True},status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error":str(e)},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+        
 # views.py
 class MediaViewSet(viewsets.ModelViewSet):
     queryset = Media.objects.all()

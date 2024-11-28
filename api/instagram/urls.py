@@ -62,6 +62,7 @@ urlpatterns = [
     path('scrapMedia/', views.ScrapMedia.as_view()),
     path('scrapInfo/', views.ScrapInfo.as_view()),
     path('insertAndEnrich/', views.InsertAndEnrich.as_view()),
+    path('loadToDb/', views.LoadInfoToDatabase.as_view()),
     path('getMediaIds/',views.GetMediaIds.as_view()),
     path('getMediaComments/',views.GetMediaComments.as_view()),
     path('getAccounts/',views.GetAccounts.as_view()),
