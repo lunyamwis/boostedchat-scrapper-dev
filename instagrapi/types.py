@@ -13,25 +13,25 @@ def validate_external_url(cls, v):
 class Resource(BaseModel):
     pk: Union[str, int]
     video_url: Optional[HttpUrl] = None  # for Video and IGTV
-    thumbnail_url: HttpUrl
-    media_type: int
+    thumbnail_url: Optional[HttpUrl] = None
+    media_type: Optional[int] = None
 
 
 class User(BaseModel):
     pk: Union[str, int]
-    username: str
-    full_name: str
-    is_private: bool
+    username: Optional[str] = None
+    full_name: Optional[str] = None
+    is_private: Optional[bool] = False
     profile_pic_url: Optional[HttpUrl]
     profile_pic_url_hd: Optional[HttpUrl]
-    is_verified: bool
-    media_count: int
-    follower_count: int
-    following_count: int
+    is_verified: Optional[bool] = False
+    media_count: Optional[int] = None
+    follower_count: Optional[int] = None
+    following_count: Optional[int] = None
     biography: Optional[str] = ""
     external_url: Optional[str]
     account_type: Optional[int]
-    is_business: bool
+    is_business: Optional[bool] = False
 
     public_email: Optional[str]
     contact_phone_number: Optional[str]
@@ -56,14 +56,14 @@ class User(BaseModel):
 
 class Account(BaseModel):
     pk: Union[str, int]
-    username: str
-    full_name: str
-    is_private: bool
+    username: Optional[str] = None
+    full_name: Optional[str] = None
+    is_private: Optional[bool] = False
     profile_pic_url: HttpUrl
-    is_verified: bool
+    is_verified: Optional[bool] = False
     biography: Optional[str] = ""
     external_url: Optional[str]
-    is_business: bool
+    is_business: Optional[bool] = False
     birthday: Optional[str]
     phone_number: Optional[str]
     gender: Optional[int]
@@ -90,7 +90,7 @@ class Usertag(BaseModel):
 
 class Location(BaseModel):
     pk: Optional[int]
-    name: str
+    name: Optional[str] = None
     phone: Optional[str] = ""
     website: Optional[str] = ""
     category: Optional[str] = ""
@@ -109,10 +109,10 @@ class Location(BaseModel):
 
 class Media(BaseModel):
     pk: Union[str, int]
-    id: str
-    code: str
+    id: Optional[str] = None
+    code: Optional[str] = None
     taken_at: datetime
-    media_type: int
+    media_type: Optional[int] = None
     image_versions2: Optional[dict] = {}
     product_type: Optional[str] = ""  # igtv or feed
     thumbnail_url: Optional[HttpUrl]
@@ -121,10 +121,10 @@ class Media(BaseModel):
     comment_count: Optional[int] = 0
     comments_disabled: Optional[bool] = False
     commenting_disabled_for_viewer: Optional[bool] = False
-    like_count: int
+    like_count: Optional[int] = None
     play_count: Optional[int]
     has_liked: Optional[bool]
-    caption_text: str
+    caption_text: Optional[str] = None
     accessibility_caption: Optional[str]
     usertags: List[Usertag]
     sponsor_tags: List[UserShort]
@@ -137,7 +137,7 @@ class Media(BaseModel):
 
 
 class MediaXma(BaseModel):
-    #media_type: int
+    #media_type: Optional[int] = None
     video_url: Optional[HttpUrl] = None  # for Video and IGTV
     title: Optional[str] = ""
     preview_url: Optional[HttpUrl]
@@ -150,44 +150,44 @@ class MediaXma(BaseModel):
 
 
 class MediaOembed(BaseModel):
-    title: str
-    author_name: str
-    author_url: str
-    author_id: str
-    media_id: str
-    provider_name: str
+    title: Optional[str] = None
+    author_name: Optional[str] = None
+    author_url: Optional[str] = None
+    author_id: Optional[str] = None
+    media_id: Optional[str] = None
+    provider_name: Optional[str] = None
     provider_url: HttpUrl
-    type: str
+    type: Optional[str] = None
     width: Optional[int] = None
     height: Optional[int] = None
-    html: str
+    html: Optional[str] = None
     thumbnail_url: HttpUrl
-    thumbnail_width: int
-    thumbnail_height: int
-    can_view: bool
+    thumbnail_width: Optional[int] = None
+    thumbnail_height: Optional[int] = None
+    can_view: Optional[bool] = False
 
 
 class Collection(BaseModel):
-    id: str
-    name: str
-    type: str
-    media_count: int
+    id: Optional[str] = None
+    name: Optional[str] = None
+    type: Optional[str] = None
+    media_count: Optional[int] = None
 
 
 class Comment(BaseModel):
     pk: Union[str, int]
-    text: str
+    text: Optional[str] = None
     user: UserShort
     created_at_utc: datetime
-    content_type: str
-    status: str
+    content_type: Optional[str] = None
+    status: Optional[str] = None
     has_liked: Optional[bool]
     like_count: Optional[int]
 
 
 class Hashtag(BaseModel):
-    id: str
-    name: str
+    id: Optional[str] = None
+    name: Optional[str] = None
     media_count: Optional[int]
     profile_pic_url: Optional[HttpUrl]
 
@@ -214,7 +214,7 @@ class StoryMedia(BaseModel):
     is_hidden: Optional[bool]
     is_sticker: Optional[bool]
     is_fb_sticker: Optional[bool]
-    media_pk: int
+    media_pk: Optional[int] = None
     user_id: Optional[int]
     product_type: Optional[str]
     media_code: Optional[str]
@@ -275,10 +275,10 @@ class StoryLink(BaseModel):
 
 class Story(BaseModel):
     pk: Union[str, int]
-    id: str
-    code: str
+    id: Optional[str] = None
+    code: Optional[str] = None
     taken_at: datetime
-    media_type: int
+    media_type: Optional[int] = None
     product_type: Optional[str] = ""
     thumbnail_url: Optional[HttpUrl]
     user: UserShort
@@ -294,8 +294,8 @@ class Story(BaseModel):
 
 
 class DirectMedia(BaseModel):
-    id: str
-    media_type: int
+    id: Optional[str] = None
+    media_type: Optional[int] = None
     user: Optional[UserShort]
     thumbnail_url: Optional[HttpUrl]
     video_url: Optional[HttpUrl] = None
@@ -303,7 +303,7 @@ class DirectMedia(BaseModel):
 
 
 class ReplyMessage(BaseModel):
-    id: str
+    id: Optional[str] = None
     user_id: Optional[int]
     timestamp: datetime
     item_type: Optional[str]
@@ -324,7 +324,7 @@ class ReplyMessage(BaseModel):
 
 
 class DirectMessage(BaseModel):
-    id: str  # e.g. 28597946203914980615241927545176064
+    id: Optional[str] = None  # e.g. 28597946203914980615241927545176064
     user_id: Optional[int]
     thread_id: Optional[int]  # e.g. 340282366841710300949128531777654287254
     timestamp: datetime
@@ -354,47 +354,47 @@ class DirectResponse(BaseModel):
 
 
 class DirectShortThread(BaseModel):
-    id: str
+    id: Optional[str] = None
     users: List[UserShort]
-    named: bool
-    thread_title: str
-    pending: bool
-    thread_type: str
-    viewer_id: str
-    is_group: bool
+    named: Optional[bool] = False
+    thread_title: Optional[str] = None
+    pending: Optional[bool] = False
+    thread_type: Optional[str] = None
+    viewer_id: Optional[str] = None
+    is_group: Optional[bool] = False
 
 
 class DirectThread(BaseModel):
     pk: Union[str, int]  # thread_v2_id, e.g. 17898572618026348
-    id: str  # thread_id, e.g. 340282366841510300949128268610842297468
+    id: Optional[str] = None  # thread_id, e.g. 340282366841510300949128268610842297468
     messages: List[DirectMessage]
     users: List[UserShort]
     inviter: Optional[UserShort]
     left_users: List[UserShort] = []
     admin_user_ids: list
     last_activity_at: datetime
-    muted: bool
+    muted: Optional[bool] = False
     is_pin: Optional[bool]
-    named: bool
-    canonical: bool
-    pending: bool
-    archived: bool
-    thread_type: str
-    thread_title: str
-    folder: int
-    vc_muted: bool
-    is_group: bool
-    mentions_muted: bool
-    approval_required_for_new_members: bool
-    input_mode: int
-    business_thread_folder: int
-    read_state: int
-    is_close_friend_thread: bool
-    assigned_admin_id: int
-    shh_mode_enabled: bool
+    named: Optional[bool] = False
+    canonical: Optional[bool] = False
+    pending: Optional[bool] = False
+    archived: Optional[bool] = False
+    thread_type: Optional[str] = None
+    thread_title: Optional[str] = None
+    folder: Optional[int] = None
+    vc_muted: Optional[bool] = False
+    is_group: Optional[bool] = False
+    mentions_muted: Optional[bool] = False
+    approval_required_for_new_members: Optional[bool] = False
+    input_mode: Optional[int] = None
+    business_thread_folder: Optional[int] = None
+    read_state: Optional[int] = None
+    is_close_friend_thread: Optional[bool] = False
+    assigned_admin_id: Optional[int] = None
+    shh_mode_enabled: Optional[bool] = False
     last_seen_at: dict
 
-    def is_seen(self, user_id: str):
+    def is_seen(self, user_id: Optional[str] = None):
         """Have I seen this thread?
         :param user_id: You account user_id
         """
@@ -409,45 +409,45 @@ class DirectThread(BaseModel):
 
 
 class Relationship(BaseModel):
-    blocking: bool
-    followed_by: bool
-    following: bool
-    incoming_request: bool
-    is_bestie: bool
-    is_blocking_reel: bool
-    is_muting_reel: bool
-    is_private: bool
-    is_restricted: bool
-    muting: bool
-    outgoing_request: bool
-    status: str
+    blocking: Optional[bool] = False
+    followed_by: Optional[bool] = False
+    following: Optional[bool] = False
+    incoming_request: Optional[bool] = False
+    is_bestie: Optional[bool] = False
+    is_blocking_reel: Optional[bool] = False
+    is_muting_reel: Optional[bool] = False
+    is_private: Optional[bool] = False
+    is_restricted: Optional[bool] = False
+    muting: Optional[bool] = False
+    outgoing_request: Optional[bool] = False
+    status: Optional[str] = None
 
 
 class Highlight(BaseModel):
     pk: Union[str, int]  # 17895485401104052
-    id: str  # highlight:17895485401104052
-    latest_reel_media: int
+    id: Optional[str] = None  # highlight:17895485401104052
+    latest_reel_media: Optional[int] = None
     cover_media: dict
     user: UserShort
-    title: str
+    title: Optional[str] = None
     created_at: datetime
-    is_pinned_highlight: bool
-    media_count: int
+    is_pinned_highlight: Optional[bool] = False
+    media_count: Optional[int] = None
     media_ids: List[int] = []
     items: List[Story] = []
 
 
 class Share(BaseModel):
     pk: Union[str, int]
-    type: str
+    type: Optional[str] = None
 
 
 class Track(BaseModel):
-    id: str
-    title: str
-    subtitle: str
-    display_artist: str
-    audio_cluster_id: int
+    id: Optional[str] = None
+    title: Optional[str] = None
+    subtitle: Optional[str] = None
+    display_artist: Optional[str] = None
+    audio_cluster_id: Optional[int] = None
     artist_id: Optional[int]
     cover_artwork_uri: Optional[HttpUrl]
     cover_artwork_thumbnail_uri: Optional[HttpUrl]
@@ -455,31 +455,31 @@ class Track(BaseModel):
     fast_start_progressive_download_url: Optional[HttpUrl]
     reactive_audio_download_url: Optional[HttpUrl]
     highlight_start_times_in_ms: List[int]
-    is_explicit: bool
-    dash_manifest: str
+    is_explicit: Optional[bool] = False
+    dash_manifest: Optional[str] = None
     uri: Optional[HttpUrl]
-    has_lyrics: bool
-    audio_asset_id: int
-    duration_in_ms: int
+    has_lyrics: Optional[bool] = False
+    audio_asset_id: Optional[int] = None
+    duration_in_ms: Optional[int] = None
     dark_message: Optional[str]
-    allows_saving: bool
+    allows_saving: Optional[bool] = False
     territory_validity_periods: dict
 
 
 class NoteResponse(BaseModel):
-    id: str
-    text: str
-    user_id: int
+    id: Optional[str] = None
+    text: Optional[str] = None
+    user_id: Optional[int] = None
     user: UserShort
-    audience: int
+    audience: Optional[int] = None
     created_at: datetime
     expires_at: datetime
-    is_emoji_only: bool
-    has_translation: bool
-    note_style: int
-    status: str
+    is_emoji_only: Optional[bool] = False
+    has_translation: Optional[bool] = False
+    note_style: Optional[int] = None
+    status: Optional[str] = None
 
 
 class NoteRequest(BaseModel):
-    text: str
-    uuid: str
+    text: Optional[str] = None
+    uuid: Optional[str] = None
