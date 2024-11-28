@@ -115,6 +115,10 @@ class WorkflowRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
 
 
 class LoadInfoToDatabase(APIView):
+    def get(self, request, *args, **kwargs):
+        # Handle GET request
+        return Response({'message': 'GET request handled'})
+
     def post(self,request):
         
         try:
@@ -813,6 +817,9 @@ class ScrapSitemaps(APIView):
     
 
 class ScrapMindBodyOnline(APIView):
+    def get(self, request, *args, **kwargs):
+        # Handle GET request
+        return Response({'message': 'GET request handled'})
 
     def post(self,request):
         chain = request.data.get("chain")
@@ -874,6 +881,10 @@ class ScrapInfo(APIView):
 
 
 class ScrapMedia(APIView):
+    def get(self, request, *args, **kwargs):
+        # Handle GET request
+        return Response({'message': 'GET request handled'})
+
     def post(self,request):
         media_links = request.data.get("media_links")
         chain = request.data.get("chain")
