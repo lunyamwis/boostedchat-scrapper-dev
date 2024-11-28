@@ -886,13 +886,12 @@ class ScrapMedia(APIView):
         return Response({'message': 'GET request handled'})
 
     def post(self,request):
-        media_links = None
-        
-        if "media_links" in request.data:
+        try:
             media_links = request.data.get("media_links","")
 
             scrap_media.delay(media_links)
-        else:
+        except Exception as err:
+            print(err)
             scrap_media.delay()
         return Response({"success":True},status=status.HTTP_200_OK)
 
