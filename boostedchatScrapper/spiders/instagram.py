@@ -29,6 +29,7 @@ from api.instagram.models import InstagramUser
 from api.scout.models import Scout,Device
 from django.core.mail import send_mail
 from django.db.models import Q
+from django_tenants.utils import schema_context
 
 class InstagramSpider:
     name = 'instagram'
@@ -359,7 +360,7 @@ class InstagramSpider:
 
         return result
 
-
+    @schema_context(os.getenv("SCHEMA_NAME"))
     def scrap_media(self, media_links=None):
         latest_scout = Scout.objects.filter(available=True).first()
         client = login_user(latest_scout)
@@ -456,7 +457,7 @@ class InstagramSpider:
 
                 
 
-   
+    @schema_context(os.getenv("SCHEMA_NAME"))   
     def scrap_info(self,delay_before_requests,delay_after_requests,step,accounts,round,index=0):
         scouts = Scout.objects.filter(available=True)
         scout_index = 0

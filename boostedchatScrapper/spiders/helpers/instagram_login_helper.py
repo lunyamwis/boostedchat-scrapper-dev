@@ -9,6 +9,7 @@ from pathlib import Path
 
 from instagrapi import Client
 from instagrapi.mixins.challenge import ChallengeChoice
+from django_tenants.utils import schema_context
 from api.scout.models import Scout,Device
 
 logger = logging.getLogger()
@@ -60,16 +61,18 @@ def challenge_code_handler(username, choice):
     return False
 
 
-
+@schema_context(os.getenv("SCHEMA_NAME"))
 def login_user(scout: Scout):
+
     """
     Attempts to login to Instagram using either the provided session information
     or the provided username and password.
     """
     
     cl = Client()
+    
     device = Device.objects.filter(scout=scout).latest('created_at')
-    print(device.scout.username)
+    scout = Scout.objects.get(id=device.scout_id)
     if device.status==0 or device.status == 1: 
         cl.set_device(device={
                 "app_version": device.app_version,
@@ -84,8 +87,8 @@ def login_user(scout: Scout):
                 "version_code": device.version_code,
             },reset=True)
         cl.set_user_agent(f"Instagram {device.app_version} Android ({device.android_version}/{device.android_release}; {device.dpi}; {device.resolution}; {device.manufacturer}; {device.device}; {device.model}; {device.cpu}; en_US; {device.version_code})",reset=True)
-        cl.set_country(device.scout.country)
-        cl.set_country_code(device.scout.code)
+        cl.set_country(scout.country)
+        cl.set_country_code(scout.code)
 
         
     # cl.login_by_sessionid()
@@ -102,10 +105,10 @@ def login_user(scout: Scout):
     # after_ip = cl._send_public_request("https://api.ipify.org/")
     # print(f"Before: {before_ip}")
     # print(f"After: {after_ip}")
-    # cl.challenge_code_handler = challenge_code_handler(device.scout.username, 1)
+    # cl.challenge_code_handler = challenge_code_handler(scout.username, 1)
     cl.delay_range = [5, 8]
     max_attempts = 2
-    session_file_path = Path(f"{device.scout.username}.json")
+    session_file_path = Path(f"{scout.username}.json")
     if os.path.exists(session_file_path):
         for attempt in range(1, max_attempts + 1):
             session = cl.load_settings(session_file_path)
@@ -127,13 +130,13 @@ def login_user(scout: Scout):
                     else:
                         print("All attempts failed, removing session file and logging in with username and password")
                         os.remove(session_file_path)
-                        cl.login(username=device.scout.username,password=device.scout.password)
+                        cl.login(username=scout.username,password=scout.password)
                         cl.dump_settings(session_file_path)
                         device.status = 1
                         device.save()
                         print("Session saved to file")
     else:
-        cl.login(username=device.scout.username,password=device.scout.password)
+        cl.login(username=scout.username,password=scout.password)
         print("Login with username and password")
         cl.dump_settings(session_file_path)
         device.status = 1
