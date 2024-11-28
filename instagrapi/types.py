@@ -72,16 +72,15 @@ class Account(BaseModel):
     _external_url = validator("external_url", allow_reuse=True)(validate_external_url)
 
 
-class UserShort(BaseModel):
-    pk: str
-    username: Optional[str]
-    full_name: Optional[str] = ""
-    profile_pic_url: Optional[HttpUrl]
-    profile_pic_url_hd: Optional[HttpUrl]
-    is_private: Optional[bool]
-    # is_verified: bool  # not found in hashtag_medias_v1
-    stories: List = []
 
+class UserShort(BaseModel):
+    pk: str  # This field is required and cannot be None
+    username: Optional[str] = None  # Optional field with default as None
+    full_name: Optional[str] = None  # Optional field with default as None
+    profile_pic_url: Optional[HttpUrl] = None  # Optional field with default as None
+    profile_pic_url_hd: Optional[HttpUrl] = None  # Optional field with default as None
+    is_private: Optional[bool] = None  # Optional field with default as None
+    stories: List = []  # Default to an empty list
 
 class Usertag(BaseModel):
     user: UserShort
