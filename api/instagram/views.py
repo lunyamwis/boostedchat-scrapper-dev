@@ -122,7 +122,7 @@ class LoadInfoToDatabase(APIView):
     def post(self,request):
         
         try:
-            load_info_to_database.delay()
+            load_info_to_database()
             return Response({"success":True},status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"error":str(e)},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -889,10 +889,10 @@ class ScrapMedia(APIView):
         try:
             media_links = request.data.get("media_links","")
 
-            scrap_media.delay(media_links)
+            scrap_media(media_links)
         except Exception as err:
             print(err)
-            scrap_media.delay()
+            scrap_media()
         return Response({"success":True},status=status.HTTP_200_OK)
 
 
