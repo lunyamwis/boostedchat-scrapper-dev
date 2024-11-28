@@ -351,7 +351,7 @@ class WorkflowInline():
     template_name = "workflows/workflow.html"
 
     # @schema_context("lunyamwi")
-    def form_valid(self, form, schema_name="lunyamwi"):
+    def form_valid(self, form, schema_name=os.getenv('SCHEMA_NAME')):
         with schema_context(schema_name):
             named_formsets = self.get_named_formsets()
             if not all((x.is_valid() for x in named_formsets.values())):
