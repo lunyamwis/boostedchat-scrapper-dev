@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Optional, Union
 
 from pydantic import BaseModel, FilePath, HttpUrl, ValidationError, validator
 
@@ -11,14 +11,14 @@ def validate_external_url(cls, v):
 
 
 class Resource(BaseModel):
-    pk: str
-    video_url: Optional[HttpUrl]  # for Video and IGTV
+    pk: Union[str, int]
+    video_url: Optional[HttpUrl] = None  # for Video and IGTV
     thumbnail_url: HttpUrl
     media_type: int
 
 
 class User(BaseModel):
-    pk: str
+    pk: Union[str, int]
     username: str
     full_name: str
     is_private: bool
@@ -55,7 +55,7 @@ class User(BaseModel):
 
 
 class Account(BaseModel):
-    pk: str
+    pk: Union[str, int]
     username: str
     full_name: str
     is_private: bool
@@ -74,7 +74,7 @@ class Account(BaseModel):
 
 
 class UserShort(BaseModel):
-    pk: str  # This field is required and cannot be None
+    pk: Union[str, int]  # This field is required and cannot be None
     username: Optional[str] = None  # Optional field with default as None
     full_name: Optional[str] = None  # Optional field with default as None
     profile_pic_url: Optional[HttpUrl] = None  # Optional field with default as None
@@ -108,7 +108,7 @@ class Location(BaseModel):
 
 
 class Media(BaseModel):
-    pk: str
+    pk: Union[str, int]
     id: str
     code: str
     taken_at: datetime
@@ -138,7 +138,7 @@ class Media(BaseModel):
 
 class MediaXma(BaseModel):
     #media_type: int
-    video_url: HttpUrl  # for Video and IGTV
+    video_url: Optional[HttpUrl] = None  # for Video and IGTV
     title: Optional[str] = ""
     preview_url: Optional[HttpUrl]
     preview_url_mime_type: Optional[str]
@@ -175,7 +175,7 @@ class Collection(BaseModel):
 
 
 class Comment(BaseModel):
-    pk: str
+    pk: Union[str, int]
     text: str
     user: UserShort
     created_at_utc: datetime
@@ -274,7 +274,7 @@ class StoryLink(BaseModel):
 
 
 class Story(BaseModel):
-    pk: str
+    pk: Union[str, int]
     id: str
     code: str
     taken_at: datetime
@@ -282,7 +282,7 @@ class Story(BaseModel):
     product_type: Optional[str] = ""
     thumbnail_url: Optional[HttpUrl]
     user: UserShort
-    video_url: Optional[HttpUrl]  # for Video and IGTV
+    video_url: Optional[HttpUrl] = None  # for Video and IGTV
     video_duration: Optional[float] = 0.0  # for Video and IGTV
     sponsor_tags: List[UserShort]
     mentions: List[StoryMention]
@@ -298,7 +298,7 @@ class DirectMedia(BaseModel):
     media_type: int
     user: Optional[UserShort]
     thumbnail_url: Optional[HttpUrl]
-    video_url: Optional[HttpUrl]
+    video_url: Optional[HttpUrl] = None
     audio_url: Optional[HttpUrl]
 
 
@@ -365,7 +365,7 @@ class DirectShortThread(BaseModel):
 
 
 class DirectThread(BaseModel):
-    pk: str  # thread_v2_id, e.g. 17898572618026348
+    pk: Union[str, int]  # thread_v2_id, e.g. 17898572618026348
     id: str  # thread_id, e.g. 340282366841510300949128268610842297468
     messages: List[DirectMessage]
     users: List[UserShort]
@@ -424,7 +424,7 @@ class Relationship(BaseModel):
 
 
 class Highlight(BaseModel):
-    pk: str  # 17895485401104052
+    pk: Union[str, int]  # 17895485401104052
     id: str  # highlight:17895485401104052
     latest_reel_media: int
     cover_media: dict
@@ -438,7 +438,7 @@ class Highlight(BaseModel):
 
 
 class Share(BaseModel):
-    pk: str
+    pk: Union[str, int]
     type: str
 
 
