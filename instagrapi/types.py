@@ -22,7 +22,7 @@ class User(BaseModel):
     username: str
     full_name: str
     is_private: bool
-    profile_pic_url: HttpUrl
+    profile_pic_url: Optional[HttpUrl]
     profile_pic_url_hd: Optional[HttpUrl]
     is_verified: bool
     media_count: int
