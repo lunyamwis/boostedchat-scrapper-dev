@@ -59,7 +59,7 @@ class Account(BaseModel):
     username: Optional[str] = None
     full_name: Optional[str] = None
     is_private: Optional[bool] = False
-    profile_pic_url: HttpUrl
+    profile_pic_url: Optional[HttpUrl] = None
     is_verified: Optional[bool] = False
     biography: Optional[str] = ""
     external_url: Optional[str]
@@ -115,17 +115,17 @@ class Media(BaseModel):
     media_type: Optional[int] = None
     image_versions2: Optional[dict] = {}
     product_type: Optional[str] = ""  # igtv or feed
-    thumbnail_url: Optional[HttpUrl]
+    thumbnail_url: Optional[HttpUrl] = None
     location: Optional[Location] = None
     user: UserShort
     comment_count: Optional[int] = 0
     comments_disabled: Optional[bool] = False
     commenting_disabled_for_viewer: Optional[bool] = False
     like_count: Optional[int] = None
-    play_count: Optional[int]
-    has_liked: Optional[bool]
+    play_count: Optional[int] = None
+    has_liked: Optional[bool] = False
     caption_text: Optional[str] = None
-    accessibility_caption: Optional[str]
+    accessibility_caption: Optional[str] = None
     usertags: List[Usertag]
     sponsor_tags: List[UserShort]
     video_url: Optional[HttpUrl] = None   # for Video and IGTV
@@ -156,12 +156,12 @@ class MediaOembed(BaseModel):
     author_id: Optional[str] = None
     media_id: Optional[str] = None
     provider_name: Optional[str] = None
-    provider_url: HttpUrl
+    provider_url: Optional[HttpUrl] = None
     type: Optional[str] = None
     width: Optional[int] = None
     height: Optional[int] = None
     html: Optional[str] = None
-    thumbnail_url: HttpUrl
+    thumbnail_url: Optional[HttpUrl] = None
     thumbnail_width: Optional[int] = None
     thumbnail_height: Optional[int] = None
     can_view: Optional[bool] = False
@@ -237,7 +237,7 @@ class StoryLocation(BaseModel):
 
 
 class StoryStickerLink(BaseModel):
-    url: HttpUrl
+    url: Optional[HttpUrl] = None
     link_title: Optional[str]
     link_type: Optional[str]
     display_url: Optional[str]
@@ -264,7 +264,7 @@ class StoryBuild(BaseModel):
 
 
 class StoryLink(BaseModel):
-    webUri: HttpUrl
+    webUri: Optional[HttpUrl] = None
     x: float = 0.5126011
     y: float = 0.5168225
     z: float = 0.0
