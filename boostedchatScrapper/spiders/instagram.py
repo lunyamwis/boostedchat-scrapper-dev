@@ -411,14 +411,15 @@ class InstagramSpider:
                 # info_dict = client.user_info_by_username("barbersince").dict()
                 
             try:
-                user_media = client.user_medias(user_id=27971835,amount=1)
+                user_medias = client.user_medias(user_id=27971835,amount=8)
+                user_media = max(user_medias, key=lambda x: x.taken_at)
             except Exception as error:
             #     info_dict.update({"media_id":""})
                 print(error)
             # except Exception as err:
             #     print(err)
             try:
-                media_pk = user_media[0].pk
+                media_pk = user_media.pk
             except Exception as error:
                 print(error)
                 
