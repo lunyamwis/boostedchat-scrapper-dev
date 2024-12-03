@@ -1,0 +1,67 @@
+import json
+import requests
+from airflow import DAG
+from airflow.providers.http.sensors.http import HttpSensor
+from datetime import datetime, timedelta
+from airflow.providers.http.operators.http import SimpleHttpOperator
+from airflow.operators.python_operator import PythonOperator
+from airflow.utils.dates import days_ago
+from airflow.models.baseoperator import chain
+
+
+def create_json_response_check(expected_key, expected_value):
+        def json_response_check(response):
+            # Parse the response as JSON
+            json_response = response.json()
+            # Check for the specific key and expected value
+            return json_response.get(expected_key) == expected_value
+        return json_response_check
+
+
+
+default_args = {
+    'owner': 'airflow',
+    'depends_on_past': False,
+    'start_date': days_ago(1),
+    'retries': 1,
+    'retry_delay': timedelta(minutes=5),
+}
+{% set http_tasks = [] %}
+http_tasks = []
+# Initialize the DAG
+{% for dag_ in dag %}
+with DAG(
+    "{{dag_.dag_id}}",
+    default_args=default_args,
+    description="{{dag_.description}}",
+    schedule_interval="{{dag_.schedule_interval}}"
+) as dag:
+    http_sensor = HttpSensor(
+        task_id='check_condition',
+        http_conn_id='{{dag_.http_conn_id}}',
+        endpoint='{{dag_.trigger_url}}',
+        response_check=create_json_response_check({{dag_.trigger_key}}, {{dag_.trigger_value}}),
+        poke_interval=5,
+        timeout=20
+    )
+    http_tasks.append(http_sensor)
+
+    {% for operator in operators %}
+    # Define the HTTP task to make a GET request using Jinja templating
+    http_task_{{operator.task_id}} = SimpleHttpOperator(
+        task_id="{{ operator.task_id }}",
+        http_conn_id="{{ operator.http_conn_id }}",
+        endpoint="{{ operator.endpoint }}",
+        method="{{ operator.method }}",
+        headers={{ operator.headers | tojson }},  # Assuming headers is a dictionary, convert it to JSON
+        data=json.dumps({{ operator.data }}),
+        log_response=True,
+        do_xcom_push=True,  # Enable pushing response to XCom
+    )
+    http_tasks.append(http_task_{{operator.task_id}})
+    {% endfor %}
+    # Unpack the http tasks and chain them together to run sequentially
+    chain(*http_tasks)
+{% endfor %}
+
+    

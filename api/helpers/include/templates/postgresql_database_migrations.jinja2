@@ -1,0 +1,96 @@
+from datetime import datetime, timedelta
+from airflow import DAG
+from airflow.operators.postgres_operator import PostgresOperator
+from airflow.hooks.postgres_hook import PostgresHook
+from airflow.models import Variable
+
+# Define default arguments for the DAG
+default_args = {
+    'owner': 'airflow',
+    'start_date': datetime(2024, 12, 1),
+    'retries': 1,
+    'retry_delay': timedelta(minutes=5),
+}
+
+# Define the DAG
+with DAG('database_migration', default_args=default_args, schedule_interval=None) as dag:
+
+    # Function to get all table names from source database
+    def get_table_names():
+        source_hook = PostgresHook(postgres_conn_id='source_postgres')
+        sql = "SELECT table_name FROM information_schema.tables WHERE table_schema='public';"
+        return [row[0] for row in source_hook.get_records(sql)]
+
+    # Task to extract and load data for each table
+    def migrate_table(table_name):
+        extract_sql = f"CREATE TABLE IF NOT EXISTS {table_name} AS SELECT * FROM {table_name};"
+        load_sql = f"INSERT INTO {table_name} SELECT * FROM {table_name};"
+
+        extract_task = PostgresOperator(
+            task_id=f'extract_{table_name}',
+            postgres_conn_id='source_postgres',
+            sql=extract_sql,
+        )
+
+        load_task = PostgresOperator(
+            task_id=f'load_{table_name}',
+            postgres_conn_id='dest_postgres',
+            sql=load_sql,
+        )
+
+        return extract_task, load_task  # Return both tasks
+
+    # Get the table name from Airflow Variables
+    table_to_migrate = Variable.get("table_to_migrate", default_var=None)
+
+    # Initialize lists to hold tasks for dependency management
+    load_tasks = []
+    
+    if table_to_migrate:
+        # If a specific table is defined, migrate that table only
+        extract_task, load_task = migrate_table(table_to_migrate)
+        load_tasks.append(load_task)  # Add to load tasks list
+    else:
+        # If no specific table is defined, migrate all tables
+        table_names = get_table_names()
+        for table in table_names:
+            extract_task, load_task = migrate_table(table)
+            load_tasks.append(load_task)  # Add to load tasks list
+
+    # Task to reset sequences in destination database after creating all tables
+    reset_sequences_task = PostgresOperator(
+        task_id='reset_sequences',
+        postgres_conn_id='dest_postgres',
+        sql="""
+        CREATE OR REPLACE FUNCTION reset_sequences()
+        RETURNS VOID AS $$
+        DECLARE
+          table_record RECORD;
+        BEGIN
+          FOR table_record IN SELECT table_name
+                              FROM information_schema.tables
+                              WHERE table_schema = 'public' AND table_type = 'BASE TABLE' LOOP
+            BEGIN
+              EXECUTE 'SELECT pg_catalog.setval(pg_get_serial_sequence(''' || table_record.table_name || ''', ''id''), (SELECT COALESCE(MAX(id), 0) FROM ' || table_record.table_name || ')+1)';
+              RAISE NOTICE 'Successfully reset sequence for table: %', table_record.table_name;
+            EXCEPTION
+              WHEN OTHERS THEN
+                RAISE NOTICE 'Error resetting sequence for table: %', table_record.table_name;
+            END;
+          END LOOP;
+        END;
+        $$ LANGUAGE plpgsql;
+
+        -- Call the function to reset sequences
+        SELECT reset_sequences();
+        """
+    )
+
+    # Set dependencies: run reset_sequences_task after all extraction tasks are complete and before loading tasks.
+    
+    # Ensure that all extraction tasks are completed before resetting sequences.
+    if load_tasks:
+        for load_task in load_tasks:
+            extract_task >> reset_sequences_task  # Ensure extraction happens before resetting sequences
+        
+        reset_sequences_task >> load_tasks[-1]  # Ensure that sequences are reset before loading data
