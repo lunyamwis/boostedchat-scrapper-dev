@@ -117,10 +117,26 @@ class AirflowCreds(BaseModel):
         return self.schema_name
 
 class WorkflowModel(BaseModel):
+    WORKFLOW_CHOICES = (
+        ("simple_httpoperators_sequential_with_condition","chain the endpoints but initialize with a condition to be checked in order for it to begin running"),
+        ("simple_httpoperators_sequential_run","chain the endpoints and run them sequentially in a linear fashion"),
+        ("simple_httpoperators_parallel_run","chain the endpoints and run them in a parallel manner")
+    )
     name = models.CharField(max_length=255,null=True, blank=True)
     delay_durations = models.JSONField(null=True,blank=True)
     airflow_creds = models.ForeignKey(AirflowCreds,on_delete=models.CASCADE,null=True, blank=True)
-    workflow_type = models.CharField(max_length=255, choices=(("simple_httpoperators_sequential_run","chain the endpoints and run them sequentially in a linear fashion"),("simple_httpoperators_parallel_run","chain the endpoints and run them in a parallel manner")), default="simple_httpoperators_sequential_run")
+    workflow_type = models.CharField(max_length=255, choices=WORKFLOW_CHOICES, default="simple_httpoperators_sequential_run")
+
+class HttpOperatorConnectionModel(BaseModel):
+    connection_id = models.CharField(max_length=255)
+    conn_type = models.CharField(max_length=255)
+    host = models.CharField(max_length=255)
+    port = models.IntegerField(null=True,blank=True)
+    login = models.CharField(max_length=255)
+    password = models.CharField(max_length=255)
+
+    def __str__(self) -> str:
+        return self.connection_id
 
 class DagModel(BaseModel):
     dag_id = models.CharField(max_length=255)
@@ -156,25 +172,15 @@ class DagModel(BaseModel):
     owner_links = models.JSONField(null=True,blank=True)
     auto_register = models.BooleanField(default=False)
     fail_stop = models.BooleanField(default=False)
-    trigger_url = models.URLField(null=True, blank=True,default="https://example.com")
-    trigger_url_expected_response = models.TextField(null=True,blank=True,default='{"status": "ok"}')
+    trigger_url = models.CharField(null=True,blank=True,max_length=255)
+    connection = models.ForeignKey(HttpOperatorConnectionModel,on_delete=models.CASCADE,null=True, blank=True)
+    trigger_url_expected_key = models.CharField(null=True,blank=True,max_length=255)
+    trigger_url_expected_value = models.CharField(null=True,blank=True,max_length=255)
     workflow = models.ForeignKey(WorkflowModel,on_delete=models.CASCADE,null=True, blank=True)
 
     def __str__(self) -> str:
         return self.dag_id
-    
 
-class HttpOperatorConnectionModel(BaseModel):
-    connection_id = models.CharField(max_length=255)
-    conn_type = models.CharField(max_length=255)
-    host = models.CharField(max_length=255)
-    port = models.IntegerField(null=True,blank=True)
-    login = models.CharField(max_length=255)
-    password = models.CharField(max_length=255)
-
-    def __str__(self) -> str:
-        return self.connection_id
-    
 
 class CustomField(BaseModel):
     name = models.CharField(max_length=255)
@@ -211,6 +217,17 @@ class Endpoint(BaseModel):
     @property
     def custom_fields(self):
         return CustomFieldValue.objects.filter(content_type=ContentType.objects.get_for_model(self), object_id=self.id)
+
+class PostgresOperatorModel(BaseModel):
+    task_id = models.CharField(max_length=255,null=True, blank=True)
+    connection = models.ForeignKey(HttpOperatorConnectionModel,on_delete=models.CASCADE,null=True, blank=True)
+    sql = models.TextField()
+    autocommit = models.BooleanField(default=False)
+    parameters = models.JSONField(null=True,blank=True)
+    dag = models.ForeignKey(DagModel,on_delete=models.CASCADE,null=True, blank=True)
+
+    def __str__(self) -> str:
+        return self.task_id
 
 class SimpleHttpOperatorModel(BaseModel):
     METHODS = (
