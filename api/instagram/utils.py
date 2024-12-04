@@ -99,14 +99,18 @@ def generate_dag_script(workflow):
         except Exception as error:
             print(str(error))
 
-    
+    dags = [entry for entry in dag_.values()]
+    for x in dags:
+        x['http_conn_id'] = HttpOperatorConnectionModel.objects.get(id=x['connection_id']).connection_id
+
     data = {
-        "dag":[entry for entry in dag_.values()],
+        "dag":dags,
         "operators":operators,
         "data_seconds":[str(workflow.delay_durations)]
     }
 
-    
+    print(dag.dag_id)
+    # print(data)
     # Write the dictionary to a YAML file
     yaml_file_path = os.path.join(settings.BASE_DIR, 'api', 'helpers', 'include', 'dag_configs', f"{dag.dag_id}_config.yaml")
     with open(yaml_file_path, 'w') as yaml_file:
@@ -153,7 +157,6 @@ def dag_fields_to_exclude():
             "owner_links",
             "auto_register",
             "fail_stop",
-            "trigger_url",
             "trigger_url_expected_response",
             "workflow",
         ]

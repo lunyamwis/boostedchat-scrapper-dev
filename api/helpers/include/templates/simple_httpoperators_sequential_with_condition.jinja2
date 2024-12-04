@@ -40,7 +40,7 @@ with DAG(
         task_id='check_condition',
         http_conn_id='{{dag_.http_conn_id}}',
         endpoint='{{dag_.trigger_url}}',
-        response_check=create_json_response_check({{dag_.trigger_key}}, {{dag_.trigger_value}}),
+        response_check=create_json_response_check('{{dag_.trigger_url_expected_key}}', '{{dag_.trigger_url_expected_value}}'),
         poke_interval=5,
         timeout=20
     )

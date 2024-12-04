@@ -14,6 +14,10 @@ class DagModelForm(forms.ModelForm):
             "description": forms.TextInput(attrs={"class": "form-control", "placeholder": "Description"}),
             "schedule": forms.TextInput(attrs={"class": "form-control", "placeholder": "Schedule"}),
             "schedule_interval": forms.TextInput(attrs={"class": "form-control", "placeholder": "Schedule Interval"}),
+            "trigger_url": forms.TextInput(attrs={"class": "form-control", "placeholder": "Trigger Url"}),
+            "trigger_url_expected_key": forms.TextInput(attrs={"class": "form-control", "placeholder": "Trigger Url Expected Key"}),
+            "trigger_url_expected_value": forms.TextInput(attrs={"class": "form-control", "placeholder": "Trigger Url Expected Value"}),
+            "connection": forms.Select(attrs={"class": "form-control", "placeholder": "Connection"}),
         }
         
 
@@ -43,6 +47,7 @@ class WorkflowModelForm(forms.ModelForm):
             "airflow_creds": forms.Select(attrs={"class": "form-control", "placeholder": "Airflow Creds"}),
             "workflow_type": forms.Select(
                 choices=[
+                    ("simple_httpoperators_sequential_with_condition","chain the endpoints but initialize with a condition to be checked in order for it to begin running"),
                     ("simple_httpoperators_sequential_run", "simple_httpoperators_sequential_run"),
                     ("simple_httpoperators_parallel_run", "simple_httpoperators_parallel_run"),
                 ],
