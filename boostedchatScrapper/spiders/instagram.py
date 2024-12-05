@@ -50,9 +50,9 @@ class InstagramSpider:
             self.salesrep_instagram_table = Table('sales_rep_salesrep_instagram',self.metadata,autoload_with=self.engine)
 
     
-    def store(self,users,source=1,linked_to='no_one',round=0):
+    def store(self,users,source=1,linked_to='no_one',round=0,item_id=None):
         for user in users:
-            InstagramUser.objects.create(username = user.username,info = user.dict(),source=source,linked_to=linked_to,round=round)
+            InstagramUser.objects.create(username = user.username,info = user.dict(),source=source,linked_to=linked_to,round=round,item_id=item_id)
 
     def is_cursor_available(self):
         is_cursor_available = InstagramUser.objects.filter(Q(username__isnull=True) & Q(cursor__isnull=False))
@@ -215,6 +215,24 @@ class InstagramSpider:
 
         return result
 
+    def scrap_hashtag(self,hashtag):
+        latest_scout = Scout.objects.filter(available=True).latest('created_at')
+        client = login_user(latest_scout)
+        medias, cursor = client.hashtag_medias_v1_chunk(hashtag, max_amount=3, tab_key='recent')
+        try:
+            for media in medias:
+                media_likers = client.media_likers(media.pk)
+                self.store(media_likers,item_id=media.id)
+        except Exception as error:
+            print(error)
+
+        try:
+            for media in medias:
+                media_comments = client.media_comments(media.pk)
+                self.store(media_comments,item_id=media.id)
+        except Exception as error:
+            print(error)
+            
 
     def scrap_inbox(self,scout):
         client = login_user(scout)
