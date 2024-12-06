@@ -54,6 +54,7 @@ urlpatterns = [
     path('scrapGmaps/', views.ScrapGmaps.as_view()),
     path('scrapTheCut/', views.ScrapTheCut.as_view()),
     path('scrapStyleseat/',views.ScrapStyleseat.as_view()),
+    path('scrapHashTag/', views.ScrapHashtag.as_view()),
     path('scrapAPI/', views.ScrapAPI.as_view()),
     path('scrapURL/', views.ScrapURL.as_view()),
     path('scrapMindBodyOnline/', views.ScrapMindBodyOnline.as_view()),

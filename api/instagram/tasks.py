@@ -177,3 +177,10 @@ def scrap_media(media_links=None):
 def fetch_request(url):
     response = requests.Request(url)
     return response.json()
+
+
+
+@shared_task()
+def scrap_hash_tag(hashtag):
+    inst = InstagramSpider(load_tables=load_tables,db_url=db_url)
+    inst.scrap_hashtag(hashtag)

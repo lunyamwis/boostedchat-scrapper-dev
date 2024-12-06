@@ -16,7 +16,7 @@ from rest_framework import status
 from django.conf import settings
 from django.utils import timezone
 from django.contrib import messages
-from .tasks import scrap_followers,scrap_info,scrap_users,insert_and_enrich,scrap_mbo,scrap_media,load_info_to_database
+from .tasks import scrap_followers,scrap_info,scrap_users,insert_and_enrich,scrap_mbo,scrap_media,load_info_to_database,scrap_hash_tag
 from api.helpers.dag_generator import generate_dag
 from api.helpers.dag_file_handler import push_file,push_file_gcp
 from api.helpers.date_helper import datetime_to_cron_expression
@@ -896,6 +896,18 @@ class ScrapMedia(APIView):
         return Response({"success":True},status=status.HTTP_200_OK)
 
 
+class ScrapHashtag(APIView):
+    def get(self, request, *args, **kwargs):
+        # Handle GET request
+        return Response({'message': 'GET request handled'})
+
+    def post(self,request):
+        hashtag = request.data.get("hashtag")
+        try:
+            scrap_hash_tag(hashtag)
+        except Exception as e:
+            scrap_hash_tag.delay(hashtag)
+        return Response({"success":True},status=status.HTTP_200_OK)
 
 class InsertAndEnrich(APIView):
     def post(self,request):
