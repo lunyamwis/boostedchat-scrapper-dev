@@ -866,12 +866,12 @@ class ScrapUsers(APIView):
 class ScrapInfo(APIView):
     def post(self,request):
         
-        delay_before_requests = int(request.data.get("delay_before_requests",4))
-        delay_after_requests = int(request.data.get("delay_after_requests",14))
-        step = int(request.data.get("step",3))
-        accounts = int(request.data.get("accounts",18))
-        round_number = int(request.data.get("round",121))
-        chain = request.data.get("chain",False)
+        delay_before_requests = 4
+        delay_after_requests = 14
+        step = 3
+        accounts = 18
+        round_number = 121
+        chain = False
         if chain:
             scrap_info(delay_before_requests,delay_after_requests,step,accounts,round_number)
         else:
