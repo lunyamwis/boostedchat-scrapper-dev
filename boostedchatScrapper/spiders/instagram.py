@@ -221,15 +221,41 @@ class InstagramSpider:
         medias, cursor = client.hashtag_medias_v1_chunk(hashtag, max_amount=3, tab_key='recent')
         try:
             for media in medias:
-                media_likers = client.media_likers(media.pk)
-                self.store(media_likers,item_id=media.id)
-        except Exception as error:
-            print(error)
-
-        try:
-            for media in medias:
-                media_comments = client.media_comments(media.pk)
-                self.store(media_comments,item_id=media.id)
+                try:
+                    media_pk = media.pk
+                except Exception as error:
+                    print(error)
+                    
+                try:
+                    media_info = client.media_info(media_pk)
+                except Exception as error:
+                    print(error)
+                    
+                try:
+                    media_comments = client.media_comments(media_pk)
+                except Exception as error:
+                    print(error)
+                    
+                try:
+                    media_likers = client.media_likers(media_pk)
+                except Exception as error:
+                    print(error)
+                    
+                # Create a DataFrame for the likers and comments    
+                df_likers = pd.DataFrame([{**liker.dict(), "media_link": media_info.id, "media_caption_text": media_info.caption_text} for liker in media_likers])
+                df_comments = pd.DataFrame([{**comment.dict(), "media_link": media_info.id, "media_caption_text": media_info.caption_text} for comment in media_comments])
+                try:
+                    df_comments['username'] = df_comments['user'].apply(lambda x: x['username'] if isinstance(x, dict) else None)
+                except Exception as err:
+                    print("There are no comments attached to media most likely", err)
+                df = pd.concat([df_likers, df_comments],ignore_index=True)
+                # Append the results to the CSV file
+                df.to_csv("prequalified.csv", index=False, mode='a', header=False)
+                for i, row in df.iterrows():
+                    try:
+                        InstagramUser.objects.create(username=row['username'], item_id=media_info.id, is_manually_triggered=True)   
+                    except Exception as error:
+                        print(error)
         except Exception as error:
             print(error)
             
