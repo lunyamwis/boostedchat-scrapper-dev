@@ -215,9 +215,19 @@ class InstagramSpider:
 
         return result
 
+    @schema_context(os.getenv("SCHEMA_NAME"))
     def scrap_hashtag(self,hashtag):
-        latest_scout = Scout.objects.filter(available=True).latest('created_at')
-        client = login_user(latest_scout)
+        count = Scout.objects.filter(available=True).count()
+
+        if count == 0:
+            return None  # Handle case where no scouts are available
+
+        # Generate a random index
+        random_index = random.randint(0, count - 1)
+
+        # Retrieve a scout at that index using offset
+        random_scout = Scout.objects.filter(available=True)[random_index]
+        client = login_user(random_scout)
         medias, cursor = client.hashtag_medias_v1_chunk(hashtag, max_amount=3, tab_key='recent')
         try:
             for media in medias:
@@ -404,10 +414,21 @@ class InstagramSpider:
 
         return result
 
+    
+
     @schema_context(os.getenv("SCHEMA_NAME"))
     def scrap_media(self, media_links=None):
-        latest_scout = Scout.objects.filter(available=True).first()
-        client = login_user(latest_scout)
+        count = Scout.objects.filter(available=True).count()
+
+        if count == 0:
+            return None  # Handle case where no scouts are available
+
+        # Generate a random index
+        random_index = random.randint(0, count - 1)
+
+        # Retrieve a scout at that index using offset
+        random_scout = Scout.objects.filter(available=True)[random_index]
+        client = login_user(random_scout)
 
         # Initialize the CSV file with headers
         header = ['media_link', 'media_caption_text', 'user_id', 'username', 'full_name', 'profile_pic_url', 'is_private', 'is_verified', 'media_count', 'follower_count', 'following_count', 'biography', 'external_url', 'is_business']
@@ -541,62 +562,13 @@ class InstagramSpider:
                 check_account_response = requests.post(check_accounts_endpoint,data=check_data)
                 check_thread_response = requests.post(check_threads_endpoint,data=check_data)
                 if check_account_response.json()['exists'] and check_thread_response.json()['exists']:
-                    # manually trigger, qualify, and assign
-                    # perform inbound triggering
-                    # inbound_trigger_data = {
-                    #     "username": user.username
-                    # }
-                    # response = requests.post("https://api.booksy.us.boostedchat.com/v1/instagram/account/manually-trigger/",data=inbound_trigger_data)
-                    # if response.status_code in [200,201]:
-                    #     print(f"Account-----{user.username} successfully triggered")
-
-                    # # perform inbound qualifying
-                    # inbound_qualify_data = {
-                    #     "username": user.username,
-                    #     "qualify_flag": True,
-                    #     "relevant_information": user.relevant_information,
-                    #     "scraped":True
-                    # }
-                    # response = requests.post("https://api.booksy.us.boostedchat.com/v1/instagram/account/qualify-account/",data=inbound_qualify_data)
-                    # if response.status_code in [200,201]:
-                    #     print(f"Account-----{user.username} successfully qualified")
-
-                    # perform outbound qualifying
                     print("user in database")
                     user.qualified = True
                     user.save()
 
-
-                    # perform salesrep assignment
-                    # endpoint = "https://api.booksy.us.boostedchat.com/v1/sales/assign-salesrep/"
-                    # payload = {"username": ""}
-                    # try:
-                    #     response = requests.post(endpoint, data=json.dumps(payload), headers=headers)
-                    #     response.raise_for_status()  # Raise an exception for HTTP errors
-                    #     print(f"Account-----{user.username} successfully assigned")
-                    # except requests.exceptions.RequestException as e:
-                    #     print( {"error": str(e)})
                 else:
                     pass
-                    # fetch the direct inbox items
 
-                    # username = 'blendscrafters'
-                    # endpoint = "https://mqtt.booksy.us.boostedchat.com"
-                    # Send a POST request to the fetchDirectInbox endpoint
-                    
-                    # response = requests.post(f'{endpoint}/fetchDirectInbox', json={'username_from': username})
-                    
-                    # # Check the status code of the response
-                    # if response.status_code == 200:
-                    #     # Print the response JSON
-                    #     print("all is well")
-                    #     print(json.dumps(response.json(), indent=2))
-                    #     inbox_data = response.json()
-                    #     inbox_dataset = self.extract_direct_inbox_data(inbox_data)
-                    #     print(inbox_dataset)
-                        
-                    # else:
-                    #     print(f'Request failed with status code {response.status_code}')
         else:
             # pick the automatically generated ones
             instagram_users = InstagramUser.objects.filter(Q(created_at__gte=yesterday_start))
@@ -604,7 +576,8 @@ class InstagramSpider:
         print(len(instagram_users))
         
         for i, user in enumerate(instagram_users[index:], start=1):
-            print(i)
+            if "biography" in user.info:
+                continue
             if user.username:
                 time.sleep(random.randint(delay_before_requests,delay_before_requests+step))
                 try:
@@ -635,42 +608,6 @@ class InstagramSpider:
                         user.save()
                     except Exception as err:
                         print(f"failed to save user------>{err}")
-                    # try:
-                    #     account_dict = {
-                    #         "igname": user.username,
-                    #         "is_manually_triggered":True
-                    #     }
-                    #     # Save account data
-                    #     response = requests.post(
-                    #         "https://api.booksy.us.boostedchat.com/v1/instagram/account/",
-                    #         headers=headers,
-                    #         data=json.dumps(account_dict)
-                    #     )
-                    #     account = response.json()
-                    #     # Save outsourced data
-                    #     outsourced_dict = {
-                    #         "results": {
-                    #             **user.info
-                    #         },
-                    #         "source": "instagram"
-                    #     }
-                    #     response = requests.post(
-                    #         f"https://api.booksy.us.boostedchat.com/v1/instagram/account/{account['id']}/add-outsourced/",
-                    #         headers=headers,
-                    #         data=json.dumps(outsourced_dict)
-                    #     )
-                    #     inbound_qualify_data = {
-                    #         "username": user.username,
-                    #         "qualify_flag": True,
-                    #         "relevant_information": user.relevant_information,
-                    #         "scraped":True
-                    #     }
-                    #     response = requests.post("https://api.booksy.us.boostedchat.com/v1/instagram/account/qualify-account/",data=inbound_qualify_data)
-
-                    #     if response.status_code in [200,201]:
-                    #         print(f"Account-----{user.username} successfully qualified")
-                    # except Exception as error:
-                    #     print(error)
                         
                 except Exception as error:
                     user.outsourced_id_pointer=True
