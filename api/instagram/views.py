@@ -1,4 +1,5 @@
 import yaml
+import ast
 import os
 import json
 import uuid
@@ -888,8 +889,13 @@ class ScrapMedia(APIView):
     def post(self,request):
         try:
             media_links = request.data.get("media_links","")
+            if media_links == "":
+                scrap_media(media_links)
+            elif len(media_links) > 0:
+                scrap_media(ast.literal_eval(media_links))
+            else:
+                scrap_media()
 
-            scrap_media(media_links)
         except Exception as err:
             print(err)
             scrap_media()
