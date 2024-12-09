@@ -41,6 +41,7 @@ with DAG(
         http_conn_id='{{dag_.http_conn_id}}',
         endpoint='{{dag_.trigger_url}}',
         response_check=create_json_response_check('{{dag_.trigger_url_expected_key}}', '{{dag_.trigger_url_expected_value}}'),
+        mode="reschedule",
         poke_interval=2 * 24 * 60 * 60,
         timeout=8 * 24 * 60 * 60
     )
