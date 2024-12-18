@@ -750,7 +750,15 @@ class agentSetup(APIView):
         # print(request.tentant.schema_name)
         # print(f"Received request data: {request.data}")
         print(f"Current tenant schema: {request.tenant.schema_name}")
-        data = json.loads(request.data.get('_content'))
+        data = None
+        try:
+            data = json.loads(request.data.get('_content'))
+        except Exception as err:
+            try:
+                data = request.data
+            except Exception as err:
+                print(err)
+
         wandb.init(
             project="boostedchat",  # replace with your WandB project name
             entity="lutherlunyamwi",       # replace with your WandB username or team

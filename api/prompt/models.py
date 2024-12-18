@@ -154,6 +154,7 @@ class Department(BaseModel):
 
     def __str__(self):
         return self.name
+    
 class Query(BaseModel):
     name = models.CharField(max_length=255)
     query = models.TextField()
