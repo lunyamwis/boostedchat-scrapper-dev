@@ -751,10 +751,13 @@ class agentSetup(APIView):
         # print(f"Received request data: {request.data}")
         # print(f"Current tenant schema: {request.tenant.schema_name}")
         data = None
-        print("Request---",request)
         print("Request---",request.data)
-        # import pdb;pdb.set_trace()
+        if not request.data:
+            return Response({"error": "No data provided"}, status=400)
+
         content = request.data.get('_content')
+        if content is None:
+            return Response({"error": "'_content' not found in request data"}, status=400)
         corrected_content = content.replace("\\'", "'")
 
         try:
