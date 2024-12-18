@@ -751,9 +751,13 @@ class agentSetup(APIView):
         # print(f"Received request data: {request.data}")
         print(f"Current tenant schema: {request.tenant.schema_name}")
         data = None
-        print(request.data)
+        print("Request---",request.data)
+        # import pdb;pdb.set_trace()
+        content = request.data.get('_content')
+        corrected_content = content.replace("\\'", "'")
+
         try:
-            data = json.loads(request.data.get('_content'))
+            data = json.loads(corrected_content)
         except Exception as err:
             try:
                 data = request.data
