@@ -761,10 +761,10 @@ class agentSetup(APIView):
         
         else:
             content = request.data
-        corrected_content = content.replace("\\'", "'")
+        # corrected_content = content.replace("\\'", "'")
 
         try:
-            data = json.loads(corrected_content)
+            data = json.loads(content)
         except Exception as err:
             try:
                 data = request.data
