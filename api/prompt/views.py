@@ -800,6 +800,8 @@ class agentSetup(APIView):
             if isinstance(info, str):
                 import ast
                 info = ast.literal_eval(info)
+            print(info)
+            
             agents = []
             tasks = []
             
