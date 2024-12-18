@@ -757,7 +757,7 @@ class agentSetup(APIView):
 
         content = request.data.get('_content')
         if content is None:
-            return Response({"error": "'_content' not found in request data"}, status=400)
+            return Response({"error": f"'_content' not found in request data - {request.data}"}, status=400)
         corrected_content = content.replace("\\'", "'")
 
         try:
