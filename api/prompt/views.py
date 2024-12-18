@@ -751,6 +751,7 @@ class agentSetup(APIView):
         # print(f"Received request data: {request.data}")
         print(f"Current tenant schema: {request.tenant.schema_name}")
         data = None
+        print(request.data)
         try:
             data = json.loads(request.data.get('_content'))
         except Exception as err:
