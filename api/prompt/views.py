@@ -793,6 +793,7 @@ class agentSetup(APIView):
 
             # import pdb;pdb.set_trace()          
             department = Department.objects.filter(name = data.get("department")).last()
+            logging.warning(f"Department: {department}")
             info = data.get(department.baton.start_key)
             agents = []
             tasks = []
