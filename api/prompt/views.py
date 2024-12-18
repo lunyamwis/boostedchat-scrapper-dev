@@ -797,6 +797,9 @@ class agentSetup(APIView):
             logging.warning(f"Department: {department}")
             logging.warning(f"Schema: {os.getenv('SCHEMA_NAME')}")
             info = data.get(department.baton.start_key)
+            if isinstance(info, str):
+                import ast
+                info = ast.literal_eval(info)
             agents = []
             tasks = []
             
