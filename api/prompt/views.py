@@ -749,8 +749,9 @@ class agentSetup(APIView):
     def post(self,request):
         # print(request.tentant.schema_name)
         # print(f"Received request data: {request.data}")
-        print(f"Current tenant schema: {request.tenant.schema_name}")
+        # print(f"Current tenant schema: {request.tenant.schema_name}")
         data = None
+        print("Request---",request)
         print("Request---",request.data)
         # import pdb;pdb.set_trace()
         content = request.data.get('_content')
@@ -782,7 +783,7 @@ class agentSetup(APIView):
 
         # workflow_data = data.get("workflow_data")
         workflow = None
-        with schema_context(request.tenant.schema_name):
+        with schema_context(os.getenv("SCHEMA_NAME")):
 
             # import pdb;pdb.set_trace()          
             department = Department.objects.filter(name = data.get("department")).last()
