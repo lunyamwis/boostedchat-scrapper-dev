@@ -886,6 +886,15 @@ class agentSetup(APIView):
 
             # if isinstance(result, dict):
                 # kickstart new workflow
+
+            if wandb.run is None or wandb.run.is_finished:
+                wandb.init(
+                    project="boostedchat",  # replace with your WandB project name
+                    entity="lutherlunyamwi",       # replace with your WandB username or team
+                    name=f"crewai_run_{data.get('department')}",  # custom name for each run
+                    config=data           # optionally log the request data as run config
+                )
+
             wandb.log({"result": result.json_dict})  # log the final result
 
             # Optionally, log additional information about agents and tasks
