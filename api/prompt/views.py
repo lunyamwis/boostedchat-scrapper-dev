@@ -887,7 +887,7 @@ class agentSetup(APIView):
             # if isinstance(result, dict):
                 # kickstart new workflow
 
-            if wandb.run is None or wandb.run.is_finished:
+            if wandb.run is None or wandb.run.is_finished: # re-initialize if the run is empty or finished
                 wandb.init(
                     project="boostedchat",  # replace with your WandB project name
                     entity="lutherlunyamwi",       # replace with your WandB username or team
