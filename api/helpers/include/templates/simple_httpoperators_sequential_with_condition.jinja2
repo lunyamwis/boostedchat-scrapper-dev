@@ -42,7 +42,7 @@ with DAG(
         endpoint='{{dag_.trigger_url}}',
         response_check=create_json_response_check('{{dag_.trigger_url_expected_key}}', '{{dag_.trigger_url_expected_value}}'),
         mode="reschedule",
-        poke_interval=2 * 24 * 60 * 60,
+        poke_interval=1 * 24 * 60 * 60,
         timeout=8 * 24 * 60 * 60
     )
     http_tasks.append(http_sensor)
