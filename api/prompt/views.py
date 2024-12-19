@@ -771,20 +771,8 @@ class agentSetup(APIView):
             except Exception as err:
                 print(err)
 
-        wandb.init(
-            project="boostedchat",  # replace with your WandB project name
-            entity="lutherlunyamwi",       # replace with your WandB username or team
-            name=f"crewai_run_{data.get('department')}",  # custom name for each run
-            config=data           # optionally log the request data as run config
-        )
+        
 
-        wandb_handler = WandbLoggingHandler()
-        wandb_handler.setLevel(logging.INFO)
-        wandb_handler.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
-
-        langchain_logger = logging.getLogger("langchain")
-        langchain_logger.addHandler(wandb_handler)
-        langchain_logger.setLevel(logging.INFO)
         # with schema_context("lunyamwi"):
 
         # workflow_data = data.get("workflow_data")
@@ -887,26 +875,33 @@ class agentSetup(APIView):
             # if isinstance(result, dict):
                 # kickstart new workflow
 
-            if wandb.run is None or wandb.run.is_finished: # re-initialize if the run is empty or finished
-                wandb.init(
+            with wandb.init(
                     project="boostedchat",  # replace with your WandB project name
                     entity="lutherlunyamwi",       # replace with your WandB username or team
                     name=f"crewai_run_{data.get('department')}",  # custom name for each run
                     config=data           # optionally log the request data as run config
-                )
+                ) as run:
+                wandb_handler = WandbLoggingHandler()
+                wandb_handler.setLevel(logging.INFO)
+                wandb_handler.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
 
-            wandb.log({"result": result.json_dict})  # log the final result
+                langchain_logger = logging.getLogger("langchain")
+                langchain_logger.addHandler(wandb_handler)
+                langchain_logger.setLevel(logging.INFO)
+                
 
-            # Optionally, log additional information about agents and tasks
-            wandb.log({
-                "agents": [{"role": agent.role, "goal": agent.goal, "tools": str(agent.tools)} for agent in agents],
-                "tasks": [{"description": task.description, "expected_output": task.expected_output} for task in tasks]
-            })
+                wandb.log({"result": result.json_dict})  # log the final result
 
-            # End wandb run
-            time.sleep(2)
-            self.log_scrapping_logs(logging_filename)
-            wandb.finish()
+                # Optionally, log additional information about agents and tasks
+                wandb.log({
+                    "agents": [{"role": agent.role, "goal": agent.goal, "tools": str(agent.tools)} for agent in agents],
+                    "tasks": [{"description": task.description, "expected_output": task.expected_output} for task in tasks]
+                })
+
+                # End wandb run
+                time.sleep(2)
+                self.log_scrapping_logs(logging_filename)
+                wandb.finish()
             return Response({"result":result.json_dict})
         # else:
         #     return Response({"result":result})
