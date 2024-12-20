@@ -95,7 +95,7 @@ def login_user(scout: Scout):
     # index = 1
     # before_ip = cl._send_public_request("https://api.ipify.org/")
     
-    username = f'user-{os.getenv('PROXY_USERNAME').strip()}-country-{str.lower(scout.country)}-city-{str.lower(scout.city)}'
+    username = f"user-{os.getenv('PROXY_USERNAME').strip()}-country-{str.lower(scout.country)}-city-{str.lower(scout.city)}"
     password = os.getenv('PROXY_PASSWORD').strip()
     proxy = None
     
