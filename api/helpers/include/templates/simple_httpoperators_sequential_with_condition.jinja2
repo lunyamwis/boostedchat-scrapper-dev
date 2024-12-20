@@ -14,7 +14,7 @@ def create_json_response_check(expected_key, expected_value):
             # Parse the response as JSON
             json_response = response.json()
             # Check for the specific key and expected value
-            return json_response.get(expected_key) == expected_value
+            return str(json_response[expected_key]).lower() == str(expected_value).lower()
         return json_response_check
 
 
