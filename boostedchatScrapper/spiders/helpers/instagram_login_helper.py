@@ -95,9 +95,12 @@ def login_user(scout: Scout):
     # index = 1
     # before_ip = cl._send_public_request("https://api.ipify.org/")
     
-    username = os.getenv('PROXY_USERNAME').strip()
+    username = f'user-{os.getenv('PROXY_USERNAME').strip()}-country-{str.lower(scout.country)}-city-{str.lower(scout.city)}'
     password = os.getenv('PROXY_PASSWORD').strip()
-    proxy = f"http://{username}:{password}@ke.smartproxy.com:45001"
+    proxy = None
+    
+    proxy = f"http://{username}:{password}@gate.smartproxy.com:10001"
+
     
     cl.set_proxy(
         proxy
