@@ -576,7 +576,7 @@ class InstagramSpider:
         print(len(instagram_users))
         
         for i, user in enumerate(instagram_users[index:], start=1):
-            if "biography" in user.info:
+            if user.info and "biography" in user.info:
                 continue
             if user.username:
                 time.sleep(random.randint(delay_before_requests,delay_before_requests+step))
