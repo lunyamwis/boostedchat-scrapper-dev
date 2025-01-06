@@ -803,22 +803,44 @@ class agentSetup(APIView):
                 print(agent)
                 # import pdb;pdb.set_trace()
                 if agent.tools.filter().exists():
-                    agents.append(Agent(
-                        role=agent.role.description + " " + agent.role.tone_of_voice if agent.role else department.name,
-                        goal=agent.goal,
-                        backstory=agent.prompt.last().text_data,
-                        tools = [TOOLS.get(tool.name) for tool in agent.tools.all()],
-                        allow_delegation=False,
-                        verbose=True
-                    ))
+                    if agent.is_opensource:
+
+                        agents.append(Agent(
+                            role=agent.role.description + " " + agent.role.tone_of_voice if agent.role else department.name,
+                            goal=agent.goal,
+                            backstory=agent.prompt.last().text_data,
+                            tools = [TOOLS.get(tool.name) for tool in agent.tools.all()],
+                            allow_delegation=False,
+                            verbose=True,
+                            llm="huggingface/mistralai/Mistral-7B-Instruct-v0.3"
+                        ))
+                    else:
+                        agents.append(Agent(
+                            role=agent.role.description + " " + agent.role.tone_of_voice if agent.role else department.name,
+                            goal=agent.goal,
+                            backstory=agent.prompt.last().text_data,
+                            tools = [TOOLS.get(tool.name) for tool in agent.tools.all()],
+                            allow_delegation=False,
+                            verbose=True
+                        ))
                 else:
-                    agents.append(Agent(
-                        role=agent.role.description + " " + agent.role.tone_of_voice if agent.role else department.name,
-                        goal=agent.goal,
-                        backstory=agent.prompt.last().text_data,
-                        allow_delegation=False,
-                        verbose=True
-                    ))
+                    if agent.is_opensource:
+                        agents.append(Agent(
+                            role=agent.role.description + " " + agent.role.tone_of_voice if agent.role else department.name,
+                            goal=agent.goal,
+                            backstory=agent.prompt.last().text_data,
+                            allow_delegation=False,
+                            verbose=True,
+                            llm="huggingface/mistralai/Mistral-7B-Instruct-v0.3"
+                        ))
+                    else:
+                        agents.append(Agent(
+                            role=agent.role.description + " " + agent.role.tone_of_voice if agent.role else department.name,
+                            goal=agent.goal,
+                            backstory=agent.prompt.last().text_data,
+                            allow_delegation=False,
+                            verbose=True
+                        ))
                 
             tasks = []
             department_agent_tasks = None
