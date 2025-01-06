@@ -30,6 +30,14 @@ sentry_sdk.init(
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+NOTEBOOK_ARGUMENTS = [
+    '--ip', '0.0.0.0',
+    '--port', '8888',
+    '--notebook-dir', BASE_DIR / "notebooks",  # Adjust the path as needed
+    '--NotebookApp.default_url', '/tree'  # Change to '/lab' for JupyterLab
+]
+IPYTHON_KERNEL_DISPLAY_NAME = 'Django Kernel'
+os.environ["DJANGO_ALLOW_ASYNC_UNSAFE"] = "true"
 
 
 # Quick-start development settings - unsuitable for production
@@ -86,6 +94,7 @@ SHARED_APPS = [
     'sitemaps',
     "crispy_forms",
     "crispy_bootstrap5",
+    "django_extensions"
 ]
 
 TENANT_APPS = ['api.instagram','api.scout', 'api.helpers','api.prompt','api.analyst']
