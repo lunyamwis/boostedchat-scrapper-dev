@@ -100,6 +100,7 @@ class Agent(BaseModel):
     prompt = models.ManyToManyField(Prompt,blank=True)
     tools = models.ManyToManyField(Tool,blank=True)
     workflow = models.CharField(max_length=255)
+    is_opensource = models.BooleanField(default=False)
     
     def __str__(self):
         return self.name
