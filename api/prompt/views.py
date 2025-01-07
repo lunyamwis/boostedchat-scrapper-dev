@@ -936,7 +936,8 @@ def fetch_logs(request):
     api = wandb.Api()
     entity = "lutherlunyamwi"
     project = "boostedchat"
-    runs = api.runs(f"{entity}/{project}")
+    # runs = api.runs(f"{entity}/{project}")
+    runs = api.runs(f"{entity}/{project}", order="-created_at")[:15]
 
     run_data = []
     for run in runs:
