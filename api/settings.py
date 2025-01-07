@@ -94,7 +94,7 @@ SHARED_APPS = [
     'sitemaps',
     "crispy_forms",
     "crispy_bootstrap5",
-    "django_extensions"
+    # "django_extensions"
 ]
 
 TENANT_APPS = ['api.instagram','api.scout', 'api.helpers','api.prompt','api.analyst']
