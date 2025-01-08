@@ -22,8 +22,8 @@ class User(BaseModel):
     username: Optional[str] = None
     full_name: Optional[str] = None
     is_private: Optional[bool] = False
-    profile_pic_url: Optional[HttpUrl]
-    profile_pic_url_hd: Optional[HttpUrl]
+    profile_pic_url: Optional[HttpUrl] = None
+    profile_pic_url_hd: Optional[HttpUrl] = None
     is_verified: Optional[bool] = False
     media_count: Optional[int] = None
     follower_count: Optional[int] = None
@@ -33,23 +33,23 @@ class User(BaseModel):
     account_type: Optional[int]
     is_business: Optional[bool] = False
 
-    public_email: Optional[str]
-    contact_phone_number: Optional[str]
-    public_phone_country_code: Optional[str]
-    public_phone_number: Optional[str]
-    business_contact_method: Optional[str]
-    business_category_name: Optional[str]
-    category_name: Optional[str]
-    category: Optional[str]
+    public_email: Optional[str] = None
+    contact_phone_number: Optional[str] = None
+    public_phone_country_code: Optional[str] = None
+    public_phone_number: Optional[str] = None
+    business_contact_method: Optional[str] = None
+    business_category_name: Optional[str] = None
+    category_name: Optional[str] = None
+    category: Optional[str] = None
 
-    address_street: Optional[str]
-    city_id: Optional[str]
-    city_name: Optional[str]
-    latitude: Optional[float]
-    longitude: Optional[float]
-    zip: Optional[str]
-    instagram_location_id: Optional[str]
-    interop_messaging_user_fbid: Optional[str]
+    address_street: Optional[str] = None
+    city_id: Optional[str] = None
+    city_name: Optional[str] = None
+    latitude: Optional[float] = 0.0
+    longitude: Optional[float] = 0.0
+    zip: Optional[str] = None
+    instagram_location_id: Optional[str] = None
+    interop_messaging_user_fbid: Optional[str] = None
 
     _external_url = validator("external_url", allow_reuse=True)(validate_external_url)
 

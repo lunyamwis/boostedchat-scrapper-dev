@@ -142,23 +142,23 @@ def load_info_to_database():
                 else:
                     print("failed to post outsourced data")
                 # Save relevant data
-                if qualify_algo(user.info,STYLISTS_WORDS):
-                    try:
-                        inbound_qualify_data = {
-                            "username": user.username,
-                            "qualify_flag": True,
-                            "relevant_information": json.dumps(user.relevant_information),
-                            "scraped":True
-                        }
-                        response = requests.post("https://api.booksy.us.boostedchat.com/v1/instagram/account/qualify-account/",data=inbound_qualify_data)
+                # if qualify_algo(user.info,STYLISTS_WORDS):
+                try:
+                    inbound_qualify_data = {
+                        "username": user.username,
+                        "qualify_flag": True,
+                        "relevant_information": json.dumps(user.relevant_information),
+                        "scraped":True
+                    }
+                    response = requests.post("https://api.booksy.us.boostedchat.com/v1/instagram/account/qualify-account/",data=inbound_qualify_data)
 
-                        if response.status_code in [200,201]:
-                            print(response.json())
-                            print(f"Account-----{user.username} successfully qualified")
-                    except Exception as err:
-                        print(err,f"---->error in qualifying user {user.username}")
-                else:
-                    print("failed to qualify")
+                    if response.status_code in [200,201]:
+                        print(response.json())
+                        print(f"Account-----{user.username} successfully qualified")
+                except Exception as err:
+                    print(err,f"---->error in qualifying user {user.username}")
+                # else:
+                #     print("failed to qualify")
             except Exception as err:
                 print(err, f"---->error in posting user {user.username}")
     except Exception as err:
