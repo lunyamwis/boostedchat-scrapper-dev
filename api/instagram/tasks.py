@@ -3,6 +3,10 @@ import pandas as pd
 import os
 import requests
 import json
+import logging
+import wandb
+import time
+import uuid
 import subprocess
 from boostedchatScrapper.spiders.instagram import InstagramSpider
 from boostedchatScrapper.spiders.helpers.instagram_login_helper import login_user
@@ -163,6 +167,55 @@ def load_info_to_database():
                 print(err, f"---->error in posting user {user.username}")
     except Exception as err:
         print(err, "---->error in posting data")
+
+
+def log_scrapping_logs(self, log_file_path):
+    """Logs the contents of scrappinglogs.txt to W&B and deletes the file."""
+    try:
+        with open(log_file_path, 'r') as file:
+            logs = file.read()
+            # Log the entire content of the log file
+            wandb.log({"scrapping_logs": logs})
+            print("Scrapping logs logged successfully.")
+        
+        # Delete the log file after logging
+        os.remove(log_file_path)
+        print(f"{log_file_path} has been deleted.")
+    
+    except Exception as e:
+        print(f"Error logging scrapping logs: {e}")
+
+class WandbLoggingHandler(logging.Handler):
+    def emit(self, record):
+        log_entry = self.format(record)
+        wandb.log({"langchain_log": log_entry})
+
+@shared_task
+def send_logs(data,result):
+    logging_filename = f"scrappinglogs-{str(uuid.uuid4())}.txt"
+    with wandb.init(
+            project="boostedchat",  # replace with your WandB project name
+            entity="lutherlunyamwi",       # replace with your WandB username or team
+            name=f"crewai_run_{data.get('department')}",  # custom name for each run
+            config=data           # optionally log the request data as run config
+        ) as run:
+        wandb_handler = WandbLoggingHandler()
+        wandb_handler.setLevel(logging.INFO)
+        wandb_handler.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
+
+        langchain_logger = logging.getLogger("langchain")
+        langchain_logger.addHandler(wandb_handler)
+        langchain_logger.setLevel(logging.INFO)
+        
+
+        wandb.log({"result": result})  # log the final result
+
+        
+
+        # End wandb run
+        time.sleep(2)
+        log_scrapping_logs(logging_filename)
+        wandb.finish()
 
 
 
