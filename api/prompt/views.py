@@ -912,8 +912,20 @@ class agentSetup(APIView):
                 # workflow_tool = TOOLS.get("workflow_tool")
                 # response = workflow_tool._run(workflow_data)
                 # inputs.update({"workflow_data":workflow_data})
-            
-            result = crew.kickoff(inputs=info)
+            try:
+                result = crew.kickoff(inputs=info)
+            except Exception as e:
+                print(e)
+                try:
+                    items_list = list(info.items())
+
+                    # Get the last item
+                    last_item = items_list[-1]
+
+                    print("Last item:", last_item)
+                    result = crew.kickoff(inputs=last_item)
+                except Exception as err:
+                    print(err)
             # import pdb;pdb.set_trace()
 
             # if isinstance(result, dict):
@@ -965,6 +977,7 @@ class agentSetup(APIView):
                     return Response({"result":result.raw})
                 except Exception as err:
                     print(err)
+
         # else:
         #     return Response({"result":result})
 
