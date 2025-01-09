@@ -957,7 +957,14 @@ class agentSetup(APIView):
                 time.sleep(2)
                 self.log_scrapping_logs(logging_filename)
                 wandb.finish()
-            return Response({"result":result.json_dict})
+            
+            try:
+                return Response({"result":result.json_dict})
+            except Exception as e:
+                try:
+                    return Response({"result":result.raw})
+                except Exception as err:
+                    print(err)
         # else:
         #     return Response({"result":result})
 
