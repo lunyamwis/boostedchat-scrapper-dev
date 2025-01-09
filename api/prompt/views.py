@@ -717,10 +717,10 @@ TOOLS = {
 }
 
 class GeneratedTextOutput(BaseModel):
-    text: str
-    active_stage: str
-    confirmed_problems: str
-    human_takeover: bool
+    text: Optional[str] = ""
+    active_stage: Optional[str] = ""
+    confirmed_problems: Optional[str] = ""
+    human_takeover: Optional[bool] = False
 
 class WandbLoggingHandler(logging.Handler):
     def emit(self, record):
