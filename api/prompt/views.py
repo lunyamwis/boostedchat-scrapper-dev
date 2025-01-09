@@ -857,21 +857,43 @@ class agentSetup(APIView):
                         agent_ = agent
                 if  agent_:
                     if task.tools.filter().exists():
-                        tasks.append(Task(
-                            description=task.prompt.last().text_data if task.prompt.exists() else "perform agents task",
-                            expected_output=task.expected_output,
-                            tools=[TOOLS.get(tool.name) for tool in task.tools.all()],
+                        try:
+                            tasks.append(Task(
+                                description=task.prompt.last().text_data if task.prompt.exists() else "perform agents task",
+                                expected_output=task.expected_output,
+                                tools=[TOOLS.get(tool.name) for tool in task.tools.all()],
 
-                        agent=agent_,
-                        output_json=GeneratedTextOutput
-                        ))
-                    else:
-                        tasks.append(Task(
-                            description=task.prompt.last().text_data if task.prompt.exists() else "perform agents task",
-                            expected_output=task.expected_output,
                             agent=agent_,
                             output_json=GeneratedTextOutput
-                        ))
+                            ))
+                        except Exception as e:
+                            try:
+                                tasks.append(Task(
+                                    description=task.prompt.last().text_data if task.prompt.exists() else "perform agents task",
+                                    expected_output=task.expected_output,
+                                    tools=[TOOLS.get(tool.name) for tool in task.tools.all()],
+                                    agent=agent_
+                                ))
+                            except Exception as e:
+                                print(e)
+                            
+                    else:
+                        try:
+                            tasks.append(Task(
+                                description=task.prompt.last().text_data if task.prompt.exists() else "perform agents task",
+                                expected_output=task.expected_output,
+                                agent=agent_,
+                                output_json=GeneratedTextOutput
+                            ))
+                        except Exception as e:
+                            try:
+                                tasks.append(Task(
+                                    description=task.prompt.last().text_data if task.prompt.exists() else "perform agents task",
+                                    expected_output=task.expected_output,
+                                    agent=agent_
+                                ))
+                            except Exception as e:
+                                print(e)
                     
                 
             logging_filename = f"scrappinglogs-{str(uuid.uuid4())}.txt"
@@ -917,7 +939,13 @@ class agentSetup(APIView):
                 langchain_logger.setLevel(logging.INFO)
                 
 
-                wandb.log({"result": result.json_dict})  # log the final result
+                try:
+                    wandb.log({"result": result.json_dict})  # log the final result
+                except Exception as e:
+                    try:
+                        wandb.log({"result":result.raw})
+                    except Exception as err:
+                        print(err)
 
                 # Optionally, log additional information about agents and tasks
                 wandb.log({
