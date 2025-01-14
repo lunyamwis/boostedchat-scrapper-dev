@@ -674,7 +674,8 @@ class QualificationAlgorithmViewSet(viewsets.ModelViewSet):
     serializer_class = QualificationAlgorithmSerializer
 
 class SchedulerViewSet(viewsets.ModelViewSet):
-    queryset = Scheduler.objects.all()
+    with schema_context(os.getenv('SCHEMA_NAME')):
+        queryset = Scheduler.objects.all()
     serializer_class = SchedulerSerializer
 
 class LeadSourceViewSet(viewsets.ModelViewSet):
