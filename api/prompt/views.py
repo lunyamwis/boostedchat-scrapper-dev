@@ -925,8 +925,8 @@ class agentSetup(APIView):
                     name=f"crewai_run_{data.get('department')}",  # custom name for each run
                     config=data,           # optionally log the request data as run config
                     settings=wandb.Settings(
-                        _service_wait=600,  # Increase service wait time to 600 seconds
-                        init_timeout=600     # Increase initialization timeout to 600 seconds
+                        _service_wait=1200,  # Increase service wait time to 600 seconds
+                        init_timeout=1200     # Increase initialization timeout to 600 seconds
                     )
                     
                 ) as run:
