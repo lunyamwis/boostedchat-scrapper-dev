@@ -67,6 +67,7 @@ db_url = f"postgresql://{os.getenv('POSTGRES_USERNAME')}:{os.getenv('POSTGRES_PA
 print(db_url)
 
 def index(request):
+    # with schema_context(os.getenv("SCHEMA_NAME")):
     prompts = Prompt.objects.all()
     return render(request, 'prompt/index.html', {'prompts': prompts})
 
@@ -754,12 +755,12 @@ class agentSetup(APIView):
         print("Request---",request.data)
         if not request.data:
             return Response({"error": "No data provided"}, status=400)
-
+        # import pdb;pdb.set_trace()
         content = request.data.get('_content')
         if content is None:
             print({"error": f"'_content' not found in request data - {request.data}"})
         
-        else:
+        # else:
             content = request.data
         # corrected_content = content.replace("\\'", "'")
 
@@ -777,6 +778,7 @@ class agentSetup(APIView):
 
         # workflow_data = data.get("workflow_data")
         workflow = None
+        opensource = False    
         with schema_context(os.getenv("SCHEMA_NAME")):
 
             # import pdb;pdb.set_trace()          
@@ -798,12 +800,12 @@ class agentSetup(APIView):
                 department_agents = department.agents.filter(name = data.get('agent_name'))
             else:
                 department_agents = department.agents.exclude(name__icontains='monitoring')
-                
             for agent in department_agents:
                 print(agent)
                 # import pdb;pdb.set_trace()
                 if agent.tools.filter().exists():
                     if agent.is_opensource:
+                        opensource = agent.is_opensource
 
                         agents.append(Agent(
                             role=agent.role.description + " " + agent.role.tone_of_voice if agent.role else department.name,
@@ -825,6 +827,7 @@ class agentSetup(APIView):
                         ))
                 else:
                     if agent.is_opensource:
+                        opensource = agent.is_opensource
                         agents.append(Agent(
                             role=agent.role.description + " " + agent.role.tone_of_voice if agent.role else department.name,
                             goal=agent.goal,
@@ -857,16 +860,7 @@ class agentSetup(APIView):
                         agent_ = agent
                 if  agent_:
                     if task.tools.filter().exists():
-                        try:
-                            tasks.append(Task(
-                                description=task.prompt.last().text_data if task.prompt.exists() else "perform agents task",
-                                expected_output=task.expected_output,
-                                tools=[TOOLS.get(tool.name) for tool in task.tools.all()],
-
-                            agent=agent_,
-                            output_json=GeneratedTextOutput
-                            ))
-                        except Exception as e:
+                        if task.agent.is_opensource:
                             try:
                                 tasks.append(Task(
                                     description=task.prompt.last().text_data if task.prompt.exists() else "perform agents task",
@@ -876,21 +870,37 @@ class agentSetup(APIView):
                                 ))
                             except Exception as e:
                                 print(e)
-                            
-                    else:
-                        try:
-                            tasks.append(Task(
-                                description=task.prompt.last().text_data if task.prompt.exists() else "perform agents task",
-                                expected_output=task.expected_output,
+                        else:
+                            try:
+                                tasks.append(Task(
+                                    description=task.prompt.last().text_data if task.prompt.exists() else "perform agents task",
+                                    expected_output=task.expected_output,
+                                    tools=[TOOLS.get(tool.name) for tool in task.tools.all()],
+
                                 agent=agent_,
                                 output_json=GeneratedTextOutput
-                            ))
-                        except Exception as e:
+                                ))
+                            except Exception as e:
+                                print(e)
+                        
+                            
+                    else:
+                        if task.agent.is_opensource:
                             try:
                                 tasks.append(Task(
                                     description=task.prompt.last().text_data if task.prompt.exists() else "perform agents task",
                                     expected_output=task.expected_output,
                                     agent=agent_
+                                ))
+                            except Exception as e:
+                                print(e)
+                        else:
+                            try:
+                                tasks.append(Task(
+                                    description=task.prompt.last().text_data if task.prompt.exists() else "perform agents task",
+                                    expected_output=task.expected_output,
+                                    agent=agent_,
+                                    output_json=GeneratedTextOutput
                                 ))
                             except Exception as e:
                                 print(e)
@@ -914,8 +924,7 @@ class agentSetup(APIView):
                 # inputs.update({"workflow_data":workflow_data})
             result = crew.kickoff(inputs=info)
         
-            # import pdb;pdb.set_trace()
-
+            
             # if isinstance(result, dict):
                 # kickstart new workflow
             # send_logs.delay(data,result.json_dict)
@@ -938,15 +947,16 @@ class agentSetup(APIView):
                 langchain_logger.addHandler(wandb_handler)
                 langchain_logger.setLevel(logging.INFO)
                 
-
-                try:
-                    wandb.log({"result": result.json_dict})  # log the final result
-                except Exception as e:
+                if opensource:
                     try:
                         wandb.log({"result":result.raw})
                     except Exception as err:
                         print(err)
-
+                else:
+                    try:
+                        wandb.log({"result": result.json_dict})  # log the final result
+                    except Exception as e:
+                        print(e)
                 # Optionally, log additional information about agents and tasks
                 wandb.log({
                     "agents": [{"role": agent.role, "goal": agent.goal, "tools": str(agent.tools)} for agent in agents],
@@ -957,14 +967,18 @@ class agentSetup(APIView):
                 time.sleep(2)
                 self.log_scrapping_logs(logging_filename)
                 wandb.finish()
-            
-            try:
-                return Response({"result":result.json_dict})
-            except Exception as e:
+            # import pdb;pdb.set_trace()
+            if opensource:
+                # import pdb;pdb.set_trace()
                 try:
                     return Response({"result":result.raw})
                 except Exception as err:
                     print(err)
+            else:
+                try:
+                    return Response({"result":result.json_dict})
+                except Exception as e:
+                    print(e)
 
         # else:
         #     return Response({"result":result})
