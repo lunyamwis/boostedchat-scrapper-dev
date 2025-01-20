@@ -100,6 +100,7 @@ class Agent(BaseModel):
     prompt = models.ManyToManyField(Prompt,blank=True)
     tools = models.ManyToManyField(Tool,blank=True)
     workflow = models.CharField(max_length=255)
+    llm = models.CharField(max_length=255,null=True,blank=True)
     is_opensource = models.BooleanField(default=False)
     
     def __str__(self):
@@ -116,6 +117,7 @@ class Task(BaseModel):
     expected_output = models.TextField()
     workflow = models.CharField(max_length=255)
     index = models.IntegerField(null=True,blank=True)
+    output = models.CharField(max_length=255,null=True,blank=True)
 
     def __str__(self):
         return self.name

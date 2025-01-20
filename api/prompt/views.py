@@ -723,6 +723,10 @@ class GeneratedTextOutput(BaseModel):
     confirmed_problems: Optional[str] = ""
     human_takeover: Optional[bool] = False
 
+OUTPUT_MODELS = {
+    "GeneratedTextOutput": GeneratedTextOutput
+}
+
 class WandbLoggingHandler(logging.Handler):
     def emit(self, record):
         log_entry = self.format(record)
@@ -814,7 +818,7 @@ class agentSetup(APIView):
                             tools = [TOOLS.get(tool.name) for tool in agent.tools.all()],
                             allow_delegation=False,
                             verbose=True,
-                            llm="huggingface/mistralai/Mistral-7B-Instruct-v0.3"
+                            llm=agent.llm
                         ))
                     else:
                         agents.append(Agent(
@@ -834,7 +838,8 @@ class agentSetup(APIView):
                             backstory=agent.prompt.last().text_data,
                             allow_delegation=False,
                             verbose=True,
-                            llm="huggingface/mistralai/Mistral-7B-Instruct-v0.3"
+                            # llm="huggingface/mistralai/Mistral-7B-Instruct-v0.3"
+                            llm=agent.llm
                         ))
                     else:
                         agents.append(Agent(
@@ -878,7 +883,7 @@ class agentSetup(APIView):
                                     tools=[TOOLS.get(tool.name) for tool in task.tools.all()],
 
                                 agent=agent_,
-                                output_json=GeneratedTextOutput
+                                output_json=OUTPUT_MODELS.get(task.output)
                                 ))
                             except Exception as e:
                                 print(e)
@@ -900,7 +905,7 @@ class agentSetup(APIView):
                                     description=task.prompt.last().text_data if task.prompt.exists() else "perform agents task",
                                     expected_output=task.expected_output,
                                     agent=agent_,
-                                    output_json=GeneratedTextOutput
+                                    output_json=OUTPUT_MODELS.get(task.output)
                                 ))
                             except Exception as e:
                                 print(e)
