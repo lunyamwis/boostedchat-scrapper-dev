@@ -963,15 +963,26 @@ class agentSetup(APIView):
                     except Exception as e:
                         print(e)
                 # Optionally, log additional information about agents and tasks
-                wandb.log({
-                    "agents": [{"role": agent.role, "goal": agent.goal, "tools": str(agent.tools)} for agent in agents],
-                    "tasks": [{"description": task.description, "expected_output": task.expected_output} for task in tasks]
-                })
+                with wandb.init(
+                    project="boostedchat",  # replace with your WandB project name
+                    entity="lutherlunyamwi",       # replace with your WandB username or team
+                    name=f"crewai_run_{data.get('department')}",  # custom name for each run
+                    config=data,           # optionally log the request data as run config
+                    settings=wandb.Settings(
+                        _service_wait=1200,  # Increase service wait time to 600 seconds
+                        init_timeout=1200     # Increase initialization timeout to 600 seconds
+                    )
+                    
+                ) as run:
+                    wandb.log({
+                        "agents": [{"role": agent.role, "goal": agent.goal, "tools": str(agent.tools)} for agent in agents],
+                        "tasks": [{"description": task.description, "expected_output": task.expected_output} for task in tasks]
+                    })
 
-                # End wandb run
-                time.sleep(2)
-                self.log_scrapping_logs(logging_filename)
-                wandb.finish()
+                    # End wandb run
+                    time.sleep(2)
+                    self.log_scrapping_logs(logging_filename)
+                    wandb.finish()
             # import pdb;pdb.set_trace()
             if opensource:
                 # import pdb;pdb.set_trace()
