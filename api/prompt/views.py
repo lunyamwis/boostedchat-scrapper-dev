@@ -1031,7 +1031,7 @@ class getAgent(APIView):
     def post(self, request, *args,**kwargs):
         transition_prompt = Prompt.objects.filter(name="ED_Stage_Transition_P").latest('created_at')
         template = transition_prompt.text_data
-        all_tasks = [{"task_name":task.name,"task_description":task.prompt.last().text_data,"agent_name":task.agent.name,"agent_goal":task.agent.goal} for task in Department.objects.filter(name="Engagement Department").latest('created_at')]
+        all_tasks = [{"task_name":task.name,"task_description":task.prompt.last().text_data,"agent_name":task.agent.name,"agent_goal":task.agent.goal} for task in Department.objects.filter(name="Engagement Department").latest('created_at').tasks.all()]
         prompt = ChatPromptTemplate.from_template(template)
         model = ChatOpenAI(temperature=0)
         output_parser = StrOutputParser()
