@@ -116,7 +116,7 @@ def load_info_to_database():
                     "relevant_information": user.info
                 }
                 response = requests.post(
-                    "https://api.booksy.us.boostedchat.com/v1/instagram/account/",
+                    f"https://api.{os.getenv('DOMAIN1')}.boostedchat.com/v1/instagram/account/",
                     headers=headers,
                     data=json.dumps(account_dict)
                 )
@@ -137,7 +137,7 @@ def load_info_to_database():
                     }
                 # import pdb;pdb.set_trace()
                 response = requests.post(
-                    f"https://api.booksy.us.boostedchat.com/v1/instagram/account/{account['id']}/add-outsourced/",
+                    f"https://api.{os.getenv('DOMAIN1')}.boostedchat.com/v1/instagram/account/{account['id']}/add-outsourced/",
                     headers=headers,
                     data=json.dumps(outsourced_dict)
                 )
@@ -154,7 +154,7 @@ def load_info_to_database():
                         "relevant_information": json.dumps(user.relevant_information),
                         "scraped":True
                     }
-                    response = requests.post("https://api.booksy.us.boostedchat.com/v1/instagram/account/qualify-account/",data=inbound_qualify_data)
+                    response = requests.post(f"https://api.{os.getenv('DOMAIN1')}.boostedchat.com/v1/instagram/account/qualify-account/",data=inbound_qualify_data)
 
                     if response.status_code in [200,201]:
                         print(response.json())
