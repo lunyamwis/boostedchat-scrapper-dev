@@ -640,6 +640,7 @@ class PaginationClass(PageNumberPagination):
 
 
 
+
 class InstagramLeadViewSet(viewsets.ModelViewSet):
     queryset = InstagramUser.objects.all()
     serializer_class = InstagramLeadSerializer
