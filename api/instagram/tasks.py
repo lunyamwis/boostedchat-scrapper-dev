@@ -150,7 +150,7 @@ def load_info_to_database():
                 try:
                     inbound_qualify_data = {
                         "username": user.username,
-                        "qualify_flag": True,
+                        "qualify_flag": False,
                         "relevant_information": json.dumps(user.relevant_information),
                         "scraped":True
                     }
