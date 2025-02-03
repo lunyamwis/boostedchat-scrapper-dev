@@ -229,6 +229,7 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:9000",
     "http://localhost:5173",
     "https://booksy.us.boostedchat.com",
+    "http://localhost:3000",
     "https://jamel.boostedchat.com"
 ]
 

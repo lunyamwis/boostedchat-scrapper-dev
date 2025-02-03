@@ -136,17 +136,18 @@ class MediaViewSet(viewsets.ModelViewSet):
 
     @action(detail=True,methods=["post"],url_path="download-media")
     def download_media(self,request,pk=None):
-        latest_available_scout = Scout.objects.latest('created_at')
-        client = login_user(latest_available_scout)
-        media_obj = self.get_object()
-        try:
-            media_id = client.media_pk_from_url(media_obj.media_url)
-            media = client.media_info(media_id)
-            media_obj.download_url = media.thumbnail_url
-            media_obj.save()
-            return Response({"success":True},status=status.HTTP_200_OK) 
-        except Exception as e:
-            return Response({"error":str(e)},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        with schema_context(os.getenv('SCHEMA_NAME')):
+            latest_available_scout = Scout.objects.filter(available=True).latest('created_at')
+            client = login_user(latest_available_scout)
+            media_obj = self.get_object()
+            try:
+                media_id = client.media_pk_from_url(media_obj.media_url)
+                media = client.media_info(media_id)
+                media_obj.download_url = media.thumbnail_url
+                media_obj.save()
+                return Response({"download_url":media_obj.download_url},status=status.HTTP_200_OK) 
+            except Exception as e:
+                return Response({"error":str(e)},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
 
 
