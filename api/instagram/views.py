@@ -133,23 +133,45 @@ class LoadInfoToDatabase(APIView):
 class MediaViewSet(viewsets.ModelViewSet):
     queryset = Media.objects.all()
     serializer_class = MediaSerializer
+    
+    @action(detail=True, methods=["post"], url_path="download-media")
+    def download_media(self, request, pk=None):
+        schema_name = os.getenv('SCHEMA_NAME', 'public')
+        with schema_context(schema_name):
+            try:
+                # Handle missing scouts
+                latest_available_scout = Scout.objects.filter(available=True).latest('created_at')
+            except Scout.DoesNotExist:
+                return Response(
+                    {"error": "No available scouts found"},
+                    status=status.HTTP_404_NOT_FOUND
+                )
 
-    @action(detail=True,methods=["post"],url_path="download-media")
-    def download_media(self,request,pk=None):
-        with schema_context(os.getenv('SCHEMA_NAME')):
-            latest_available_scout = Scout.objects.filter(available=True).latest('created_at')
-            client = login_user(latest_available_scout)
+            try:
+                # Handle authentication failures
+                client = login_user(latest_available_scout)
+            except Exception as e:
+                return Response(
+                    {"error": f"Authentication failed: {str(e)}"},
+                    status=status.HTTP_401_UNAUTHORIZED
+                )
+
             media_obj = self.get_object()
             try:
                 media_id = client.media_pk_from_url(media_obj.media_url)
                 media = client.media_info(media_id)
-                media_obj.download_url = media.thumbnail_url
+                media_obj.download_url = media.download_url  # Use correct property
                 media_obj.save()
-                return Response({"download_url":media_obj.download_url},status=status.HTTP_200_OK) 
+                return Response(
+                    {"download_url": media_obj.download_url},
+                    status=status.HTTP_200_OK
+                )
             except Exception as e:
-                return Response({"error":str(e)},status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-    
-
+                return Response(
+                    {"error": str(e)},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
+            
 
 class CustomFieldCreateView(CreateView):
     model = CustomField
