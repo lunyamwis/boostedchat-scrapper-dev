@@ -160,7 +160,7 @@ class MediaViewSet(viewsets.ModelViewSet):
             try:
                 media_id = client.media_pk_from_url(media_obj.media_url)
                 media = client.media_info(media_id)
-                media_obj.download_url = media.download_url  # Use correct property
+                media_obj.download_url = media.thumbnail_url  # Use correct property
                 media_obj.save()
                 return Response(
                     {"download_url": media_obj.download_url},
