@@ -143,7 +143,8 @@ class MediaViewSet(viewsets.ModelViewSet):
                 latest_available_scout = Scout.objects.filter(available=True).latest('created_at')
             except Scout.DoesNotExist:
                 return Response(
-                    {"error": "No available scouts found"},
+                    {"error": "No available scouts found",
+                     "message": "No available scouts found"},
                     status=status.HTTP_404_NOT_FOUND
                 )
 
@@ -152,7 +153,7 @@ class MediaViewSet(viewsets.ModelViewSet):
                 client = login_user(latest_available_scout)
             except Exception as e:
                 return Response(
-                    {"error": f"Authentication failed: {str(e)}"},
+                    {"error": f"Authentication failed: {str(e)}", "message": f"Authentication failed: {str(e)}"},
                     status=status.HTTP_401_UNAUTHORIZED
                 )
 
@@ -168,7 +169,7 @@ class MediaViewSet(viewsets.ModelViewSet):
                 )
             except Exception as e:
                 return Response(
-                    {"error": str(e)},
+                    {"error": str(e), "message": str(e) },
                     status=status.HTTP_500_INTERNAL_SERVER_ERROR
                 )
             
