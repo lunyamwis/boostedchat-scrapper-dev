@@ -161,9 +161,9 @@ class MediaViewSet(viewsets.ModelViewSet):
             try:
                 media_id = client.media_pk_from_url(media_obj.media_url)
                 media = client.media_info(media_id)
-                if media.media_type == "image":
+                if media_obj.media_type == "image":
                     media_obj.download_url = media.thumbnail_url.unicode_string() 
-                elif media.media_type == "video":
+                elif media_obj.media_type == "video":
                     media_obj.download_url = media.video_url.unicode_string()
                 media_obj.save()
                 return Response(
