@@ -566,6 +566,7 @@ class TriggerRun(View):
             messages.error(request, f"Failed to trigger DAG run: {str(e)}")
         
         return redirect('list_workflows')
+    
 
 def delete_httpoperator(request, pk):
     try:
@@ -624,7 +625,6 @@ class WorkflowList(ListView):
 
         # print(resp.json())
         return context
-
 
 
 

@@ -10,6 +10,7 @@ urlpatterns = [
     # path('', home),  # Root URL
     # path('',include('boostedchatScrapper.urls')),
     path('instagram/',include('api.instagram.urls')),
+    path('scout/',include('api.scout.urls')),
     path('prompt/',include('api.prompt.urls')),
     path('',include('api.analyst.urls')),
 ]
