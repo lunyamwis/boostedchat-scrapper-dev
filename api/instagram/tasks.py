@@ -110,6 +110,14 @@ def load_info_to_database():
         instagram_users = InstagramUser.objects.filter(created_at__gte=yesterday_start).distinct('username')
         for user in instagram_users:
             try:
+                check_accounts_endpoint = "https://api.booksy.us.boostedchat.com/v1/instagram/checkAccountExists/"
+                check_data = {
+                    "username": user.username
+                }
+                check_account_response = requests.post(check_accounts_endpoint,data=check_data)
+                if check_account_response.json()['exists']:
+                    continue
+                
                 account_dict = {
                     "igname": user.username,
                     "is_manually_triggered":True,
