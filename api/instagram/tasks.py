@@ -96,6 +96,111 @@ def load_info_to_csv():
         print(err,"file not found")  
 
 
+def update_account_information(user:InstagramUser):
+    headers = {
+        'Content-Type': 'application/json'
+    }
+    get_id_account_data = {
+        "username": user.username
+    }
+    response = requests.post(f"https://api.{os.getenv('DOMAIN1')}.boostedchat.com/v1/instagram/account/get-id/",data=get_id_account_data)
+    account_id = response.json()['id']
+        
+    account_dict = {
+        "igname": user.username,
+        "is_manually_triggered":True,
+        "relevant_information": user.info
+    }
+    response = requests.patch(
+        f"https://api.{os.getenv('DOMAIN1')}.boostedchat.com/v1/instagram/account/{account_id}/",
+        headers=headers,
+        data=json.dumps(account_dict)
+    )
+    account = response.json()
+    print(account)
+    # Save outsourced data
+    if "outsourced_id" in response.json():
+        outsourced_id = response.json()['outsourced_id']
+        outsourced_dict = None
+
+        if user.info:
+            outsourced_dict = {
+                "results": {**user.info, "media_id": user.item_id},  # yet to test
+                "source": "instagram"
+            }
+        else:
+            outsourced_dict = {
+                "results": {"username":user.username,"media_id": user.item_id},
+                "source": "instagram"
+            }
+        # import pdb;pdb.set_trace()
+        response = requests.patch(
+            f"https://api.{os.getenv('DOMAIN1')}.boostedchat.com/v1/instagram/outsourced/{outsourced_id}/",
+            headers=headers,
+            data=json.dumps(outsourced_dict)
+        )
+        if response.status_code in [200,201]:
+            print("successfully posted outsourced data")
+        else:
+            print("failed to post outsourced data")
+    # Save relevant data
+    # if qualify_algo(user.info,STYLISTS_WORDS):
+
+def create_account_information(user:InstagramUser):
+    headers = {
+        'Content-Type': 'application/json'
+    }
+    account_dict = {
+        "igname": user.username,
+        "is_manually_triggered":True,
+        "relevant_information": user.info
+    }
+    response = requests.post(
+        f"https://api.{os.getenv('DOMAIN1')}.boostedchat.com/v1/instagram/account/",
+        headers=headers,
+        data=json.dumps(account_dict)
+    )
+    account = response.json()
+    print(account)
+    # Save outsourced data
+    outsourced_dict = None
+
+    if user.info:
+        outsourced_dict = {
+            "results": {**user.info, "media_id": user.item_id},  # yet to test
+            "source": "instagram"
+        }
+    else:
+        outsourced_dict = {
+            "results": {"username":user.username,"media_id": user.item_id},
+            "source": "instagram"
+        }
+    # import pdb;pdb.set_trace()
+    response = requests.post(
+        f"https://api.{os.getenv('DOMAIN1')}.boostedchat.com/v1/instagram/account/{account['id']}/add-outsourced/",
+        headers=headers,
+        data=json.dumps(outsourced_dict)
+    )
+    if response.status_code in [200,201]:
+        print("successfully posted outsourced data")
+    else:
+        print("failed to post outsourced data")
+    # Save relevant data
+    # if qualify_algo(user.info,STYLISTS_WORDS):
+    try:
+        inbound_qualify_data = {
+            "username": user.username,
+            "qualify_flag": False,
+            "relevant_information": json.dumps(user.relevant_information),
+            "scraped":True
+        }
+        response = requests.post(f"https://api.{os.getenv('DOMAIN1')}.boostedchat.com/v1/instagram/account/qualify-account/",data=inbound_qualify_data)
+
+        if response.status_code in [200,201]:
+            print(response.json())
+            print(f"Account-----{user.username} successfully qualified")
+    except Exception as err:
+        print(err,f"---->error in qualifying user {user.username}")  
 
 @shared_task()
 @schema_context(os.getenv("SCHEMA_NAME"))
@@ -110,65 +215,18 @@ def load_info_to_database():
         instagram_users = InstagramUser.objects.filter(created_at__gte=yesterday_start).distinct('username')
         for user in instagram_users:
             try:
+                user_exists = False
                 check_accounts_endpoint = "https://api.booksy.us.boostedchat.com/v1/instagram/checkAccountExists/"
                 check_data = {
                     "username": user.username
                 }
                 check_account_response = requests.post(check_accounts_endpoint,data=check_data)
                 if check_account_response.json()['exists']:
-                    continue
-                
-                account_dict = {
-                    "igname": user.username,
-                    "is_manually_triggered":True,
-                    "relevant_information": user.info
-                }
-                response = requests.post(
-                    f"https://api.{os.getenv('DOMAIN1')}.boostedchat.com/v1/instagram/account/",
-                    headers=headers,
-                    data=json.dumps(account_dict)
-                )
-                account = response.json()
-                print(account)
-                # Save outsourced data
-                outsourced_dict = None
-
-                if user.info:
-                    outsourced_dict = {
-                        "results": {**user.info, "media_id": user.item_id},  # yet to test
-                        "source": "instagram"
-                    }
+                    user_exists = True
+                if user_exists:
+                    update_account_information(user)
                 else:
-                    outsourced_dict = {
-                        "results": {"username":user.username,"media_id": user.item_id},
-                        "source": "instagram"
-                    }
-                # import pdb;pdb.set_trace()
-                response = requests.post(
-                    f"https://api.{os.getenv('DOMAIN1')}.boostedchat.com/v1/instagram/account/{account['id']}/add-outsourced/",
-                    headers=headers,
-                    data=json.dumps(outsourced_dict)
-                )
-                if response.status_code in [200,201]:
-                    print("successfully posted outsourced data")
-                else:
-                    print("failed to post outsourced data")
-                # Save relevant data
-                # if qualify_algo(user.info,STYLISTS_WORDS):
-                try:
-                    inbound_qualify_data = {
-                        "username": user.username,
-                        "qualify_flag": False,
-                        "relevant_information": json.dumps(user.relevant_information),
-                        "scraped":True
-                    }
-                    response = requests.post(f"https://api.{os.getenv('DOMAIN1')}.boostedchat.com/v1/instagram/account/qualify-account/",data=inbound_qualify_data)
-
-                    if response.status_code in [200,201]:
-                        print(response.json())
-                        print(f"Account-----{user.username} successfully qualified")
-                except Exception as err:
-                    print(err,f"---->error in qualifying user {user.username}")
+                    create_account_information(user)
                 # else:
                 #     print("failed to qualify")
             except Exception as err:
