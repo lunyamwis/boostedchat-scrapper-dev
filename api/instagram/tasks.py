@@ -216,7 +216,7 @@ def load_info_to_database():
         for user in instagram_users:
             try:
                 user_exists = False
-                check_accounts_endpoint = "https://api.booksy.us.boostedchat.com/v1/instagram/checkAccountExists/"
+                check_accounts_endpoint = f"https://api.{os.getenv('DOMAIN1')}.boostedchat.com/v1/instagram/checkAccountExists/"
                 check_data = {
                     "username": user.username
                 }
@@ -224,9 +224,9 @@ def load_info_to_database():
                 if check_account_response.json()['exists']:
                     user_exists = True
                 if user_exists:
-                    update_account_information(user) # use patch
+                    update_account_information(user) # uses patch
                 else:
-                    create_account_information(user) # use post
+                    create_account_information(user) # uses post
                 
             except Exception as err:
                 print(err, f"---->error in posting user {user.username}")
