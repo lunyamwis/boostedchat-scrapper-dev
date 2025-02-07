@@ -96,10 +96,14 @@ def load_info_to_csv():
         print(err,"file not found")  
 
 
-def update_account_information(user:InstagramUser):
+def get_headers():
     headers = {
         'Content-Type': 'application/json'
     }
+    return headers
+
+def update_account_information(user:InstagramUser):
+    headers = get_headers()
     get_id_account_data = {
         "username": user.username
     }
@@ -147,9 +151,7 @@ def update_account_information(user:InstagramUser):
     # if qualify_algo(user.info,STYLISTS_WORDS):
 
 def create_account_information(user:InstagramUser):
-    headers = {
-        'Content-Type': 'application/json'
-    }
+    headers = get_headers()
     account_dict = {
         "igname": user.username,
         "is_manually_triggered":True,
@@ -205,9 +207,7 @@ def create_account_information(user:InstagramUser):
 @shared_task()
 @schema_context(os.getenv("SCHEMA_NAME"))
 def load_info_to_database():
-    headers = {
-        'Content-Type': 'application/json'
-    }
+    
     try:
         yesterday = timezone.now() - timezone.timedelta(days=1)
         yesterday_start = timezone.make_aware(timezone.datetime.combine(yesterday,timezone.datetime.min.time()))
@@ -224,11 +224,10 @@ def load_info_to_database():
                 if check_account_response.json()['exists']:
                     user_exists = True
                 if user_exists:
-                    update_account_information(user)
+                    update_account_information(user) # use patch
                 else:
-                    create_account_information(user)
-                # else:
-                #     print("failed to qualify")
+                    create_account_information(user) # use post
+                
             except Exception as err:
                 print(err, f"---->error in posting user {user.username}")
     except Exception as err:
