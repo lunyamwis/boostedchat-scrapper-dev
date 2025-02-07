@@ -548,27 +548,7 @@ class InstagramSpider:
         # the instagram users who are manually triggered need to be given first priority
         instagram_users = InstagramUser.objects.filter(Q(created_at__gte=yesterday_start) & Q(is_manually_triggered=True)).distinct('username')
         if instagram_users.exists():
-            # manually qualify and assign those accounts
-            headers = {
-                'Content-Type': 'application/json'
-            }
-            for user in instagram_users:
-                # check if account or thread exists otherwise pull the inbox afresh
-                check_accounts_endpoint = "https://api.booksy.us.boostedchat.com/v1/instagram/checkAccountExists/"
-                check_threads_endpoint = "https://api.booksy.us.boostedchat.com/v1/instagram/checkThreadExists/"
-                check_data = {
-                    "username": user.username
-                }
-                check_account_response = requests.post(check_accounts_endpoint,data=check_data)
-                check_thread_response = requests.post(check_threads_endpoint,data=check_data)
-                if check_account_response.json()['exists'] and check_thread_response.json()['exists']:
-                    print("user in database")
-                    user.qualified = True
-                    user.save()
-
-                else:
-                    pass
-
+            pass
         else:
             # pick the automatically generated ones
             instagram_users = InstagramUser.objects.filter(Q(created_at__gte=yesterday_start))
