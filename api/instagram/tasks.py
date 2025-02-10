@@ -109,11 +109,11 @@ def update_account_information(user:InstagramUser):
     }
     response = requests.post(f"https://api.{os.getenv('DOMAIN1')}.boostedchat.com/v1/instagram/account/get-id/",data=get_id_account_data)
     account_id = response.json()['id']
-        
+    account_outsourced = response.json()
     account_dict = {
         "igname": user.username,
         "is_manually_triggered":True,
-        "relevant_information": user.info
+        "relevant_information": {**user.info } if user.info else {"username":user.username,"media_id": user.item_id}
     }
     response = requests.patch(
         f"https://api.{os.getenv('DOMAIN1')}.boostedchat.com/v1/instagram/account/{account_id}/",
@@ -123,8 +123,8 @@ def update_account_information(user:InstagramUser):
     account = response.json()
     print(account)
     # Save outsourced data
-    if "outsourced_id" in response.json():
-        outsourced_id = response.json()['outsourced_id']
+    if "outsourced_id" in account_outsourced:
+        outsourced_id = account_outsourced['outsourced_id']
         outsourced_dict = None
 
         if user.info:
