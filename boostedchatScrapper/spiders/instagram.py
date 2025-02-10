@@ -562,7 +562,8 @@ class InstagramSpider:
                 time.sleep(random.randint(delay_before_requests,delay_before_requests+step))
                 try:
 
-                    info_dict = client.user_info_by_username(user.username).dict()
+                    info_dict_ = client.user_info_by_username(user.username).model_dump_json()
+                    info_dict = json.loads(info_dict_)
                     try:
                         user_medias = client.user_medias(info_dict.get("pk"),amount=1)
                         # comment = self.generate_comment(user_medias[0],user.username)
