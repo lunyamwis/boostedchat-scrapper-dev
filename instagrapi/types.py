@@ -43,7 +43,7 @@ class User(BaseModel):
     category: Optional[str] = None
 
     address_street: Optional[str] = None
-    city_id: Optional[str] = None
+    city_id: Optional[Union[str, int]] = None
     city_name: Optional[str] = None
     latitude: Optional[float] = 0.0
     longitude: Optional[float] = 0.0
