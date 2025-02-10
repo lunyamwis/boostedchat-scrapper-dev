@@ -573,7 +573,7 @@ class InstagramSpider:
                                 media_info_ = client.media_info(user_media.id)
                                 media_res.append({
                                     "media_id":media_info_.id,
-                                    "media_url":media_info_.thumbnail_url,
+                                    "media_url":media_info_.thumbnail_url.unicode_string(),
                                     "media_caption":media_info_.caption_text,
                                     # "media_taken_at":media_info_.taken_at
                                 })
