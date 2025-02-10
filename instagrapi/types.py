@@ -49,7 +49,7 @@ class User(BaseModel):
     longitude: Optional[float] = 0.0
     zip: Optional[str] = None
     instagram_location_id: Optional[str] = None
-    interop_messaging_user_fbid: Optional[str] = None
+    interop_messaging_user_fbid: Optional[Union[str, int]] = None
 
     _external_url = validator("external_url", allow_reuse=True)(validate_external_url)
 
