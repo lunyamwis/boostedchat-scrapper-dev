@@ -564,6 +564,8 @@ class InstagramSpider:
 
                     info_dict_ = client.user_info_by_username(user.username).model_dump_json()
                     info_dict = json.loads(info_dict_)
+                    if user.item_id:
+                        info_dict.update({"media_id":user.item_id})
                     try:
                         user_medias = client.user_medias(info_dict.get("pk"),amount=1)
                         # comment = self.generate_comment(user_medias[0],user.username)
