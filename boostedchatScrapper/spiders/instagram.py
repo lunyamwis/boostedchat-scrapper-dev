@@ -551,7 +551,7 @@ class InstagramSpider:
             pass
         else:
             # pick the automatically generated ones
-            instagram_users = InstagramUser.objects.filter(Q(created_at__gte=yesterday_start))
+            instagram_users = InstagramUser.objects.filter(Q(created_at__gte=yesterday_start)).distinct('username')
 
         print(len(instagram_users))
         
