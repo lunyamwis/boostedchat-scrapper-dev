@@ -723,8 +723,21 @@ class GeneratedTextOutput(BaseModel):
     confirmed_problems: Optional[str] = ""
     human_takeover: Optional[bool] = False
 
+class PrequalifiedTextOutput(BaseModel):
+    prequalified: Optional[bool] = False
+    lead_score: Optional[str] = ""
+    name: Optional[str] = ""
+    content: Optional[str] = ""
+    strengths: Optional[str] = ""
+    biography: Optional[str] = ""
+    area: Optional[str] = ""
+    contact_details: Optional[str] = ""
+    external_url: Optional[str] = ""
+
+
 OUTPUT_MODELS = {
-    "GeneratedTextOutput": GeneratedTextOutput
+    "GeneratedTextOutput": GeneratedTextOutput,
+    "PrequalifiedTextOutput": PrequalifiedTextOutput
 }
 
 class WandbLoggingHandler(logging.Handler):
@@ -866,15 +879,28 @@ class agentSetup(APIView):
                 if  agent_:
                     if task.tools.filter().exists():
                         if task.agent.is_opensource:
-                            try:
-                                tasks.append(Task(
-                                    description=task.prompt.last().text_data if task.prompt.exists() else "perform agents task",
-                                    expected_output=task.expected_output,
-                                    tools=[TOOLS.get(tool.name) for tool in task.tools.all()],
-                                    agent=agent_
-                                ))
-                            except Exception as e:
-                                print(e)
+                            if task.output:
+                                try:
+                                    tasks.append(Task(
+                                        description=task.prompt.last().text_data if task.prompt.exists() else "perform agents task",
+                                        expected_output=task.expected_output,
+                                        tools=[TOOLS.get(tool.name) for tool in task.tools.all()],
+                                        agent=agent_,
+                                        output_json=OUTPUT_MODELS.get(task.output)
+                                    ))
+                                except Exception as e:
+                                    print(e)
+                            else:
+                                try:
+                                    tasks.append(Task(
+                                        description=task.prompt.last().text_data if task.prompt.exists() else "perform agents task",
+                                        expected_output=task.expected_output,
+                                        tools=[TOOLS.get(tool.name) for tool in task.tools.all()],
+                                        agent=agent_
+                                    ))
+                                except Exception as e:
+                                    print(e)
+
                         else:
                             try:
                                 tasks.append(Task(
