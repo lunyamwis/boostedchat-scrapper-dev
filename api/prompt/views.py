@@ -727,7 +727,7 @@ class PrequalifiedTextOutput(BaseModel):
     prequalified: Optional[str] = ""
     lead_score: Optional[Union[str, int]] = None
     name: Optional[str] = ""
-    # content: Optional[List[str]] = None #Modified attribute
+    content: Optional[List[str]] = None #Modified attribute
     strengths: Optional[str] = ""
     biography: Optional[str] = ""
     area: Optional[str] = ""
