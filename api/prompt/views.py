@@ -28,7 +28,7 @@ from langchain.tools import tool
 import requests
 import re
 import wandb
-from typing import Dict, Any, Type
+from typing import Dict, Any, Type,Union
 from pydantic import BaseModel, Field
 from langchain.schema.runnable import RunnablePassthrough
 from langchain.schema.output_parser import StrOutputParser
@@ -724,10 +724,10 @@ class GeneratedTextOutput(BaseModel):
     human_takeover: Optional[bool] = False
 
 class PrequalifiedTextOutput(BaseModel):
-    prequalified: Optional[bool] = False
-    lead_score: Optional[str] = ""
+    prequalified: Optional[str] = ""
+    lead_score: Optional[Union[str, int]] = None
     name: Optional[str] = ""
-    content: Optional[str] = ""
+    # content: Optional[List[str]] = None #Modified attribute
     strengths: Optional[str] = ""
     biography: Optional[str] = ""
     area: Optional[str] = ""
@@ -915,14 +915,17 @@ class agentSetup(APIView):
                             
                     else:
                         if task.agent.is_opensource:
+                            print("are we reaching here................****")
                             try:
+                                print("ok this is the condition we are using--------------------***")
                                 tasks.append(Task(
                                     description=task.prompt.last().text_data if task.prompt.exists() else "perform agents task",
                                     expected_output=task.expected_output,
-                                    agent=agent_
+                                    agent=agent_,
+                                    output_json=OUTPUT_MODELS.get(task.output)
                                 ))
                             except Exception as e:
-                                print(e)
+                                print(f"Issue with json when tools switched off {e}")
                         else:
                             try:
                                 tasks.append(Task(
@@ -938,7 +941,7 @@ class agentSetup(APIView):
             logging_filename = f"scrappinglogs-{str(uuid.uuid4())}.txt"
             crew = Crew(
                 agents=agents,
-                
+                cache=False,
                 tasks=tasks,
                 # process=Process.sequential,
                 verbose=True,
@@ -1009,7 +1012,7 @@ class agentSetup(APIView):
                 #     wandb.finish()
             # import pdb;pdb.set_trace()
             if opensource:
-                # import pdb;pdb.set_trace()
+                import pdb;pdb.set_trace()
                 try:
                     return Response({"result":result.json_dict})
                 except Exception as err:
