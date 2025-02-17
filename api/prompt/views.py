@@ -1011,9 +1011,14 @@ class agentSetup(APIView):
             if opensource:
                 # import pdb;pdb.set_trace()
                 try:
-                    return Response({"result":result.raw})
+                    return Response({"result":result.json_dict})
                 except Exception as err:
-                    print(err)
+
+                    logging.warning(f"Problem with json --> {err}")
+                    try:
+                        return Response({"result":result.raw})
+                    except Exception as e:
+                        logging.warning(f"Problem with raw --> {e}")
             else:
                 try:
                     return Response({"result":result.json_dict})
