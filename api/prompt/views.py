@@ -879,18 +879,16 @@ class agentSetup(APIView):
                 if  agent_:
                     if task.tools.filter().exists():
                         if task.agent.is_opensource:
-                            if task.output:
-                                try:
-                                    tasks.append(Task(
-                                        description=task.prompt.last().text_data if task.prompt.exists() else "perform agents task",
-                                        expected_output=task.expected_output,
-                                        tools=[TOOLS.get(tool.name) for tool in task.tools.all()],
-                                        agent=agent_,
-                                        output_json=OUTPUT_MODELS.get(task.output)
-                                    ))
-                                except Exception as e:
-                                    print(e)
-                            else:
+                            try:
+                                tasks.append(Task(
+                                    description=task.prompt.last().text_data if task.prompt.exists() else "perform agents task",
+                                    expected_output=task.expected_output,
+                                    tools=[TOOLS.get(tool.name) for tool in task.tools.all()],
+                                    agent=agent_,
+                                    output_json=OUTPUT_MODELS.get(task.output)
+                                ))
+                            except Exception as e:
+                                logging.warning(f"No json pydantic model found-->{e}")
                                 try:
                                     tasks.append(Task(
                                         description=task.prompt.last().text_data if task.prompt.exists() else "perform agents task",
