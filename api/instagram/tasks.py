@@ -149,6 +149,7 @@ def update_account_information(user:InstagramUser):
                     "source": "instagram"
                 }
             except Exception as err:
+                logging.warning(err)
                 outsourced_dict = {
                     "results": {"username":user.username,"media_id": user.item_id},
                     "source": "instagram"
