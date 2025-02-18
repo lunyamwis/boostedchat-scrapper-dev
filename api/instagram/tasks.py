@@ -185,14 +185,29 @@ def create_account_information(user:InstagramUser):
 
     if user.info:
         outsourced_dict = {
-            "results": {**user.info, "media_id": user.item_id},  # yet to test
+            "results": {**user.info},  # yet to test
             "source": "instagram"
         }
     else:
-        outsourced_dict = {
-            "results": {"username":user.username,"media_id": user.item_id},
-            "source": "instagram"
-        }
+        try:
+            client = login_user(scout=Scout.objects.filter(available=True).first())
+            info_dict_ = client.user_info_by_username(user.username).model_dump_json()
+            info_dict = json.loads(info_dict_)
+            if True:
+                if user.item_id:
+                    info_dict.update({"media_id":user.item_id})
+            user.info = info_dict
+            user.save()
+            outsourced_dict = {
+                "results": {**user.info},  
+                "source": "instagram"
+            }
+        except Exception as err:
+            logging.warning(err)    
+            outsourced_dict = {
+                "results": {"username":user.username,"media_id": user.item_id},
+                "source": "instagram"
+            }
     # import pdb;pdb.set_trace()
     response = requests.post(
         f"http://api:8000/v1/instagram/account/{account['id']}/add-outsourced/",
