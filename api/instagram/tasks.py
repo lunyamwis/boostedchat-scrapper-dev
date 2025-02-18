@@ -12,6 +12,7 @@ from boostedchatScrapper.spiders.instagram import InstagramSpider
 from boostedchatScrapper.spiders.helpers.instagram_login_helper import login_user
 from django.utils import timezone
 from .models import InstagramUser
+from api.scout.models import Scout
 from django_tenants.utils import schema_context
 from boostedchatScrapper.spiders.constants import STYLISTS_WORDS,STYLISTS_NEGATIVE_WORDS
 
@@ -133,10 +134,25 @@ def update_account_information(user:InstagramUser):
                 "source": "instagram"
             }
         else:
-            outsourced_dict = {
-                "results": {"username":user.username,"media_id": user.item_id},
-                "source": "instagram"
-            }
+            try:
+                client = login_user(scout=Scout.objects.filter(available=True).first())
+                info_dict_ = client.user_info_by_username(user.username).model_dump_json()
+                info_dict = json.loads(info_dict_)
+                if True:
+                    if user.item_id:
+                        info_dict.update({"media_id":user.item_id})
+                user.info = info_dict
+                user.save()
+
+                outsourced_dict = {
+                    "results": {**user.info},  
+                    "source": "instagram"
+                }
+            except Exception as err:
+                outsourced_dict = {
+                    "results": {"username":user.username,"media_id": user.item_id},
+                    "source": "instagram"
+                }
         # import pdb;pdb.set_trace()
         response = requests.patch(
             f"http://api:8000/v1/instagram/outsourced/{outsourced_id}/",
