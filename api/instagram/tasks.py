@@ -3,6 +3,7 @@ import pandas as pd
 import os
 import requests
 import json
+import random
 import logging
 import wandb
 import time
@@ -135,7 +136,17 @@ def update_account_information(user:InstagramUser):
             }
         else:
             try:
-                client = login_user(scout=Scout.objects.filter(available=True).first())
+                count = Scout.objects.filter(available=True).count()
+
+                if count == 0:
+                    logging.warning("Scouting accounts are not available") # Handle case where no scouts are available
+
+                # Generate a random index
+                random_index = random.randint(0, count - 1)
+
+                # Retrieve a scout at that index using offset
+                random_scout = Scout.objects.filter(available=True)[random_index]
+                client = login_user(scout=random_scout)
                 info_dict_ = client.user_info_by_username(user.username).model_dump_json()
                 info_dict = json.loads(info_dict_)
                 if True:
@@ -191,7 +202,17 @@ def create_account_information(user:InstagramUser):
         }
     else:
         try:
-            client = login_user(scout=Scout.objects.filter(available=True).first())
+            count = Scout.objects.filter(available=True).count()
+
+            if count == 0:
+                logging.warning("Scouting accounts are not available") # Handle case where no scouts are available
+
+            # Generate a random index
+            random_index = random.randint(0, count - 1)
+
+            # Retrieve a scout at that index using offset
+            random_scout = Scout.objects.filter(available=True)[random_index]
+            client = login_user(scout=random_scout)
             info_dict_ = client.user_info_by_username(user.username).model_dump_json()
             info_dict = json.loads(info_dict_)
             if True:
