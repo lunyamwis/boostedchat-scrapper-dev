@@ -74,7 +74,7 @@ CSRF_TRUSTED_ORIGINS = [
     f"https://scrapper.{os.environ.get('DOMAIN2', '')}.boostedchat.com",
     "http://34.28.104.255",
     "http://lunyamwi.localhost/",
-    "http://lunyamwi.localhost"
+    "http://lunyamwi.localhost",
 ]
 
 # Application definition
