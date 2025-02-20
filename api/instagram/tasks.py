@@ -135,36 +135,10 @@ def update_account_information(user:InstagramUser):
                 "source": "instagram"
             }
         else:
-            try:
-                count = Scout.objects.filter(available=True).count()
-
-                if count == 0:
-                    logging.warning("Scouting accounts are not available") # Handle case where no scouts are available
-
-                # Generate a random index
-                random_index = random.randint(0, count - 1)
-
-                # Retrieve a scout at that index using offset
-                random_scout = Scout.objects.filter(available=True)[random_index]
-                client = login_user(scout=random_scout)
-                info_dict_ = client.user_info_by_username(user.username).model_dump_json()
-                info_dict = json.loads(info_dict_)
-                if True:
-                    if user.item_id:
-                        info_dict.update({"media_id":user.item_id})
-                user.info = info_dict
-                user.save()
-
-                outsourced_dict = {
-                    "results": {**user.info},  
-                    "source": "instagram"
-                }
-            except Exception as err:
-                logging.warning(err)
-                outsourced_dict = {
-                    "results": {"username":user.username,"media_id": user.item_id},
-                    "source": "instagram"
-                }
+            outsourced_dict = {
+                "results": {"username":user.username,"media_id": user.item_id},
+                "source": "instagram"
+            }
         # import pdb;pdb.set_trace()
         response = requests.patch(
             f"http://api:8000/v1/instagram/outsourced/{outsourced_id}/",
@@ -201,35 +175,10 @@ def create_account_information(user:InstagramUser):
             "source": "instagram"
         }
     else:
-        try:
-            count = Scout.objects.filter(available=True).count()
-
-            if count == 0:
-                logging.warning("Scouting accounts are not available") # Handle case where no scouts are available
-
-            # Generate a random index
-            random_index = random.randint(0, count - 1)
-
-            # Retrieve a scout at that index using offset
-            random_scout = Scout.objects.filter(available=True)[random_index]
-            client = login_user(scout=random_scout)
-            info_dict_ = client.user_info_by_username(user.username).model_dump_json()
-            info_dict = json.loads(info_dict_)
-            if True:
-                if user.item_id:
-                    info_dict.update({"media_id":user.item_id})
-            user.info = info_dict
-            user.save()
-            outsourced_dict = {
-                "results": {**user.info},  
-                "source": "instagram"
-            }
-        except Exception as err:
-            logging.warning(err)    
-            outsourced_dict = {
-                "results": {"username":user.username,"media_id": user.item_id},
-                "source": "instagram"
-            }
+        outsourced_dict = {
+            "results": {"username":user.username,"media_id": user.item_id},
+            "source": "instagram"
+        }
     # import pdb;pdb.set_trace()
     response = requests.post(
         f"http://api:8000/v1/instagram/account/{account['id']}/add-outsourced/",
