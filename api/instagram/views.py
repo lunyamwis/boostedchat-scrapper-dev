@@ -604,33 +604,42 @@ class WorkflowList(ListView):
     model = WorkflowModel
     template_name = "workflows/workflows.html"
     context_object_name = "workflows"
+    
+    with schema_context(os.getenv('SCHEMA_NAME')): queryset = WorkflowModel.objects.all()
+    
 
+    # @schema_context(os.getenv('SCHEMA_NAME'))
     def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['workflows'] = self.get_queryset()
-        airflowcreds = AirflowCreds.objects.latest('created_at')
-        headers = {
-            "Content-Type": "application/json",
-            "Accept": "application/json",
-        }
-        context['data'] = []
-        try:
-            print("Fetching DAGs from Airflow under construction")
-            # resp = requests.get(f"{airflowcreds.airflow_base_url}/api/v1/dags", auth=HTTPBasicAuth(airflowcreds.username, airflowcreds.password),headers=headers)   
-            # messages.success(self.request, "Fetched DAGs from Airflow successfully.")
-            # if resp.status_code == 200:
-            #     context['data'] = resp.json()
-        except Exception as e:
-            messages.error(self.request, f"Failed to fetch DAGs from Airflow: {str(e)}")
+        with schema_context(os.getenv('SCHEMA_NAME')):
+            print(WorkflowModel.objects.count())
+            # context = super().get_context_data(**kwargs)
+            context = {}
+            context['workflows'] = self.queryset
+            print(WorkflowModel.objects.count())
+            airflowcreds = AirflowCreds.objects.latest('created_at')
+            headers = {
+                "Content-Type": "application/json",
+                "Accept": "application/json",
+            }
+            context['data'] = []
+            try:
+                print("Fetching DAGs from Airflow under construction")
+                # resp = requests.get(f"{airflowcreds.airflow_base_url}/api/v1/dags", auth=HTTPBasicAuth(airflowcreds.username, airflowcreds.password),headers=headers)   
+                # messages.success(self.request, "Fetched DAGs from Airflow successfully.")
+                # if resp.status_code == 200:
+                #     context['data'] = resp.json()
+            except Exception as e:
+                messages.error(self.request, f"Failed to fetch DAGs from Airflow: {str(e)}")
 
-        # print(resp.json())
-        return context
+            # print(resp.json())
+            return context
 
 
 
 def display_workflows(request):
-    workflows = WorkflowModel.objects.all()
-    return render(request, 'workflows/workflows.html', {'workflows': workflows})
+    with schema_context(os.getenv('SCHEMA_NAME')):
+        workflows = WorkflowModel.objects.all()
+        return render(request, 'workflows/workflows.html', {'workflows': workflows})
 
 
 
