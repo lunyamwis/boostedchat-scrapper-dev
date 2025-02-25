@@ -163,14 +163,6 @@ DATABASES = {
         "PASSWORD": os.getenv("POSTGRES_PASSWORD_ETL").strip(),
         "HOST": os.getenv("POSTGRES_HOST_ETL").strip(),
         "PORT": os.getenv("POSTGRES_PORT_ETL").strip(),
-    },
-    "test": {
-        "ENGINE": "django_tenants.postgresql_backend",
-        "NAME": os.getenv("POSTGRES_DBNAME_ETL").strip(),
-        "USER": os.getenv("POSTGRES_USERNAME_ETL").strip(),
-        "PASSWORD": os.getenv("POSTGRES_PASSWORD_ETL").strip(),
-        "HOST": os.getenv("POSTGRES_HOST_ETL").strip(),
-        "PORT": os.getenv("POSTGRES_PORT_ETL").strip(),
     }
 
 }
