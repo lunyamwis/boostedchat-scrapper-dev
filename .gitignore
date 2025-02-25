@@ -122,6 +122,7 @@ celerybeat.pid
 *.xml
 # Environments
 .env
+.env.*
 .venv
 env/
 venv/
@@ -166,7 +167,6 @@ output.xml
 report.html
 
 *.json
-.env
 
 boostedchatScrapper/*.json
 *.csv
