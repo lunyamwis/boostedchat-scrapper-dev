@@ -144,6 +144,13 @@ TEMPLATES = [
 WSGI_APPLICATION = 'api.wsgi.application'
 
 AIRFLOW_API_BASE_URL = 'http://localhost:8080/api/v1'
+# settings.py
+
+# ... other settings ...
+
+TEST_RUNNER = 'api.test_runner.NoTestDBTestRunner'
+
+# ... other settings ...
 
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
@@ -156,7 +163,16 @@ DATABASES = {
         "PASSWORD": os.getenv("POSTGRES_PASSWORD_ETL").strip(),
         "HOST": os.getenv("POSTGRES_HOST_ETL").strip(),
         "PORT": os.getenv("POSTGRES_PORT_ETL").strip(),
+    },
+    "test": {
+        "ENGINE": "django_tenants.postgresql_backend",
+        "NAME": os.getenv("POSTGRES_DBNAME_ETL").strip(),
+        "USER": os.getenv("POSTGRES_USERNAME_ETL").strip(),
+        "PASSWORD": os.getenv("POSTGRES_PASSWORD_ETL").strip(),
+        "HOST": os.getenv("POSTGRES_HOST_ETL").strip(),
+        "PORT": os.getenv("POSTGRES_PORT_ETL").strip(),
     }
+
 }
 
 DATABASE_ROUTERS = (
