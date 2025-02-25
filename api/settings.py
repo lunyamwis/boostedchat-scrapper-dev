@@ -144,8 +144,6 @@ TEMPLATES = [
 WSGI_APPLICATION = 'api.wsgi.application'
 
 AIRFLOW_API_BASE_URL = 'http://localhost:8080/api/v1'
-<<<<<<< HEAD
-=======
 # settings.py
 
 # ... other settings ...
@@ -153,7 +151,6 @@ AIRFLOW_API_BASE_URL = 'http://localhost:8080/api/v1'
 TEST_RUNNER = 'api.test_runner.NoTestDBTestRunner'
 
 # ... other settings ...
->>>>>>> origin/dev
 
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
