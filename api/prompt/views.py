@@ -28,7 +28,7 @@ from langchain.tools import tool
 import requests
 import re
 import wandb
-from typing import Dict, Any, Type
+from typing import Dict, Any, Type,Union
 from pydantic import BaseModel, Field
 from langchain.schema.runnable import RunnablePassthrough
 from langchain.schema.output_parser import StrOutputParser
@@ -723,8 +723,60 @@ class GeneratedTextOutput(BaseModel):
     confirmed_problems: Optional[str] = ""
     human_takeover: Optional[bool] = False
 
+class PrequalifiedTextOutput(BaseModel):
+    prequalified: Optional[str] = ""
+    lead_score: Optional[Union[str, int]] = None
+    name: Optional[str] = ""
+    content: Optional[Union[str, List[str]]] = None  # Allowing both str and List[str]
+    # content: Optional[str] = ""
+    strengths: Optional[str] = ""
+    biography: Optional[str] = ""
+    area: Optional[str] = ""
+    contact_details: Optional[str] = ""
+    external_url: Optional[str] = ""
+
+def remove_duplicate_content_keys(json_string: str) -> dict:
+    """
+    Parses a JSON string, removes duplicate "content" keys, and returns a dictionary.
+    """
+    try:
+        data = json.loads(json_string)
+        if "content" in data and isinstance(data["content"], str):
+            data["content"] = [data["content"]]
+        return data
+    except json.JSONDecodeError as e:
+        print(f"Error decoding JSON: {e}")
+        return {"success":False}
+    
+def clean_json_output(raw_output: str) -> dict:
+    """
+    Parses a raw JSON string and ensures 'content' is a list.
+    If 'content' is a string, it converts it into a list.
+    """
+    try:
+        # Extract JSON from raw output (if wrapped in additional text)
+        start_index = raw_output.find("{")
+        end_index = raw_output.rfind("}")
+        if start_index == -1 or end_index == -1:
+            raise ValueError("Invalid JSON structure in raw output")
+
+        json_string = raw_output[start_index:end_index + 1]
+        data = json.loads(json_string)
+
+        # Check if 'content' exists and is a string; convert to list if so
+        if "content" in data:
+            if isinstance(data["content"], str):
+                data["content"] = [data["content"]]  # Convert string to list
+
+        return data
+
+    except (json.JSONDecodeError, ValueError) as e:
+        print(f"Error decoding or cleaning JSON: {e}")
+        return {}
+
 OUTPUT_MODELS = {
-    "GeneratedTextOutput": GeneratedTextOutput
+    "GeneratedTextOutput": GeneratedTextOutput,
+    "PrequalifiedTextOutput": PrequalifiedTextOutput
 }
 
 class WandbLoggingHandler(logging.Handler):
@@ -871,10 +923,21 @@ class agentSetup(APIView):
                                     description=task.prompt.last().text_data if task.prompt.exists() else "perform agents task",
                                     expected_output=task.expected_output,
                                     tools=[TOOLS.get(tool.name) for tool in task.tools.all()],
-                                    agent=agent_
+                                    agent=agent_,
+                                    output_json=OUTPUT_MODELS.get(task.output)
                                 ))
                             except Exception as e:
-                                print(e)
+                                logging.warning(f"No json pydantic model found-->{e}")
+                                try:
+                                    tasks.append(Task(
+                                        description=task.prompt.last().text_data if task.prompt.exists() else "perform agents task",
+                                        expected_output=task.expected_output,
+                                        tools=[TOOLS.get(tool.name) for tool in task.tools.all()],
+                                        agent=agent_
+                                    ))
+                                except Exception as e:
+                                    print(e)
+
                         else:
                             try:
                                 tasks.append(Task(
@@ -891,22 +954,27 @@ class agentSetup(APIView):
                             
                     else:
                         if task.agent.is_opensource:
+                            print("are we reaching here................****")
                             try:
+                                print("ok this is the condition we are using--------------------***")
+                                # import pdb;pdb.set_trace()
                                 tasks.append(Task(
                                     description=task.prompt.last().text_data if task.prompt.exists() else "perform agents task",
                                     expected_output=task.expected_output,
                                     agent=agent_
+                                    # output_json=OUTPUT_MODELS.get(task.output)
                                 ))
                             except Exception as e:
-                                print(e)
+                                print(f"Issue with json when tools switched off {e}")
                         else:
                             try:
                                 tasks.append(Task(
                                     description=task.prompt.last().text_data if task.prompt.exists() else "perform agents task",
                                     expected_output=task.expected_output,
                                     agent=agent_,
-                                    output_json=OUTPUT_MODELS.get(task.output)
-                                ))
+                                    output_json=OUTPUT_MODELS.get(task.output),
+                                    output_parser=lambda json_string: PrequalifiedTextOutput(**remove_duplicate_content_keys(json_string)))
+                                )
                             except Exception as e:
                                 print(e)
                     
@@ -914,7 +982,7 @@ class agentSetup(APIView):
             logging_filename = f"scrappinglogs-{str(uuid.uuid4())}.txt"
             crew = Crew(
                 agents=agents,
-                
+                cache=False,
                 tasks=tasks,
                 # process=Process.sequential,
                 verbose=True,
@@ -987,9 +1055,15 @@ class agentSetup(APIView):
             if opensource:
                 # import pdb;pdb.set_trace()
                 try:
-                    return Response({"result":result.raw})
+                    cleaned_json = clean_json_output(result.raw)
+                    return Response({"result":cleaned_json},status=status.HTTP_200_OK)
                 except Exception as err:
-                    print(err)
+
+                    logging.warning(f"Problem with json --> {err}")
+                    try:
+                        return Response({"result":result.raw})
+                    except Exception as e:
+                        logging.warning(f"Problem with raw --> {e}")
             else:
                 try:
                     return Response({"result":result.json_dict})

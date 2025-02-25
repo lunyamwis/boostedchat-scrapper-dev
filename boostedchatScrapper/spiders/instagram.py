@@ -548,30 +548,10 @@ class InstagramSpider:
         # the instagram users who are manually triggered need to be given first priority
         instagram_users = InstagramUser.objects.filter(Q(created_at__gte=yesterday_start) & Q(is_manually_triggered=True)).distinct('username')
         if instagram_users.exists():
-            # manually qualify and assign those accounts
-            headers = {
-                'Content-Type': 'application/json'
-            }
-            for user in instagram_users:
-                # check if account or thread exists otherwise pull the inbox afresh
-                check_accounts_endpoint = "https://api.booksy.us.boostedchat.com/v1/instagram/checkAccountExists/"
-                check_threads_endpoint = "https://api.booksy.us.boostedchat.com/v1/instagram/checkThreadExists/"
-                check_data = {
-                    "username": user.username
-                }
-                check_account_response = requests.post(check_accounts_endpoint,data=check_data)
-                check_thread_response = requests.post(check_threads_endpoint,data=check_data)
-                if check_account_response.json()['exists'] and check_thread_response.json()['exists']:
-                    print("user in database")
-                    user.qualified = True
-                    user.save()
-
-                else:
-                    pass
-
+            pass
         else:
             # pick the automatically generated ones
-            instagram_users = InstagramUser.objects.filter(Q(created_at__gte=yesterday_start))
+            instagram_users = InstagramUser.objects.filter(Q(created_at__gte=yesterday_start)).distinct('username')
 
         print(len(instagram_users))
         
@@ -582,22 +562,28 @@ class InstagramSpider:
                 time.sleep(random.randint(delay_before_requests,delay_before_requests+step))
                 try:
 
-                    info_dict = client.user_info_by_username(user.username).dict()
+                    info_dict_ = client.user_info_by_username(user.username).model_dump_json()
+                    info_dict = json.loads(info_dict_)
+                    if user.item_id:
+                        info_dict.update({"media_id":user.item_id})
                     try:
-                        user_medias = client.user_medias(info_dict.get("pk"),amount=1)
                         # comment = self.generate_comment(user_medias[0],user.username)
                         # info_dict.update({"media_comment":comment})
-                        media_res = []
-                        for user_media in user_medias:
-                            if user_media:
-                                media_info_ = client.media_info(user_media.id)
-                                media_res.append({
-                                    "media_id":media_info_.id,
-                                    "media_url":media_info_.thumbnail_url,
-                                    "media_caption":media_info_.caption_text,
-                                    # "media_taken_at":media_info_.taken_at
-                                })
-                        info_dict.update({"medias":media_res})
+                        if not info_dict.get("is_private"):
+                            user_medias = client.user_medias(info_dict.get("pk"),amount=1)
+                            media_res = []
+                            for user_media in user_medias:
+                                if user_media:
+                                    media_info_ = client.media_info(user_media.id)
+                                    media_res.append({
+                                        "media_id":media_info_.id,
+                                        "media_url":media_info_.thumbnail_url.unicode_string(),
+                                        "media_caption":media_info_.caption_text,
+                                        # "media_taken_at":media_info_.taken_at
+                                    })
+                            info_dict.update({"medias":media_res})
+                        else:
+                            logging.warning("Private accounts don't allow us to view their media")
                     except Exception as error:
                         info_dict.update({"media_id":""})
                         print(error)

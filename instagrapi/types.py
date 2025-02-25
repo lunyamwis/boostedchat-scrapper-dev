@@ -43,13 +43,13 @@ class User(BaseModel):
     category: Optional[str] = None
 
     address_street: Optional[str] = None
-    city_id: Optional[str] = None
+    city_id: Optional[Union[str, int]] = None
     city_name: Optional[str] = None
     latitude: Optional[float] = 0.0
     longitude: Optional[float] = 0.0
     zip: Optional[str] = None
     instagram_location_id: Optional[str] = None
-    interop_messaging_user_fbid: Optional[str] = None
+    interop_messaging_user_fbid: Optional[Union[str, int]] = None
 
     _external_url = validator("external_url", allow_reuse=True)(validate_external_url)
 
