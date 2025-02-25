@@ -121,6 +121,7 @@ celerybeat.pid
 *.sage.py
 *.xml
 # Environments
+.env
 .env.*
 .venv
 env/
@@ -166,7 +167,6 @@ output.xml
 report.html
 
 *.json
-.env
 
 boostedchatScrapper/*.json
 *.csv
