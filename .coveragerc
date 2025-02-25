@@ -1,0 +1,27 @@
+[run]
+source =
+    api/instagram
+omit =
+    api/helpers/*
+    api/prompt/*
+    api/scout/*
+    api/instagram/tests/*
+    api/instagram/migrations/*
+    api/templates/*
+    api/instagram/tests/test_instagram_models.py 
+    *venv*
+    conftest.py
+    *__init__.py*
+    *settings.py*
+    *AppData*
+
+
+
+[report]
+omit =
+   *venv/*
+   conftest.py
+   *tests*
+   *__init__.py*
+   *settings.py*
+   *AppData*

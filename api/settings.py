@@ -14,6 +14,7 @@ Profession: Data Consultant
 import os
 from pathlib import Path
 import sentry_sdk
+import sys
 
 sentry_sdk.init(
     dsn=os.getenv("SENTRY_DSN"),
@@ -66,6 +67,7 @@ ALLOWED_HOSTS = [
     "scrapper.booksy.boostedchat.com",
     "airflow.booksy.boostedchat.com",
     "lunyamwi.localhost",
+    "boosted_db.localhost.com",
 ]
 CSRF_TRUSTED_ORIGINS = [
     f"https://api.{os.environ.get('DOMAIN1', '')}.boostedchat.com",
@@ -156,9 +158,15 @@ DATABASES = {
         "PASSWORD": os.getenv("POSTGRES_PASSWORD_ETL").strip(),
         "HOST": os.getenv("POSTGRES_HOST_ETL").strip(),
         "PORT": os.getenv("POSTGRES_PORT_ETL").strip(),
+        "TEST": {
+            "NAME": "test_booksyus",  # Set the test database name
+            "USER": "etldb-user",  # Use the test database user
+        },
     }
 }
 
+
+    
 DATABASE_ROUTERS = (
     "django_tenants.routers.TenantSyncRouter",
 ) 
