@@ -13,6 +13,7 @@ class InstagramUserTest(TestCase):
     @schema_context(os.getenv('SCHEMA_NAME'))
     def test_instagram_user_creation(self):
         user = InstagramUser.objects.get(username='test_user')
+        print(f"{user.username} -------my tests are working")
         self.assertEqual(user.username, 'test_user')
 
     @schema_context(os.getenv('SCHEMA_NAME'))
