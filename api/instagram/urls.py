@@ -74,5 +74,5 @@ urlpatterns = [
     path('assignmentPayload/',views.PayloadAssignmentAgent.as_view()),
     path('scrapingPayload/',views.PayloadScrappingAgent.as_view()),
     path('encPass/',views.GeneratePasswordEnc.as_view()),
-    path('recreateAPI/',views.ForceRecreateAPI.as_view()),
+    path('recreateAPI/',views.ForceRecreateApi.as_view()),
 ]
