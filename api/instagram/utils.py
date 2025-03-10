@@ -7,7 +7,7 @@ from .models import SimpleHttpOperatorModel, WorkflowModel, Endpoint, CustomFiel
 from django.conf import settings
 
 from api.helpers.dag_generator import generate_dag
-
+from django_tenants.utils import schema_context
 import pandas as pd
 
 
@@ -58,7 +58,7 @@ def remove_timestamp(dict_):
     return dict_
 
 
-
+@schema_context(os.getenv('SCHEMA_NAME'))
 def generate_dag_script(workflow):
     # if "trigger_url" in dag_data:
         
