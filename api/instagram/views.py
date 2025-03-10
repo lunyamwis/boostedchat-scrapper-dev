@@ -1199,7 +1199,7 @@ class ForceRecreateApi(APIView):
             container.remove()
 
             # Pull the latest image
-            client.images.pull('lunyamwimages/boostedchatapi-dev:latest')
+            # client.images.pull('lunyamwimages/boostedchatapi-dev:latest')
 
             # Create a new container
             container = client.containers.run(
