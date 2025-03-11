@@ -428,7 +428,15 @@ class InstagramSpider:
 
         # Retrieve a scout at that index using offset
         random_scout = Scout.objects.filter(available=True)[random_index]
-        client = login_user(random_scout)
+        client = None
+        
+        try:
+            client = login_user(random_scout)
+        except Exception as error:
+            logging.warning(error)
+            random_scout.available = False
+            random_scout.save()
+            
 
         # Initialize the CSV file with headers
         header = ['media_link', 'media_caption_text', 'user_id', 'username', 'full_name', 'profile_pic_url', 'is_private', 'is_verified', 'media_count', 'follower_count', 'following_count', 'biography', 'external_url', 'is_business']
