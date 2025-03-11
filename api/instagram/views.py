@@ -1183,35 +1183,37 @@ class GeneratePasswordEnc(APIView):
 
 class ForceRecreateApi(APIView):
     def post(self, request):
-        container_id = 'boostedchat-site-api-1'  # Assuming this is a fixed container name
+        container_id = 'boostedchat-site-api-1'
+        image_name = 'lunyamwimages/boostedchatapi-dev:staging'  # Match server tag
 
         try:
-            # Create a Docker client
             client = docker.from_env()
+            
+            # Stop and remove existing container
+            try:
+                container = client.containers.get(container_id)
+                container.stop()
+                container.remove()
+            except docker.errors.NotFound:
+                pass  # Container already gone
 
-            # Get the specified container
-            container = client.containers.get(container_id)
+            # Force pull fresh image with stream progress
+            client.images.pull(image_name, stream=True, decode=True, force=True)
+            
+            # Clean up old images
+            client.images.prune(filters={'dangling': True})
 
-            # Stop the container
-            container.stop()
-
-            # Remove the container
-            container.remove()
-
-            # Pull the latest image
-            # client.images.pull('lunyamwimages/boostedchatapi-dev:latest')
-
-            # Create a new container
-            container = client.containers.run(
-                'lunyamwimages/boostedchatapi-dev:latest',
+            # Create new container with correct image
+            client.containers.run(
+                image_name,
                 detach=True,
                 name=container_id,
                 ports={'8000/tcp': 8000},
-                volumes={'/var/run/docker.sock': {'bind': '/var/run/docker.sock', 'mode': 'rw'}}
+                volumes={'/var/run/docker.sock': {'bind': '/var/run/docker.sock', 'mode': 'rw'}},
+                restart_policy={"Name": "always"}  # Add restart policy
             )
 
-            return Response({"message": f"Container '{container_id}' recreated successfully."}, status=status.HTTP_200_OK)
-        except docker.errors.NotFound:
-            return Response({"error": "Container not found."}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"message": f"Container '{container_id}' recreated successfully."}, status=200)
+            
         except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response({"error": str(e)}, status=500)
