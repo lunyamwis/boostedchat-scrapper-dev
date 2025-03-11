@@ -1198,11 +1198,9 @@ class ForceRecreateApi(APIView):
                 pass  # Container already gone
 
             # Force pull fresh image with stream progress
-            client.images.pull(image_name, stream=True, decode=True, force=True)
+            client.images.pull(image_name, stream=True, decode=True)
             
-            # Clean up old images
-            client.images.prune(filters={'dangling': True})
-
+            
             # Create new container with correct image
             client.containers.run(
                 image_name,
