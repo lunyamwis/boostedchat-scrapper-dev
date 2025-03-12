@@ -59,6 +59,10 @@ from api.instagram.tasks import send_logs
 from .models import Agent as AgentModel,Task as TaskModel,Tool, Department
 import os
 from typing import List,Optional
+from crewai.flow.flow import Flow, and_, listen, start
+import asyncio
+import inspect
+
 
 openai_api_key = os.getenv('OPENAI_API_KEY')
 os.environ["OPENAI_MODEL_NAME"] = 'gpt-4-1106-preview'
@@ -783,6 +787,232 @@ class WandbLoggingHandler(logging.Handler):
     def emit(self, record):
         log_entry = self.format(record)
         wandb.log({"langchain_log": log_entry})
+
+
+
+class PrequalifyingWorkflow(Flow):
+   
+   
+   def __init__(self, agents, tasks, inputs):
+      super().__init__()
+      self.agents = agents
+      self.tasks = tasks
+      self.inputs = inputs
+      self.headers = {"Content-Type": "application/json"}
+
+
+   def clean_json_output(self, raw_output: str) -> dict:
+      """
+      Parses a raw JSON string and ensures 'content' is a list.
+      If 'content' is a string, it converts it into a list.
+      Handles nested JSON structures recursively.
+      """
+      try:
+         # Extract JSON from raw output (if wrapped in additional text)
+         start_index = raw_output.find("{")
+         end_index = raw_output.rfind("}")
+         if start_index == -1 or end_index == -1:
+               raise ValueError("Invalid JSON structure in raw output")
+
+         json_string = raw_output[start_index:end_index + 1]
+         no_newlines = json_string.replace("\n", " ")
+
+         data  = None
+         try:
+            data = json.loads(no_newlines)
+         except json.decoder.JSONDecodeError as err:
+            logging.warning("Error loading JSON")
+            try:
+               data = eval(no_newlines)
+            except Exception as e:
+               logging.warning(e, "Error evaluating JSON")
+               try:
+                  data = no_newlines
+               except Exception as e:
+                  logging.error(e, "Error converting JSON to string")
+                  data = {}
+
+
+         
+         # Check if 'content' exists and is a string; convert to list if so
+         if "content" in data:
+               if isinstance(data["content"], str):
+                  data["content"] = [data["content"]]  # Convert string to list
+         return data
+
+      except (json.JSONDecodeError, ValueError) as e:
+         print(f"Error decoding or cleaning JSON: {e}")
+         return {}
+ 
+
+   
+   def get_agents(self,filter_value):
+      filtered_dict = [agent for agent in self.agents if any(v == filter_value for _, v in agent.items())]
+      return [v for filtered_dict_ in filtered_dict for _, v in filtered_dict_.items() if isinstance(v, Agent)]
+
+
+   def get_tasks(self, filter_value):
+      filtered_tasks = [task for task in self.tasks if task.agent.goal == filter_value]
+      return filtered_tasks
+   
+   def patch_account_request(self, output, username):
+      username = self.inputs["outsourced_info"]["username"]
+      
+      get_id_account_data = {
+         "username": username
+      }
+      response = requests.post(f"http://api:8000/v1/instagram/account/get-id/",data=get_id_account_data)
+      account_id = response.json()['id']
+      prequalified_flag = False
+      try:
+         prequalified_flag = output['prequalified']['prequalified']
+      except Exception as e:
+         logging.warning(e)
+         try:
+            prequalified_flag = output['prequalified'] if isinstance(output['prequalified'],bool) else output['prequalified']['desired_category']
+         except Exception as err:
+            logging.warning(err)
+            try:
+               prequalified_flag = False
+            except Exception as err:
+               logging.error(err)
+               prequalified_flag = False
+
+      # import pdb;pdb.set_trace()
+      # print(prequalified_flag)
+      account_dict = {
+         "igname": username,
+         "is_manually_triggered":True,
+         "relevant_information": output if output else {},
+         "qualified": prequalified_flag,
+      }
+      response = requests.patch(
+         f"http://api:8000/v1/instagram/account/{account_id}/",
+         headers=self.headers,
+         data=json.dumps(account_dict)
+      )
+      print(response.json())
+      return response
+
+   @start()
+   def prequalifying_flag_assessor(self):
+      agents = self.get_agents(inspect.currentframe().f_code.co_name)
+      first_agent = next(iter(agents))
+      tasks = self.get_tasks(first_agent.goal)
+      crew = Crew(agents=agents, tasks=tasks, verbose=True, memory=True)
+      result = crew.kickoff(inputs=self.inputs)
+      crew_result = self.clean_json_output(result.raw)
+      self.state["prequalified_result"] = crew_result
+      print(1)
+      
+   @listen(prequalifying_flag_assessor)
+   def lead_score_calculator(self):
+      agents = self.get_agents(inspect.currentframe().f_code.co_name)
+      first_agent = next(iter(agents))
+      tasks = self.get_tasks(first_agent.goal)
+      crew = Crew(agents=agents, tasks=tasks, verbose=True, memory=True)
+      result = crew.kickoff(inputs=self.inputs)
+      crew_result = self.clean_json_output(result.raw)
+      self.state["score_result"] = crew_result
+      print(2)
+
+
+
+   @listen(and_(prequalifying_flag_assessor, lead_score_calculator))
+   def prequalifying_output_extractor(self):
+      print("---- Logger ----")
+      agents = self.get_agents(inspect.currentframe().f_code.co_name)
+      first_agent = next(iter(agents))
+      tasks = self.get_tasks(first_agent.goal)
+      crew = Crew(agents=agents, tasks=tasks, verbose=True, memory=True)
+      self.inputs['outsourced_info'].update({"lead_score":self.state.get("score_result",{}), "preqaulified":self.state.get("prequalified_result",{})})
+      result = crew.kickoff(inputs=self.inputs)
+      # crew_result = self.clean_json_output(result.raw)
+      self.state["output"] = self.clean_json_output(result.raw)
+      self.patch_account_request(self.state["output"], self.inputs["outsourced_info"]["username"])
+      print(self.state["output"])
+      
+      # patch the output to the database
+      print(3)
+
+class SetupAgent(APIView):
+    def post(self, request):
+        data = None
+        print("Request---",request.data)
+        if not request.data:
+            return Response({"error": "No data provided"}, status=400)
+        # import pdb;pdb.set_trace()
+        content = request.data.get('_content')
+        if content is None:
+            print({"error": f"'_content' not found in request data - {request.data}"})
+        
+        # else:
+            content = request.data
+        # corrected_content = content.replace("\\'", "'")
+
+        try:
+            data = json.loads(content)
+        except Exception as err:
+            try:
+                data = request.data
+            except Exception as err:
+                print(err)
+
+        
+
+        # with schema_context("lunyamwi"):
+
+        # workflow_data = data.get("workflow_data")
+        workflow = None
+        opensource = False    
+        agents = []
+        tasks = []
+        department_name = data.get("department")
+        with schema_context(os.getenv("SCHEMA_NAME")):
+            print(Department.objects.filter(name=department_name))
+            department = Department.objects.filter(name=department_name).latest("created_at")
+            
+            agents_ = department.agents.all()
+            tasks_ = department.tasks.all()
+            payload = data.get(department.baton.start_key)
+            if isinstance(payload, str):
+                import ast
+                payload = ast.literal_eval(payload)
+            print(payload)
+            # print(tasks_)
+            for i, agent in enumerate(agents_):
+                print(agent.llm)
+                agents.append({f"agent_{i}":Agent(
+                                    role=agent.role.description + " " + agent.role.tone_of_voice if agent.role else "Qualifying department",
+                                    goal=agent.goal,
+                                    backstory=agent.prompt.last().text_data,
+                                    allow_delegation=False,
+                                    verbose=True,
+                                    llm=agent.llm
+                                ),
+                                f"workflow_step_{i}":agent.workflow
+                                })
+            for i,task in enumerate(tasks_):              
+                tasks.append(Task(
+                                description=task.prompt.last().text_data if task.prompt.exists() else "perform agents task",
+                                expected_output=task.expected_output,
+                                tools=[TOOLS.get(tool.name) for tool in task.tools.all()],
+                                agent=Agent(
+                                    role=task.agent.role.description + " " + task.agent.role.tone_of_voice if task.agent.role else "Qualifying department",
+                                    goal=task.agent.goal,
+                                    backstory=task.agent.prompt.last().text_data,
+                                    allow_delegation=False,
+                                    verbose=True,
+                                    llm=task.agent.llm
+                                ),
+                                #output_json=OUTPUT_MODELS.get(task.output)
+                            ))
+                            
+            # print(tasks)
+            flow = PrequalifyingWorkflow(agents = agents,tasks = tasks,inputs = payload)
+            asyncio.run(flow.kickoff())
+
+        return Response({"result": flow.state}, status=200)
 
 
 class agentSetup(APIView):
