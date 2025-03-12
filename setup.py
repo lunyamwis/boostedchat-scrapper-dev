@@ -2,9 +2,9 @@ from setuptools import setup, find_packages
 
 setup(
     name='lunyamwi',
-    version='1.0.14',
+    version='1.0.15',
     author='Martin Luther Bironga',
-    description='Lunyamwi is a data science library that assists one in data generation, pipeline setup, model selection and setup.',
+    description='Lunyamwi is a data science library that assists one in data generation, pipeline setup, model selection and agent setup.',
     long_description=open('README.md').read(),
     long_description_content_type='text/markdown',
     url='https://github.com/lunyamwis/boostedchat-scrapper-dev.git',
