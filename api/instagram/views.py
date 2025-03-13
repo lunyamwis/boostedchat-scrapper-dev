@@ -114,6 +114,11 @@ class WorkflowRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
     queryset = WorkflowModel.objects.all()
     serializer_class = WorkflowModelSerializer
 
+class WorkflowViewSet(viewsets.ModelViewSet):
+    queryset = WorkflowModel.objects.all()
+    serializer_class = WorkflowModelSerializer
+    pagination_class = PaginationClass
+
 
 class LoadInfoToDatabase(APIView):
     def get(self, request, *args, **kwargs):
@@ -475,6 +480,8 @@ class WorkflowCreate(WorkflowInline, CreateView):
             }
         
 
+
+
     
 class WorkflowUpdate(WorkflowInline, UpdateView):
 
@@ -744,10 +751,6 @@ class SimpleHttpOperatorViewSet(viewsets.ModelViewSet):
 
 
 
-class WorkflowViewSet(viewsets.ModelViewSet):
-    queryset = WorkflowModel.objects.all()
-    serializer_class = WorkflowModelSerializer
-    pagination_class = PaginationClass
 
     
 class ScrapFollowers(APIView):
