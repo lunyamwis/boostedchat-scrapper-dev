@@ -564,6 +564,8 @@ class InstagramSpider:
         print(len(instagram_users))
         
         for i, user in enumerate(instagram_users[index:], start=1):
+            # only append info for the qualified ones
+
             if user.info and "biography" in user.info:
                 continue
             if user.username:
