@@ -1014,7 +1014,7 @@ class SetupAgent(APIView):
                                     verbose=True,
                                     llm=task.agent.llm
                                 ),
-                                #output_json=OUTPUT_MODELS.get(task.output)
+                                output_json=OUTPUT_MODELS.get(task.output)
                             ))
                             
             # print(tasks)
