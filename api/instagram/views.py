@@ -70,6 +70,15 @@ from .serializers import (
 )
 import docker
 # Custom Field API Views
+
+class PaginationClass(PageNumberPagination):
+    page_size = 20  # Set the number of items per page
+    page_size_query_param = 'page_size'
+    max_page_size = 100
+
+
+
+
 class CustomFieldListCreateView(generics.ListCreateAPIView):
     queryset = CustomField.objects.all()
     serializer_class = CustomFieldSerializer
@@ -692,11 +701,6 @@ def generate_workflow(request):
 
     return render(request, 'workflows/workflow.html', {'workflow_form': workflow_form, 'simplehttpoperator_formset': simplehttpoperator_formset, 'dag_formset': dag_formset})
 
-
-class PaginationClass(PageNumberPagination):
-    page_size = 20  # Set the number of items per page
-    page_size_query_param = 'page_size'
-    max_page_size = 100
 
 
 
