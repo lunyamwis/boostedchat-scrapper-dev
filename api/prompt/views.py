@@ -910,7 +910,9 @@ class PrequalifyingWorkflow(Flow):
       result = crew.kickoff(inputs=self.inputs)
       # import pdb;pdb.set_trace()
       crew_result = result.json_dict
-      self.state["prequalified_result"] = {"desired_provider":crew_result.get("desired_provider"),"desired_location":crew_result.get("desired_location")}
+      self.state["prequalified_result"] = {"desired_provider":"not provided","desired_location":"not provided"}
+      # print(crew_result)
+      # print(self.state)
       print(1)
       
    # @listen(prequalifying_flag_assessor)
@@ -934,10 +936,14 @@ class PrequalifyingWorkflow(Flow):
       tasks = self.get_tasks(first_agent.goal)
       crew = Crew(agents=agents, tasks=tasks, verbose=True, memory=True)
       # self.inputs['outsourced_info'].update({"lead_score":self.state.get("score_result",{}), "preqaulified":self.state.get("prequalified_result",{})})
-      self.inputs['outsourced_info'].update({"preqaulified":self.state.get("prequalified_result",{})})
+      # self.inputs['outsourced_info'].update({"preqaulified":self.state.get("prequalified_result",{})})
+      self.inputs['outsourced_info'] = {"username":self.inputs['outsourced_info']['username']}
       result = crew.kickoff(inputs=self.inputs)
+      # import pdb;pdb.set_trace()
       # crew_result = result.json_dict
-      self.state["output"] = self.clean_json_output(result.raw)
+      self.state["output"] = result.json_dict
+      
+      print(self.state["output"])
       self.patch_account_request(self.state["output"], self.inputs["outsourced_info"]["username"])
       print(self.state["output"])
       
