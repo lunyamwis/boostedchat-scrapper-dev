@@ -727,17 +727,23 @@ class GeneratedTextOutput(BaseModel):
     confirmed_problems: Optional[str] = ""
     human_takeover: Optional[bool] = False
 
-class PrequalifiedTextOutput(BaseModel):
-    prequalified: Optional[str] = ""
-    lead_score: Optional[Union[str, int]] = None
-    name: Optional[str] = ""
-    content: Optional[Union[str, List[str]]] = None  # Allowing both str and List[str]
-    # content: Optional[str] = ""
-    strengths: Optional[str] = ""
-    biography: Optional[str] = ""
-    area: Optional[str] = ""
-    contact_details: Optional[str] = ""
-    external_url: Optional[str] = ""
+class PrequalifyingOutput(BaseModel):
+   prequalified: Optional[bool] = None
+   name: Optional[str] = None
+   media_details: Optional[List[str]] = None 
+   strengths: Optional[List[str]] = None
+   biography: Optional[str] = None
+   area: Optional[str] = None
+   contact_details: Optional[str] = None
+   external_url: Optional[str] = None
+   desired_provider: Optional[bool] = None
+   desired_size: Optional[bool] = None
+   desired_location: Optional[bool] = None
+   desired_category: Optional[bool] = None
+   desired_visibility: Optional[bool] = None
+   desired_activity: Optional[bool] = None
+   lead_score: Optional[Union[int,str]] = None
+
 
 def remove_duplicate_content_keys(json_string: str) -> dict:
     """
@@ -780,7 +786,7 @@ def clean_json_output(raw_output: str) -> dict:
 
 OUTPUT_MODELS = {
     "GeneratedTextOutput": GeneratedTextOutput,
-    "PrequalifiedTextOutput": PrequalifiedTextOutput
+    "PrequalifiedTextOutput": PrequalifyingOutput
 }
 
 class WandbLoggingHandler(logging.Handler):
@@ -902,33 +908,35 @@ class PrequalifyingWorkflow(Flow):
       tasks = self.get_tasks(first_agent.goal)
       crew = Crew(agents=agents, tasks=tasks, verbose=True, memory=True)
       result = crew.kickoff(inputs=self.inputs)
-      crew_result = self.clean_json_output(result.raw)
-      self.state["prequalified_result"] = crew_result
+      # import pdb;pdb.set_trace()
+      crew_result = result.json_dict
+      self.state["prequalified_result"] = {"desired_provider":crew_result.get("desired_provider"),"desired_location":crew_result.get("desired_location")}
       print(1)
       
-   @listen(prequalifying_flag_assessor)
-   def lead_score_calculator(self):
-      agents = self.get_agents(inspect.currentframe().f_code.co_name)
-      first_agent = next(iter(agents))
-      tasks = self.get_tasks(first_agent.goal)
-      crew = Crew(agents=agents, tasks=tasks, verbose=True, memory=True)
-      result = crew.kickoff(inputs=self.inputs)
-      crew_result = self.clean_json_output(result.raw)
-      self.state["score_result"] = crew_result
-      print(2)
+   # @listen(prequalifying_flag_assessor)
+   # def lead_score_calculator(self):
+   #    agents = self.get_agents(inspect.currentframe().f_code.co_name)
+   #    first_agent = next(iter(agents))
+   #    tasks = self.get_tasks(first_agent.goal)
+   #    crew = Crew(agents=agents, tasks=tasks, verbose=True, memory=True)
+   #    result = crew.kickoff(inputs=self.inputs)
+   #    crew_result = result.json_dict
+   #    self.state["score_result"] = crew_result
+   #    print(2)
 
 
 
-   @listen(and_(prequalifying_flag_assessor, lead_score_calculator))
+   @listen(and_(prequalifying_flag_assessor))
    def prequalifying_output_extractor(self):
       print("---- Logger ----")
       agents = self.get_agents(inspect.currentframe().f_code.co_name)
       first_agent = next(iter(agents))
       tasks = self.get_tasks(first_agent.goal)
       crew = Crew(agents=agents, tasks=tasks, verbose=True, memory=True)
-      self.inputs['outsourced_info'].update({"lead_score":self.state.get("score_result",{}), "preqaulified":self.state.get("prequalified_result",{})})
+      # self.inputs['outsourced_info'].update({"lead_score":self.state.get("score_result",{}), "preqaulified":self.state.get("prequalified_result",{})})
+      self.inputs['outsourced_info'].update({"preqaulified":self.state.get("prequalified_result",{})})
       result = crew.kickoff(inputs=self.inputs)
-      # crew_result = self.clean_json_output(result.raw)
+      # crew_result = result.json_dict
       self.state["output"] = self.clean_json_output(result.raw)
       self.patch_account_request(self.state["output"], self.inputs["outsourced_info"]["username"])
       print(self.state["output"])
