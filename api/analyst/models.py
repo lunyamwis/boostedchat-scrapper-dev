@@ -26,3 +26,6 @@ class DataEntry(models.Model):
     @property
     def custom_fields(self):
         return CustomFieldValue.objects.filter(content_type=ContentType.objects.get_for_model(self), object_id=self.id)
+
+    def __str__(self) -> str:
+        return self.name if self.name else self.id

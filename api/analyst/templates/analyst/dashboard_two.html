@@ -4,7 +4,22 @@
 {% block content %}
 
 <h1 class="mb-4">Dashboard</h1>
-
+<form method="post">
+    {% csrf_token %}
+    
+    {{ form.name.label_tag }} {{ form.name }}  <!-- Render name -->
+    
+    <!-- Dropdown for selecting custom fields -->
+    <!--{{ form.field.label_tag }} {{ form.field }}-->  <!-- Render dropdown for custom fields -->
+    
+    <!--<div id="dynamic-input-container">
+        <label for="dynamic-input">Value:</label>
+        <input class="form-control" type="text" name="value" id="dynamic-input" required /> 
+    </div>-->
+    <br>
+    
+    <button type="submit" class="btn btn-primary">Submit</button>
+</form>
 <!-- Include Bokeh CSS -->
 <link href="https://cdn.bokeh.org/bokeh/release/bokeh-3.6.1.min.css" rel="stylesheet" type="text/css">
 

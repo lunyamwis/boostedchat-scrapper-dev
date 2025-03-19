@@ -70,6 +70,15 @@ class CustomFieldValueForm(forms.ModelForm):
 
 
 
+class ChartChooserForm(forms.Form):
+    # dropdown to select previous chart names in Data Entry
+    name = forms.ModelChoiceField(queryset=DataEntry.objects.all(), required=False)
+    
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['name'].widget.attrs.update({'class': 'form-control'})
+   
 
 class CombinedDataEntryForm(forms.ModelForm):
     # Assuming DataEntry has fields like 'name', 'chart_type', and 'query'
