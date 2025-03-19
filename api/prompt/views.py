@@ -906,13 +906,64 @@ class PrequalifyingWorkflow(Flow):
       agents = self.get_agents(inspect.currentframe().f_code.co_name)
       first_agent = next(iter(agents))
       tasks = self.get_tasks(first_agent.goal)
-      crew = Crew(agents=agents, tasks=tasks, verbose=True, memory=True)
-      result = crew.kickoff(inputs=self.inputs)
+      desired_category = None
+      desired_location = None
+      desired_visibility = None
+      desired_activity = None
+      desired_provider = None
+      desired_size = None
+
+      for task in tasks: # we iterate through each task and handle them separately if needed
+         crew = Crew(agents=agents, tasks=[task], verbose=True, memory=True)
+         # self.inputs['outsourced_info'] = {"preqaulified":self.state.get("prequalified_result",{})}
+         result = crew.kickoff(inputs=self.inputs)
+         if result.json_dict:
+            if result.json_dict.get("desired_location") is not None and isinstance(result.json_dict.get("desired_location"),bool):
+               desired_location = result.json_dict.get("desired_location")
+            
+            if result.json_dict.get("desired_category") is not None and isinstance(result.json_dict.get("desired_category"),bool):
+               desired_category = result.json_dict.get("desired_category")
+
+            if result.json_dict.get("desired_visibility") is not None and isinstance(result.json_dict.get("desired_visibility"),bool):
+               desired_visibility = result.json_dict.get("desired_visibility")
+            
+            if result.json_dict.get("desired_activity") is not None and isinstance(result.json_dict.get("desired_activity"),bool):
+               desired_activity = result.json_dict.get("desired_activity")
+
+            if result.json_dict.get("desired_provider") is not None and isinstance(result.json_dict.get("desired_provider"),bool):
+               desired_provider = result.json_dict.get("desired_provider")
+
+            if result.json_dict.get("desired_size") is not None and isinstance(result.json_dict.get("desired_size"),bool):
+               desired_size = result.json_dict.get("desired_size")
+
+      conditions = [desired_location, desired_category, desired_visibility, desired_activity, desired_provider, desired_size]
+      print(conditions)
+      if all(conditions):
+         self.state["prequalified_result"] = {
+            "prequalified":True,
+            "desired_location":desired_location, 
+            "desired_category": desired_category, 
+            "desired_visibility":desired_visibility, 
+            "desired_activity": desired_activity, 
+            "desired_provider": desired_provider, 
+            "desired_size": desired_size
+         }
+      else:
+         self.state["prequalified_result"] = {
+            "prequalified":False,
+            "desired_location":desired_location, 
+            "desired_category": desired_category, 
+            "desired_visibility":desired_visibility, 
+            "desired_activity": desired_activity, 
+            "desired_provider": desired_provider, 
+            "desired_size": desired_size
+         }
       # import pdb;pdb.set_trace()
-      crew_result = result.json_dict
-      self.state["prequalified_result"] = {"desired_provider":"not provided","desired_location":"not provided"}
+         # crew_result = result.json_dict
+      # self.state["prequalified_result"] = result.json_dict
+      # self.inputs['outsourced_info'].update(result.json_dict)
       # print(crew_result)
-      # print(self.state)
+      print(self.state)
       print(1)
       
    # @listen(prequalifying_flag_assessor)
@@ -926,7 +977,7 @@ class PrequalifyingWorkflow(Flow):
    #    self.state["score_result"] = crew_result
    #    print(2)
 
-
+   
 
    @listen(and_(prequalifying_flag_assessor))
    def prequalifying_output_extractor(self):
@@ -936,20 +987,30 @@ class PrequalifyingWorkflow(Flow):
       tasks = self.get_tasks(first_agent.goal)
       crew = Crew(agents=agents, tasks=tasks, verbose=True, memory=True)
       # self.inputs['outsourced_info'].update({"lead_score":self.state.get("score_result",{}), "preqaulified":self.state.get("prequalified_result",{})})
+      biography = self.inputs['outsourced_info']['biography']
+      self.inputs['outsourced_info'] = {"username":self.inputs['outsourced_info']['username'],"bio":self.inputs['outsourced_info']['biography'],"prequalified":self.state.get("prequalified_result",{})}
       # self.inputs['outsourced_info'].update({"preqaulified":self.state.get("prequalified_result",{})})
-      self.inputs['outsourced_info'] = {"username":self.inputs['outsourced_info']['username']}
+      # self.inputs['outsourced_info'] = {"preqaulified":self.state.get("prequalified_result",{})}
       result = crew.kickoff(inputs=self.inputs)
       # import pdb;pdb.set_trace()
       # crew_result = result.json_dict
       self.state["output"] = result.json_dict
+
       
       print(self.state["output"])
-      self.patch_account_request(self.state["output"], self.inputs["outsourced_info"]["username"])
-      print(self.state["output"])
+      if self.state["prequalified_result"]["prequalified"]:
+         print(self.state["output"])
+         self.patch_account_request(
+            {
+               "prequalified":self.state["prequalified_result"]["prequalified"],
+               "name":self.state["output"]["name"],
+               "bio": biography,
+            }, self.inputs["outsourced_info"]["username"])
       
       # patch the output to the database
       print(3)
 
+      
 class SetupAgent(APIView):
     def post(self, request):
         data = None
