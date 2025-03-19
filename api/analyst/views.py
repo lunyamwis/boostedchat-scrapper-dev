@@ -80,6 +80,56 @@ def generate_charts(entry, df):
 
 
 
+def dashboard_two(request):
+    entries = DataEntry.objects.all()
+    entry = entries.last()
+    query = entry.query  # Assuming there's a query field in DataEntry 
+    df = None
+    df_html = None           
+    if query:
+        # Database connection parameters
+        db_params = {
+            'username': os.getenv('POSTGRES_USERNAME'),
+            'password': os.getenv('POSTGRES_PASSWORD'),
+            'host': os.getenv('POSTGRES_HOST'),
+            'port': os.getenv('POSTGRES_PORT'),
+            'database': os.getenv('POSTGRES_DBNAME')
+        }
+
+        # Create a connection string
+        connection_string = f"postgresql+psycopg2://{db_params['username']}:{db_params['password']}@{db_params['host']}:{db_params['port']}/{db_params['database']}"
+
+        # Create an engine and fetch data using the provided query
+        engine = create_engine(connection_string)
+
+        try:
+            df_temp = pd.read_sql(query, engine)  # Execute the query
+            df = pd.concat([df, df_temp], ignore_index=True)  # Combine results if multiple queries are executed
+            df_html = df.to_html(classes='table table-striped', index=False)
+            df.columns = [f'col{i+1}' for i in range(df.shape[1])]
+        
+        except Exception as e:
+            print(f"Error executing query: {e}")  # Handle exceptions appropriately
+
+    chart_bokeh_div = None
+    chart_bokeh_script = None
+    chart_mpl = None
+    if entry.chart_type:
+        chart_type = entry.chart_type
+        
+        if chart_type == 'line':
+            chart_mpl = plot_matplotlib(df)  # Matplotlib for line charts
+        elif chart_type == 'bar':
+            chart_bokeh_div, chart_bokeh_script = plot_bokeh(df)  # Bokeh for bar charts
+
+    return render(request, 'analyst/dashboard_two.html', {
+        'chart_mpl': chart_mpl,
+        'chart_bokeh_div': chart_bokeh_div,
+        'chart_bokeh_script': chart_bokeh_script,
+        'dataframe': df_html
+    })
+    
+
 
 def dashboard(request):
     chart_mpl = None
@@ -151,6 +201,8 @@ def dashboard(request):
         'chart_bokeh_script': chart_bokeh_script,
         'dataframe': df_html
     })
+
+
 
 
 def plot_matplotlib_bar(df):

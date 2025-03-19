@@ -1,0 +1,70 @@
+{% extends 'workflows/main.html' %}
+{% load crispy_forms_tags %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+
+<h1 class="mb-4">Dashboard</h1>
+
+<!-- Include Bokeh CSS -->
+<link href="https://cdn.bokeh.org/bokeh/release/bokeh-3.6.1.min.css" rel="stylesheet" type="text/css">
+
+<div class="row mt-4">
+    <!-- Matplotlib Chart -->
+    <div class="col-md-12 text-center">
+        <h2>Chart</h2>
+        {% if chart_mpl %}
+            <img src="data:image/png;base64,{{ chart_mpl }}" alt="Matplotlib Chart" class="img-fluid rounded">
+        {% elif chart_bokeh_div %}
+            {{ chart_bokeh_div|safe }}  <!-- Render Bokeh plot -->
+        {% else %}
+            <p>No data available for the chart.</p>
+        {% endif %}
+    </div>
+    <div class="col-md-12 text-center">
+    <h2>DataFrame Display</h2>
+        {{ dataframe|safe }}
+    </div>
+</div>
+
+<!-- Include Bokeh JS -->
+<script src="https://cdn.bokeh.org/bokeh/release/bokeh-3.6.1.min.js"></script>
+<!-- Include Bokeh Script -->
+{{ chart_bokeh_script|safe }} <!-- Render Bokeh script -->
+
+<!-- Dynamic Input Script -->
+<script>
+// document.addEventListener('DOMContentLoaded', function() {
+//     const fieldSelect = document.querySelector('select[name="field"]'); // Adjust selector as needed
+    
+//     const dynamicInputContainer = document.getElementById('dynamic-input-container');
+    
+//     if (fieldSelect) {
+//         fieldSelect.addEventListener('change', function() {
+//             const selectedFieldId = this.value;
+
+//             // Fetch data type of selected custom field using AJAX
+//             fetch(`/api/custom-fields/${selectedFieldId}/`)  // Adjust URL as needed
+//                 .then(response => response.json())
+//                 .then(data => {
+//                     // Clear previous input
+//                     dynamicInputContainer.innerHTML = '';
+
+//                     // Create new input based on data type
+//                     if (data.data_type === 'text') {
+//                         dynamicInputContainer.innerHTML = `<label>${data.name}</label><input type="text" name="value" required />`;
+//                     } else if (data.data_type === 'number') {
+//                         dynamicInputContainer.innerHTML = `<label>${data.name}</label><input type="number" name="value" required />`;
+//                     } else if (data.data_type === 'date') {
+//                         dynamicInputContainer.innerHTML = `<label>${data.name}</label><input type="date" name="value" required />`;
+//                     } else if (data.data_type === 'boolean') {
+//                         dynamicInputContainer.innerHTML = `<label>${data.name}</label><input type="checkbox" name="value" value="true" />`;
+//                     } else if (data.data_type === 'json') {
+//                         dynamicInputContainer.innerHTML = `<label>${data.name}</label><textarea name="value" required></textarea>`;
+//                     }
+//                 });
+//         });
+//     }
+// });
+</script>
+
+{% endblock %}
