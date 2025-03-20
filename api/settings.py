@@ -66,6 +66,7 @@ ALLOWED_HOSTS = [
     "scrapper.booksy.boostedchat.com",
     "airflow.booksy.boostedchat.com",
     "lunyamwi.localhost",
+    "calebomariba.localhost",
 ]
 CSRF_TRUSTED_ORIGINS = [
     f"https://api.{os.environ.get('DOMAIN1', '')}.boostedchat.com",
