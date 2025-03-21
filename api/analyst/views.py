@@ -1,6 +1,7 @@
 from django.shortcuts import render
 from .models import DatabaseCred, DataEntry
 import pandas as pd
+import uuid
 import numpy as np
 import matplotlib.pyplot as plt
 import io
@@ -9,6 +10,7 @@ import base64
 from bokeh.plotting import figure
 from bokeh.models import ColumnDataSource, LabelSet
 from bokeh.embed import components
+from bokeh.io.export import export_png,export_svgs
 from sqlalchemy import create_engine,text
 from .forms import DataEntryForm,CustomFieldValueForm,CombinedDataEntryForm, ChartChooserForm
 from django.views.generic.edit import CreateView
@@ -21,16 +23,17 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from sqlalchemy import create_engine
 from .serializers import CombinedDataEntrySerializer
+from django_tenants.utils import schema_context
 
 # Create your views here.
 @api_view(['GET', 'POST'])
+@schema_context(os.getenv("SCHEMA_NAME"))
 def dashboard_api(request):
+    df_html = None
+    df = pd.DataFrame()
     if request.method == 'POST':
-        serializer = CombinedDataEntrySerializer(data=request.data)
-        
-        if serializer.is_valid():
-            entry = serializer.save()
-            df_html = None
+    
+            entry = DataEntry.objects.last()
             
             query = entry.query  # Assuming there's a query field in DataEntry
             
@@ -50,20 +53,21 @@ def dashboard_api(request):
 
                 try:
                     df_temp = pd.read_sql(query, engine)  # Execute the query
+                    df = pd.concat([df, df_temp], ignore_index=True)  # Combine results if multiple queries are executed
                     df_html = df_temp.to_html(classes='table table-striped', index=False)
-                
+                    df.columns = [f'col{i+1}' for i in range(df.shape[1])]
+
                 except Exception as e:
                     return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
-
-            chart_data = generate_charts(entry, df_temp)  # Implement this function based on your charting logic
+                
+            chart_data = generate_charts(entry, df)  # Implement this function based on your charting logic
             
             return Response({
                 'dataframe': df_html,
                 'charts': chart_data,
             }, status=status.HTTP_201_CREATED)
 
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
+        
     else:
         return Response({'message': 'GET method not supported for this endpoint.'}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
@@ -320,5 +324,6 @@ def plot_bokeh(df):
 
     # Generate script and div for embedding in HTML template
     script, div = components(p)
+    return div,script
     
-    return div, script
+    # return div, script
