@@ -2,6 +2,7 @@ from django.shortcuts import render
 from .models import DatabaseCred, DataEntry
 import pandas as pd
 import uuid
+import logging
 import numpy as np
 import matplotlib.pyplot as plt
 import io
@@ -63,8 +64,18 @@ def dashboard_api(request):
     df_html = None
     df = pd.DataFrame()
     if request.method == 'POST':
-    
-            entry = DataEntry.objects.last()
+            # Get the DataEntry instance based on the provided ID if it exists
+            # or fetch the last entry if the ID is not provided
+            entry = None
+            try:
+                entry = DataEntry.objects.get(id=request.data['id'])
+            except Exception as err:
+                logging.warning(f"Error fetching DataEntry: {err}")
+                try:
+                    entry = DataEntry.objects.last()
+                except Exception as err:
+                    logging.error(f"Error fetching DataEntry: {err}")
+                    return Response({'error': 'DataEntry not found.'}, status=status.HTTP_404_NOT_FOUND)
             
             query = entry.query  # Assuming there's a query field in DataEntry
             
