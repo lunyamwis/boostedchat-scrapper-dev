@@ -25,6 +25,37 @@ from sqlalchemy import create_engine
 from .serializers import CombinedDataEntrySerializer
 from django_tenants.utils import schema_context
 
+
+@api_view(['GET', 'POST'])
+@schema_context(os.getenv("SCHEMA_NAME"))
+def get_sql_records(request):
+    entries = DataEntry.objects.all()
+    data = []
+    for entry in entries:
+        data.append({
+            'id': entry.id,
+            'name': entry.name,
+            'query': entry.query,
+            'chart_type': entry.chart_type
+        })
+    return Response(data, status=status.HTTP_200_OK)
+
+@api_view(['GET', 'POST'])
+@schema_context(os.getenv("SCHEMA_NAME"))
+def get_sql_record(request, pk):
+    try:
+        entry = DataEntry.objects.get(pk=pk)
+    except DataEntry.DoesNotExist:
+        return Response({'error': 'DataEntry not found.'}, status=status.HTTP_404_NOT_FOUND)
+
+    data = {
+        'id': entry.id,
+        'name': entry.name,
+        'query': entry.query,
+        'chart_type': entry.chart_type
+    }
+    return Response(data, status=status.HTTP_200_OK)
+
 # Create your views here.
 @api_view(['GET', 'POST'])
 @schema_context(os.getenv("SCHEMA_NAME"))
