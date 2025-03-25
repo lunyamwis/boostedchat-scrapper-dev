@@ -192,25 +192,29 @@ class ConnectionUpdateTests(APITestCase, URLPatternsTestCase):
     urlpatterns = [
         path('connection/update/<str:pk>/', views.ConnectionUpdateView.as_view(), name='connection_update'),
     ]
+    urlpatterns = [
+        path("instagram/", include("api.instagram.urls")),
+    ]
 
-    def setUp(self):
-        """
-        Set up the initial data for testing.
-        """
-        # Create a test user (you can create other necessary objects like `HttpOperatorConnectionModel`)
-        self.user = get_user_model().objects.create_user(username='testuser', password='password')
-        self.connection = HttpOperatorConnectionModel.objects.create(
-            connection_id="test_connection_1", 
-            conn_type="HTTP", 
-            host="localhost", 
-            port=8080, 
-            login="user", 
-            password="pass"
-        )
+    base_url = "http://calebomariba.localhost/instagram/"
+
+    # def setUp(self):
+    #     """
+    #     Set up the initial data for testing.
+    #     """
+    #     # Create a test user (you can create other necessary objects like `HttpOperatorConnectionModel`)
+    #     self.user = get_user_model().objects.create_user(username='testuser', password='password')
+    #     self.connection = HttpOperatorConnectionModel.objects.create(
+    #         connection_id="test_connection_1", 
+    #         conn_type="HTTP", 
+    #         host="localhost", 
+    #         port=8080, 
+    #         login="user", 
+    #         password="pass"
+    #     )
 
     def test_update_connection_valid(self):
         """Test PUT request to update a connection with valid data."""
-        url = reverse("connection_update", kwargs={"pk": self.connection.pk})
         data = {
             "connection_id": "test_connection_1_updated", 
             "conn_type": "HTTPS", 
@@ -219,17 +223,10 @@ class ConnectionUpdateTests(APITestCase, URLPatternsTestCase):
             "login": "user_updated", 
             "password": "pass_updated"
         }
+        response = requests.patch(self.base_url+"connection/",data=data)
 
-        with patch('requests.patch') as mock_patch:
-            # Simulate a successful response from the Airflow API
-            mock_patch.return_value.status_code = 200
-            mock_patch.return_value.text = "Success"
-
-            response = self.client.put(url, data, format='json')
-            
-            self.assertEqual(response.status_code, 200)  # 200 OK for successful update
-            self.assertEqual(response.data["connection_id"], "test_connection_1_updated")
-            mock_patch.assert_called_once()  # Ensure that the external Airflow request was made
+        self.assertEqual(response.status_code, 200)  # 200 OK for successful update
+        self.assertEqual(response.data["connection_id"], "test_connection_1_updated")
 
     def test_update_connection_invalid_pk(self):
         """Test PUT request with an invalid pk."""
