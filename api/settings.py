@@ -164,6 +164,16 @@ DATABASES = {
         "PASSWORD": os.getenv("POSTGRES_PASSWORD_ETL").strip(),
         "HOST": os.getenv("POSTGRES_HOST_ETL").strip(),
         "PORT": os.getenv("POSTGRES_PORT_ETL").strip(),
+        "OPTIONS": {
+            "options": "-c search_path=boosted_db,public"  
+        },
+        "TEST": {
+            "NAME": "test_db",  # Name of the test database
+            "USER": os.getenv("POSTGRES_USERNAME_ETL").strip(),
+            "PASSWORD": os.getenv("POSTGRES_PASSWORD_ETL").strip(),
+            "HOST": os.getenv("POSTGRES_HOST_ETL").strip(),
+            "PORT": os.getenv("POSTGRES_PORT_ETL").strip(),
+        },
     }
 
 }

@@ -8,6 +8,10 @@ from rest_framework.test import APITestCase, URLPatternsTestCase
 from django.urls import include, path, reverse
 import requests
 from api.instagram import views  
+from django.urls import reverse
+from rest_framework import status
+from rest_framework.test import APITestCase
+from api.instagram.models import InstagramUser
 
 
 # class LoadInfoToDatabaseTests(APITestCase, URLPatternsTestCase):
@@ -275,3 +279,91 @@ class ConnectionUpdateTests(APITestCase, URLPatternsTestCase):
         self.assertIn("Allow", response.headers)  # Check if 'Allow' header exists
         self.assertIn("PUT", response.headers["Allow"])  # Ensure PUT is allowed
         self.assertIn("PATCH", response.headers["Allow"])  # Ensure PATCH is allowed
+
+
+
+
+class InstagramLeadViewSetTests(APITestCase):
+    def setUp(self):
+        """
+        Set up initial data for the tests.
+        """
+        # Create a test InstagramUser
+        self.user = InstagramUser.objects.create(
+            username="test_user",
+            info={"bio": "Test bio"},
+            qualified=False,
+            relevant_information=None
+        )
+        self.url = reverse('instagramlead-qualify-account')  # Adjust URL if necessary
+    
+    def test_qualify_account_success(self):
+        """
+        Test that an account is successfully qualified.
+        """
+        data = {
+            'username': self.user.username,
+            'qualify_flag': True,
+            'relevant_information': {"info": "Some relevant info"}
+        }
+        
+        response = self.client.post(self.url, data, format='json')
+        
+        # Refresh user object to get updated data
+        self.user.refresh_from_db()
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(self.user.qualified)
+        self.assertEqual(self.user.relevant_information, {"info": "Some relevant info"})
+        self.assertTrue(self.user.scraped)
+        self.assertContains(response, '"qualified": true')
+        self.assertContains(response, '"account_id":')
+    
+    def test_qualify_account_no_info(self):
+        """
+        Test that qualification fails when the user has no outsourced information.
+        """
+        # Update the user to have no info
+        self.user.info = None
+        self.user.save()
+
+        data = {
+            'username': self.user.username,
+            'qualify_flag': True,
+            'relevant_information': {"info": "Some relevant info"}
+        }
+        
+        response = self.client.post(self.url, data, format='json')
+        
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.data, {"message": "user has not outsourced information"})
+    
+    def test_qualify_account_invalid_data(self):
+        """
+        Test that the request fails if required data is missing.
+        """
+        # Missing 'username' field
+        data = {
+            'qualify_flag': True,
+            'relevant_information': {"info": "Some relevant info"}
+        }
+        
+        response = self.client.post(self.url, data, format='json')
+        
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('username', response.data)
+    
+    def test_qualify_account_invalid_qualify_flag(self):
+        """
+        Test that the request fails if 'qualify_flag' is invalid.
+        """
+        data = {
+            'username': self.user.username,
+            'qualify_flag': "invalid_flag",  # Invalid qualify_flag
+            'relevant_information': {"info": "Some relevant info"}
+        }
+        
+        response = self.client.post(self.url, data, format='json')
+        
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('qualify_flag', response.data)
