@@ -989,6 +989,12 @@ class PrequalifyingWorkflow(Flow):
       crew = Crew(agents=agents, tasks=tasks, verbose=True, memory=True)
       # self.inputs['outsourced_info'].update({"lead_score":self.state.get("score_result",{}), "preqaulified":self.state.get("prequalified_result",{})})
       biography = self.inputs['outsourced_info']['biography']
+      external_url = self.inputs['outsourced_info']['external_url']
+      city_name = self.inputs['outsourced_info']['city_name']
+      full_name = self.inputs['outsourced_info']['full_name']
+      public_email = self.inputs['outsourced_info']['public_email']
+      public_phone_number = self.inputs['outsourced_info']['public_phone_number'],
+      contact_phone_number = self.inputs['outsourced_info']['contact_phone_number']
       self.inputs['outsourced_info'] = {"username":self.inputs['outsourced_info']['username'],"bio":self.inputs['outsourced_info']['biography']}
       # self.inputs['outsourced_info'].update({"preqaulified":self.state.get("prequalified_result",{})})
       # self.inputs['outsourced_info'] = {"preqaulified":self.state.get("prequalified_result",{})}
@@ -1005,10 +1011,17 @@ class PrequalifyingWorkflow(Flow):
             {
                "prequalified":self.state["prequalified_result"]["prequalified"],
                "name":self.state["output"]["name"],
-               "bio": biography,
+               "full_name":full_name if full_name else "",
+               "bio": biography if biography else "",
+               "external_url": external_url if external_url else "",
                "strengths": result.json_dict.get("strengths",""),
-               "area": result.json_dict.get("area",""),
-               "contact_details": result.json_dict.get("contact_details",""),
+               "area": city_name if city_name else "",
+               "contact_details": {
+                  "public_email": public_email if public_email else "",
+                  "public_phone_number": public_phone_number if public_phone_number else "",
+                  "contact_phone_number": contact_phone_number if contact_phone_number else ""
+               }
+
             }, self.inputs["outsourced_info"]["username"])
       
 
