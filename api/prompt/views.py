@@ -1006,6 +1006,9 @@ class PrequalifyingWorkflow(Flow):
                "prequalified":self.state["prequalified_result"]["prequalified"],
                "name":self.state["output"]["name"],
                "bio": biography,
+               "strengths": result.json_dict.get("strengths",""),
+               "area": result.json_dict.get("area",""),
+               "contact_details": result.json_dict.get("contact_details",""),
             }, self.inputs["outsourced_info"]["username"])
       
 
