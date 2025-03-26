@@ -288,7 +288,9 @@ def plot_matplotlib(df):
 
 def plot_bokeh(df):
     # Create a ColumnDataSource for the data
-    source = ColumnDataSource(data=dict(col1=df['col1'].tolist(), col2=df['col2'].tolist()))
+    # source = ColumnDataSource(data=dict(col1=df['col1'].tolist(), col2=df['col2'].tolist()))
+    source = ColumnDataSource(data=dict(col1=df['col1'].astype(str).tolist(), col2=df['col2'].tolist()))
+
 
     # Create the Bokeh plot
     p = figure(
