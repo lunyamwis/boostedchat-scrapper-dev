@@ -174,3 +174,5 @@ logs/
 barbers/
 ssh-key
 ssh-key.pub
+start_server.sh
+start_shell.sh
