@@ -14,6 +14,7 @@ from rest_framework.test import APITestCase
 from api.instagram.models import InstagramUser
 import re
 import time
+
 from django.db.models.query import QuerySet
 
 # class LoadInfoToDatabaseTests(APITestCase, URLPatternsTestCase):
@@ -600,7 +601,8 @@ class InsertAndEnrichTests(APITestCase, URLPatternsTestCase):
 
 class GetMediaIdsTests(APITestCase, URLPatternsTestCase):
     """
-    Unit tests for GetMediaIds API endpoints.
+    Unit tests for GetMediaIds API endpoint.
+    Tests all scenarios while matching actual API behavior.
     """
 
     urlpatterns = [
@@ -610,161 +612,124 @@ class GetMediaIdsTests(APITestCase, URLPatternsTestCase):
     base_url = "http://calebomariba.localhost/instagram/getMediaIds/"
 
     def setUp(self):
+        """Initialize test client and get CSRF token."""
         self.session = requests.Session()
-        # Initial GET request to establish session and get CSRF token
-        self.get_response = self.session.get(self.base_url)
-        self.csrf_token = self._extract_csrf_token()
+        self.csrf_token = self._get_csrf_token()
 
-    def _extract_csrf_token(self):
-        """Helper method to extract CSRF token from cookies or form."""
-        csrf_token = self.session.cookies.get('csrftoken', '')
-        if not csrf_token and hasattr(self.get_response, 'text'):
-            match = re.search(r'name="csrfmiddlewaretoken" value="([^"]+)"', self.get_response.text)
-            if match:
-                csrf_token = match.group(1)
-        return csrf_token
+    def _get_csrf_token(self):
+        """Extract CSRF token from cookies or form."""
+        get_response = self.session.get(self.base_url)
+        if csrf_token := self.session.cookies.get('csrftoken', ''):
+            return csrf_token
+        if match := re.search(r'name="csrfmiddlewaretoken" value="([^"]+)"', get_response.text):
+            return match.group(1)
+        return ''
 
-    def _get_headers(self, content_type='application/json'):
-        """Return default headers including CSRF token if available."""
-        headers = {
+    def _get_headers(self):
+        """Return headers with CSRF token and content type."""
+        return {
             'Referer': self.base_url,
-            'X-Requested-With': 'XMLHttpRequest'
+            'X-Requested-With': 'XMLHttpRequest',
+            'Content-Type': 'application/json',
+            'X-CSRFToken': self.csrf_token
         }
-        if content_type:
-            headers['Content-Type'] = content_type
-        if self.csrf_token:
-            headers['X-CSRFToken'] = self.csrf_token
-        return headers
 
     @patch('requests.post')
     @patch('requests.get')
-    def test_post_request_client_responded(self, mock_get, mock_post):
-        """Test when client has responded."""
-        # Setup mock responses
-        mock_post.return_value = Mock(status_code=200, json=lambda: {'has_responded': True})
-        
-        # Create a MagicMock that behaves like a queryset
-        mock_user = MagicMock()
-        mock_user.username = 'testuser'
-        mock_user.qualified = True
-        mock_user.round = 1
-        
-        mock_queryset = MagicMock(spec=QuerySet)
-        mock_queryset.__iter__.return_value = [mock_user]
-        
-        with patch('api.instagram.models.InstagramUser.objects.filter', return_value=mock_queryset):
-            test_data = {
-                "round": 1,
-                "chain": True,
-                "csrfmiddlewaretoken": self.csrf_token
+    @patch('api.instagram.models.InstagramUser.objects.filter')
+    def test_post_requests(self, mock_filter, mock_get, mock_post):
+        """Test all POST scenarios with parameterized mocking."""
+        test_cases = [
+            {
+                'name': 'client_responded',
+                'post_status': 200,
+                'post_json': {'has_responded': True},
+                'expected': {'data': []}
+            },
+            {
+                'name': 'success_with_data',
+                'post_status': 404,
+                'get_status': 200,
+                'get_json': {'salesrep': {'username': 'salesuser'}},
+                'user_info': {"media_id": ["123", "456"]},
+                'expected': {'data': []}
             }
-            
-            response = self.session.post(
-                self.base_url,
-                json=test_data,
-                headers=self._get_headers()
-            )
-            
-            self.assertEqual(response.status_code, 200)
-            self.assertEqual(response.json(), {"data": []})
+        ]
 
-    @patch('requests.post')
-    @patch('requests.get')
-    def test_post_request_success_with_data(self, mock_get, mock_post):
-        """Test successful request with media data."""
-        # Setup mock responses
-        mock_post.return_value = Mock(status_code=404)
-        mock_get.return_value = Mock(status_code=200, json=lambda: {'salesrep': {'username': 'salesuser'}})
+        for case in test_cases:
+            with self.subTest(case['name']):
+                # Configure mocks
+                mock_post.return_value = Mock(
+                    status_code=case.get('post_status', 404),
+                    json=lambda: case.get('post_json', {}))
+                
+                if 'get_status' in case:
+                    mock_get.return_value = Mock(
+                        status_code=case['get_status'],
+                        json=lambda: case['get_json'])
+
+                # Mock user and queryset
+                mock_user = MagicMock()
+                mock_user.username = 'testuser'
+                mock_user.qualified = True
+                mock_user.round = 1
+                if 'user_info' in case:
+                    mock_user.info = case['user_info']
+                
+                mock_queryset = MagicMock(spec=QuerySet)
+                mock_queryset.__iter__.return_value = [mock_user]
+                mock_filter.return_value = mock_queryset
+
+                # Make request
+                response = self.session.post(
+                    self.base_url,
+                    json={
+                        "round": 1,
+                        "chain": True,
+                        "csrfmiddlewaretoken": self.csrf_token
+                    },
+                    headers=self._get_headers()
+                )
+
+                # Verify response
+                self.assertEqual(response.status_code, 200)
+                self.assertEqual(response.json(), case['expected'])
+
+    def test_error_cases(self):
+        """Test missing parameter scenarios."""
+        for params in [
+            {"chain": True},  # Missing round
+            {"round": 1}     # Missing chain
+        ]:
+            with self.subTest(params=params):
+                params["csrfmiddlewaretoken"] = self.csrf_token
+                response = self.session.post(
+                    self.base_url,
+                    json=params,
+                    headers=self._get_headers()
+                )
+                self.assertEqual(response.status_code, 400)
+                self.assertEqual(response.json(), 
+                    {"error": "There is an error fetching medias"})
+
+    def test_unsupported_methods(self):
+        """Test all non-POST methods return 405."""
+        methods = [
+            ('GET', requests.get),
+            ('PUT', requests.put),
+            ('PATCH', requests.patch),
+            ('DELETE', requests.delete),
+            ('HEAD', requests.head)
+        ]
         
-        # Create a MagicMock that behaves like a user
-        mock_user = MagicMock()
-        mock_user.username = 'testuser'
-        mock_user.qualified = True
-        mock_user.round = 1
-        mock_user.info = {"media_id": ["123", "456"]}
-        
-        # Create a MagicMock that behaves like a queryset
-        mock_queryset = MagicMock(spec=QuerySet)
-        mock_queryset.__iter__.return_value = [mock_user]
-        
-        with patch('api.instagram.models.InstagramUser.objects.filter', return_value=mock_queryset):
-            test_data = {
-                "round": 1,
-                "chain": True,
-                "csrfmiddlewaretoken": self.csrf_token
-            }
-            
-            response = self.session.post(
-                self.base_url,
-                json=test_data,
-                headers=self._get_headers()
-            )
-            
-            self.assertEqual(response.status_code, 200)
-            self.assertEqual(response.json(), {"data": []})
-
-    def test_post_request_missing_round(self):
-        """Test request with missing round parameter."""
-        test_data = {
-            "chain": True,
-            "csrfmiddlewaretoken": self.csrf_token
-        }
-        
-        response = self.session.post(
-            self.base_url,
-            json=test_data,
-            headers=self._get_headers()
-        )
-        
-        self.assertEqual(response.status_code, 400)
-        self.assertEqual(response.json(), {"error": "There is an error fetching medias"})
-
-    def test_post_request_missing_chain(self):
-        """Test request with missing chain parameter."""
-        test_data = {
-            "round": 1,
-            "csrfmiddlewaretoken": self.csrf_token
-        }
-        
-        response = self.session.post(
-            self.base_url,
-            json=test_data,
-            headers=self._get_headers()
-        )
-        
-        self.assertEqual(response.status_code, 400)
-        self.assertEqual(response.json(), {"error": "There is an error fetching medias"})
-
-    def test_get_request(self):
-        """Test GET request (should not be allowed)."""
-        response = requests.get(self.base_url)
-        self.assertEqual(response.status_code, 405)
-
-    def test_put_request(self):
-        """Test PUT request (should not be allowed)."""
-        response = requests.put(self.base_url)
-        self.assertEqual(response.status_code, 405)
-
-    def test_patch_request(self):
-        """Test PATCH request (should not be allowed)."""
-        response = requests.patch(self.base_url)
-        self.assertEqual(response.status_code, 405)
-
-    def test_delete_request(self):
-        """Test DELETE request (should not be allowed)."""
-        response = requests.delete(self.base_url)
-        self.assertEqual(response.status_code, 405)
-
-    def test_head_request(self):
-        """Test HEAD request."""
-        response = requests.head(self.base_url)
-        self.assertEqual(response.status_code, 405)
+        for method, func in methods:
+            with self.subTest(method=method):
+                response = func(self.base_url)
+                self.assertEqual(response.status_code, 405)
 
     def test_options_request(self):
-        """Test OPTIONS request to check allowed methods."""
+        """Test OPTIONS returns allowed methods."""
         response = requests.options(self.base_url)
         self.assertEqual(response.status_code, 200)
-        self.assertIn("Allow", response.headers)
         allowed_methods = response.headers["Allow"].split(', ')
-        self.assertIn("POST", allowed_methods)
-        self.assertIn("OPTIONS", allowed_methods)
+        self.assertCountEqual(allowed_methods, ['POST', 'OPTIONS'])
