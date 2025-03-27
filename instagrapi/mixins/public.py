@@ -245,7 +245,7 @@ class PublicRequestMixin:
                 headers=headers,
                 return_json=True,
             )
-
+            
             if body_json.get("status", None) != "ok":
                 raise ClientGraphqlError(
                     "Unexpected status '{}' in response. Message: '{}'".format(
