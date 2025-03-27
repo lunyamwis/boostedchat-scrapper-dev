@@ -731,10 +731,10 @@ class PrequalifyingOutput(BaseModel):
    prequalified: Optional[bool] = None
    name: Optional[str] = None
    media_details: Optional[List[str]] = None 
-   strengths: Optional[List[str]] = None
+   strengths: Optional[Union[str, List[str]]] = None
    biography: Optional[str] = None
    area: Optional[str] = None
-   contact_details: Optional[str] = None
+   contact_details: Optional[Union[dict, str]] = None
    external_url: Optional[str] = None
    desired_provider: Optional[bool] = None
    desired_size: Optional[bool] = None
@@ -743,6 +743,7 @@ class PrequalifyingOutput(BaseModel):
    desired_visibility: Optional[bool] = None
    desired_activity: Optional[bool] = None
    lead_score: Optional[Union[int,str]] = None
+
 
 
 def remove_duplicate_content_keys(json_string: str) -> dict:
@@ -988,7 +989,13 @@ class PrequalifyingWorkflow(Flow):
       crew = Crew(agents=agents, tasks=tasks, verbose=True, memory=True)
       # self.inputs['outsourced_info'].update({"lead_score":self.state.get("score_result",{}), "preqaulified":self.state.get("prequalified_result",{})})
       biography = self.inputs['outsourced_info']['biography']
-      self.inputs['outsourced_info'] = {"username":self.inputs['outsourced_info']['username'],"bio":self.inputs['outsourced_info']['biography'],"prequalified":self.state.get("prequalified_result",{})}
+      external_url = self.inputs['outsourced_info']['external_url']
+      city_name = self.inputs['outsourced_info']['city_name']
+      full_name = self.inputs['outsourced_info']['full_name']
+      public_email = self.inputs['outsourced_info']['public_email']
+      public_phone_number = self.inputs['outsourced_info']['public_phone_number'],
+      contact_phone_number = self.inputs['outsourced_info']['contact_phone_number']
+      self.inputs['outsourced_info'] = {"username":self.inputs['outsourced_info']['username'],"bio":self.inputs['outsourced_info']['biography']}
       # self.inputs['outsourced_info'].update({"preqaulified":self.state.get("prequalified_result",{})})
       # self.inputs['outsourced_info'] = {"preqaulified":self.state.get("prequalified_result",{})}
       result = crew.kickoff(inputs=self.inputs)
@@ -996,17 +1003,28 @@ class PrequalifyingWorkflow(Flow):
       # crew_result = result.json_dict
       self.state["output"] = result.json_dict
 
-      
-      print(self.state["output"])
+      # import pdb;pdb.set_trace()
+      # print(self.state["output"])
       if self.state["prequalified_result"]["prequalified"]:
-         print(self.state["output"])
+         # print(self.state["output"])
          self.patch_account_request(
             {
                "prequalified":self.state["prequalified_result"]["prequalified"],
                "name":self.state["output"]["name"],
-               "bio": biography,
+               "full_name":full_name if full_name else "",
+               "bio": biography if biography else "",
+               "external_url": external_url if external_url else "",
+               "strengths": result.json_dict.get("strengths",""),
+               "area": city_name if city_name else "",
+               "contact_details": {
+                  "public_email": public_email if public_email else "",
+                  "public_phone_number": public_phone_number if public_phone_number else "",
+                  "contact_phone_number": contact_phone_number if contact_phone_number else ""
+               }
+
             }, self.inputs["outsourced_info"]["username"])
       
+
       # patch the output to the database
       print(3)
 
@@ -1279,7 +1297,7 @@ class agentSetup(APIView):
                                     expected_output=task.expected_output,
                                     agent=agent_,
                                     output_json=OUTPUT_MODELS.get(task.output),
-                                    output_parser=lambda json_string: PrequalifiedTextOutput(**remove_duplicate_content_keys(json_string)))
+                                    output_parser=lambda json_string: PrequalifyingOutput(**remove_duplicate_content_keys(json_string)))
                                 )
                             except Exception as e:
                                 print(e)
