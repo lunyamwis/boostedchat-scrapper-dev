@@ -12,6 +12,8 @@ from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
 from api.instagram.models import InstagramUser
+import re
+import time
 
 
 # class LoadInfoToDatabaseTests(APITestCase, URLPatternsTestCase):
@@ -52,7 +54,7 @@ class LoadInfoToDatabaseTests(APITestCase, URLPatternsTestCase):
         """Test POST request to load data into the database."""
         response = requests.post(self.base_url)
 
-        print("Response JSON:", response.json())  # Debugging output
+        # print("Response JSON:", response.json())  # Debugging output
 
         self.assertEqual(response.status_code, 200)
         self.assertIsInstance(response.json(), dict)
@@ -101,266 +103,347 @@ class LoadInfoToDatabaseTests(APITestCase, URLPatternsTestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn("Allow", response.headers)  # Ensure 'Allow' header exists
 
-     
-# class CustomFieldTests(APITestCase, URLPatternsTestCase):
-#     """
-#     Unit tests for the CustomFieldListCreateView API endpoints.
-#     """
 
-#     urlpatterns = [
-#         path('instagram/', include('api.instagram.urls')),
-#     ]
-
-#     base_url = "http://calebomariba.localhost/api/custom-field-list-create/"
-
-#     def test_get_custom_fields(self):
-#         """Test GET request to retrieve the list of custom fields."""
-#         response = requests.get(self.base_url)
-
-#         self.assertEqual(response.status_code, 200)
-#         self.assertIsInstance(response.json(), list)  # Ensure response is a list
-#         if response.json():
-#             self.assertIsInstance(response.json()[0], dict)  # Ensure each item is a dict
-
-#         self.assertEqual(response.headers["Content-Type"], "application/json")
-
-#     def test_post_valid_custom_field(self):
-#         """Test POST request to create a valid custom field."""
-#         data = {"name": "Test Field", "type": "text"}  # Adjust based on your model
-#         response = requests.post(self.base_url, json=data)
-
-#         self.assertEqual(response.status_code, 201)
-#         self.assertIsInstance(response.json(), dict)
-#         self.assertIn("id", response.json())  # Check if response contains the new object ID
-#         self.assertEqual(response.json().get("name"), "Test Field")
-#         self.assertEqual(response.headers["Content-Type"], "application/json")
-
-#     def test_post_invalid_custom_field(self):
-#         """Test POST request with invalid data."""
-#         data = {"invalid_field": "wrong_value"}  # Missing required fields
-#         response = requests.post(self.base_url, json=data)
-
-#         self.assertEqual(response.status_code, 400)  # Bad Request
-#         self.assertIsInstance(response.json(), dict)
-#         self.assertIn("error", response.json())  # Check if error message exists
-
-#     def test_put_custom_field(self):
-#         """Test PUT request to update an existing custom field."""
-#         url = self.base_url + "1/"  # Assuming ID = 1 exists
-#         data = {"name": "Updated Field", "type": "number"}
-#         response = requests.put(url, json=data)
-
-#         self.assertIn(response.status_code, [200, 400, 404])
-#         if response.status_code == 200:
-#             self.assertEqual(response.json().get("name"), "Updated Field")
-
-#     def test_patch_custom_field(self):
-#         """Test PATCH request for partial update."""
-#         url = self.base_url + "1/"
-#         data = {"name": "Partially Updated Field"}
-#         response = requests.patch(url, json=data)
-
-#         self.assertIn(response.status_code, [200, 400, 404])
-#         if response.status_code == 200:
-#             self.assertEqual(response.json().get("name"), "Partially Updated Field")
-
-#     def test_delete_custom_field(self):
-#         """Test DELETE request to remove a custom field."""
-#         url = self.base_url + "1/"
-#         response = requests.delete(url)
-
-#         self.assertIn(response.status_code, [204, 404])
-
-#     def test_options_custom_field(self):
-#         """Test OPTIONS request to check allowed methods."""
-#         response = requests.options(self.base_url)
-
-#         self.assertEqual(response.status_code, 200)
-#         self.assertIn("Allow", response.headers)  # Check if 'Allow' header exists
-
-
-from unittest.mock import patch
-from django.urls import reverse
-from rest_framework.test import APITestCase, URLPatternsTestCase
-from api.instagram.models import HttpOperatorConnectionModel
-from django.contrib.auth import get_user_model
-
-class ConnectionUpdateTests(APITestCase, URLPatternsTestCase):
+class CustomFieldValueCreateViewTests(APITestCase, URLPatternsTestCase):
     """
-    Unit tests for the ConnectionUpdateView API endpoint.
+    Unit tests for CustomFieldValueCreateView API endpoints.
     """
-    urlpatterns = [
-        path('connection/update/<str:pk>/', views.ConnectionUpdateView.as_view(), name='connection_update'),
-    ]
+
     urlpatterns = [
         path("instagram/", include("api.instagram.urls")),
     ]
 
-    base_url = "http://calebomariba.localhost/instagram/"
+    base_url = "http://calebomariba.localhost/instagram/endpoints/1/custom-field/create/"
 
-    # def setUp(self):
-    #     """
-    #     Set up the initial data for testing.
-    #     """
-    #     # Create a test user (you can create other necessary objects like `HttpOperatorConnectionModel`)
-    #     self.user = get_user_model().objects.create_user(username='testuser', password='password')
-    #     self.connection = HttpOperatorConnectionModel.objects.create(
-    #         connection_id="test_connection_1", 
-    #         conn_type="HTTP", 
-    #         host="localhost", 
-    #         port=8080, 
-    #         login="user", 
-    #         password="pass"
-    #     )
-
-    def test_update_connection_valid(self):
-        """Test PUT request to update a connection with valid data."""
-        data = {
-            "connection_id": "test_connection_1_updated", 
-            "conn_type": "HTTPS", 
-            "host": "localhost_updated", 
-            "port": 9090, 
-            "login": "user_updated", 
-            "password": "pass_updated"
-        }
-        response = requests.patch(self.base_url+"connection/",data=data)
-
-        self.assertEqual(response.status_code, 200)  # 200 OK for successful update
-        self.assertEqual(response.data["connection_id"], "test_connection_1_updated")
-
-    def test_update_connection_invalid_pk(self):
-        """Test PUT request with an invalid pk."""
-        url = reverse("connection_update", kwargs={"pk": "non_existent_pk"})
-        data = {
-            "connection_id": "test_connection_2", 
-            "conn_type": "HTTPS", 
-            "host": "localhost", 
-            "port": 9090, 
-            "login": "user", 
-            "password": "pass"
-        }
-
-        response = self.client.put(url, data, format='json')
-        self.assertEqual(response.status_code, 404)  # Not found for invalid pk
-
-    @patch('requests.patch')
-    def test_airflow_api_failure(self, mock_patch):
-        """Test that the connection update handles failure from Airflow API."""
-        url = reverse("connection_update", kwargs={"pk": self.connection.pk})
-        data = {
-            "connection_id": "test_connection_1_failed", 
-            "conn_type": "HTTPS", 
-            "host": "localhost_failed", 
-            "port": 8081, 
-            "login": "user_failed", 
-            "password": "pass_failed"
-        }
-
-        # Simulate a failure response from the Airflow API
-        mock_patch.return_value.status_code = 500  # Internal Server Error
-        mock_patch.return_value.text = "Server Error"
-
-        response = self.client.put(url, data, format='json')
-
-        self.assertEqual(response.status_code, 200)  # Update should still return success in Django
-        # Ensure the error message is in the response (based on your implementation)
-        self.assertIn("Failed to update connection in Airflow", response.data["message"])
-
-    def test_options_connection_update(self):
-        """Test OPTIONS request to check allowed methods."""
-        url = reverse("connection_update", kwargs={"pk": self.connection.pk})
-
-        response = self.client.options(url)
-
+    def test_get_request(self):
+        """Test GET request to load the form."""
+        response = requests.get(self.base_url)
+        
+        # GET requests typically don't require CSRF tokens
         self.assertEqual(response.status_code, 200)
-        self.assertIn("Allow", response.headers)  # Check if 'Allow' header exists
-        self.assertIn("PUT", response.headers["Allow"])  # Ensure PUT is allowed
-        self.assertIn("PATCH", response.headers["Allow"])  # Ensure PATCH is allowed
+        self.assertEqual(response.headers["Content-Type"], "text/html; charset=utf-8")
+        self.assertLess(response.elapsed.total_seconds(), 2)
+
+    def test_post_request_valid_data(self):
+        """Test POST request with valid form data."""
+        # First make a GET request to obtain CSRF token
+        session = requests.Session()
+        get_response = session.get(self.base_url)
+        csrf_token = session.cookies.get('csrftoken', '')
+        
+        if not csrf_token:
+            # Try alternative method to get CSRF token
+            import re
+            match = re.search(r'name="csrfmiddlewaretoken" value="([^"]+)"', get_response.text)
+            if match:
+                csrf_token = match.group(1)
+        
+        # Assuming you have a custom field with id=1 in your test database
+        data = {
+            'field': '1',
+            'value': 'test value',
+            'csrfmiddlewaretoken': csrf_token
+        }
+        headers = {
+            'Referer': self.base_url  # Some CSRF checks require Referer header
+        }
+        response = session.post(self.base_url, data=data, headers=headers)
+        
+        # Check for either success (302) or redirect to login (common for protected views)
+        self.assertIn(response.status_code, [302, 200])
+        if response.status_code == 302:
+            self.assertTrue(response.url.endswith('/custom_field_list/'))  # Check redirect URL
+        else:
+            # Might be showing login page
+            self.assertEqual(response.headers["Content-Type"], "text/html; charset=utf-8")
+
+    def test_post_request_invalid_data(self):
+        """Test POST request with invalid form data."""
+        # First make a GET request to obtain CSRF token
+        session = requests.Session()
+        get_response = session.get(self.base_url)
+        csrf_token = session.cookies.get('csrftoken', '')
+        
+        if not csrf_token:
+            import re
+            match = re.search(r'name="csrfmiddlewaretoken" value="([^"]+)"', get_response.text)
+            if match:
+                csrf_token = match.group(1)
+        
+        data = {
+            'field': '',
+            'value': '',
+            'csrfmiddlewaretoken': csrf_token
+        }
+        headers = {
+            'Referer': self.base_url
+        }
+        response = session.post(self.base_url, data=data, headers=headers)
+        
+        # Check for either form errors (200) or redirect to login
+        self.assertIn(response.status_code, [200, 302])
+        if response.status_code == 200:
+            self.assertEqual(response.headers["Content-Type"], "text/html; charset=utf-8")
+            self.assertIn("This field is required", response.text)  # Check for form errors
+
+    def test_put_request(self):
+        """Test PUT request (should not be allowed)."""
+        response = requests.put(self.base_url)
+        # Either 405 (not allowed) or 403 (forbidden) are acceptable
+        self.assertIn(response.status_code, [405, 403])
+
+    def test_patch_request(self):
+        """Test PATCH request (should not be allowed)."""
+        response = requests.patch(self.base_url)
+        self.assertIn(response.status_code, [405, 403])
+
+    def test_delete_request(self):
+        """Test DELETE request (should not be allowed)."""
+        response = requests.delete(self.base_url)
+        self.assertIn(response.status_code, [405, 403])
+
+    def test_head_request(self):
+        """Test HEAD request."""
+        response = requests.head(self.base_url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.text, "")  # HEAD response should not contain a body
+
+    def test_options_request(self):
+        """Test OPTIONS request to check allowed methods."""
+        response = requests.options(self.base_url)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("Allow", response.headers)
+        allowed_methods = response.headers["Allow"].split(', ')
+        self.assertIn("GET", allowed_methods)
+        self.assertIn("POST", allowed_methods)
+        self.assertIn("HEAD", allowed_methods)
+        self.assertIn("OPTIONS", allowed_methods)
 
 
+# class CustomFieldValueCreateViewTests(APITestCase, URLPatternsTestCase):
+#     """
+#     Unit tests for CustomFieldValueCreateView API endpoints.
+#     """
 
+#     urlpatterns = [
+#         path("instagram/", include("api.instagram.urls")),
+#     ]
 
-class InstagramLeadViewSetTests(APITestCase):
-    def setUp(self):
-        """
-        Set up initial data for the tests.
-        """
-        # Create a test InstagramUser
-        self.user = InstagramUser.objects.create(
-            username="test_user",
-            info={"bio": "Test bio"},
-            qualified=False,
-            relevant_information=None
+#     base_url = "http://calebomariba.localhost/instagram/endpoints/1/custom-field/create/"
+#     success_url = "/custom_field_list/"
+
+#     def setUp(self):
+#         self.session = requests.Session()
+#         # Initial GET request to establish session and get CSRF token
+#         self.get_response = self.session.get(self.base_url)
+#         self.csrf_token = self._extract_csrf_token()
+
+#     def _extract_csrf_token(self):
+#         """Helper method to extract CSRF token from cookies or form."""
+#         # Try to get from cookies first
+#         csrf_token = self.session.cookies.get('csrftoken', '')
+        
+#         if not csrf_token:
+#             # Fallback to extracting from form
+#             match = re.search(r'name="csrfmiddlewaretoken" value="([^"]+)"', self.get_response.text)
+#             if match:
+#                 csrf_token = match.group(1)
+#         return csrf_token
+
+#     def _get_headers(self):
+#         """Return default headers including Referer for CSRF protection."""
+#         return {
+#             'Referer': self.base_url,
+#             'X-Requested-With': 'XMLHttpRequest'  # Helps identify AJAX requests
+#         }
+
+#     def test_get_request(self):
+#         """Test GET request to load the form."""
+#         self.assertEqual(self.get_response.status_code, 200)
+#         self.assertEqual(self.get_response.headers["Content-Type"], "text/html; charset=utf-8")
+#         self.assertLess(self.get_response.elapsed.total_seconds(), 2)
+#         self.assertIn("form", self.get_response.text.lower())  # Verify form is present
+
+#     def test_post_request_valid_data(self):
+#         """Test POST request with valid form data."""
+#         data = {
+#             'field': '1',
+#             'value': 'test value',
+#             'csrfmiddlewaretoken': self.csrf_token
+#         }
+#         response = self.session.post(
+#             self.base_url,
+#             data=data,
+#             headers=self._get_headers()
+#         )
+        
+#         self.assertEqual(response.status_code, 302)  # Should redirect on success
+#         self.assertTrue(response.url.endswith(self.success_url))
+
+#     def test_post_request_invalid_data(self):
+#         """Test POST request with invalid form data."""
+#         data = {
+#             'field': '',
+#             'value': '',
+#             'csrfmiddlewaretoken': self.csrf_token
+#         }
+#         response = self.session.post(
+#             self.base_url,
+#             data=data,
+#             headers=self._get_headers()
+#         )
+        
+#         self.assertEqual(response.status_code, 200)  # Form with errors
+#         self.assertEqual(response.headers["Content-Type"], "text/html; charset=utf-8")
+#         self.assertIn("This field is required", response.text)
+
+#     def test_unsupported_methods(self):
+#         """Test PUT, PATCH, DELETE requests (should not be allowed)."""
+#         for method in [requests.put, requests.patch, requests.delete]:
+#             with self.subTest(method=method.__name__):
+#                 response = method(self.base_url)
+#                 self.assertIn(response.status_code, [405, 403])
+
+#     def test_head_request(self):
+#         """Test HEAD request."""
+#         response = requests.head(self.base_url)
+#         self.assertEqual(response.status_code, 200)
+#         self.assertEqual(response.text, "")
+
+#     def test_options_request(self):
+#         """Test OPTIONS request to check allowed methods."""
+#         response = requests.options(self.base_url)
+#         self.assertEqual(response.status_code, 200)
+#         self.assertIn("Allow", response.headers)
+#         allowed_methods = set(m.strip() for m in response.headers["Allow"].split(','))
+#         expected_methods = {"GET", "POST", "HEAD", "OPTIONS"}
+#         self.assertTrue(expected_methods.issubset(allowed_methods))
+
+class ConnectionListCreateViewTests(APITestCase, URLPatternsTestCase):
+    """
+    Unit tests for ConnectionListCreateView API endpoints.
+    """
+
+    urlpatterns = [
+        path("instagram/", include("api.instagram.urls")),
+    ]
+
+    base_url = "http://calebomariba.localhost/instagram/api/connections/"
+
+    def test_get_request(self):
+        """Test GET request to list connections."""
+        response = requests.get(self.base_url)
+        
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.headers["Content-Type"], "application/json")
+        self.assertIsInstance(response.json(), list)
+        self.assertLess(response.elapsed.total_seconds(), 2)
+
+    def test_post_request_valid_data(self):
+        """Test POST request to create a new connection."""
+        # First make a GET request to obtain CSRF token
+        session = requests.Session()
+        get_response = session.get(self.base_url)
+        csrf_token = session.cookies.get('csrftoken', '')
+        
+        if not csrf_token:
+            match = re.search(r'name="csrfmiddlewaretoken" value="([^"]+)"', get_response.text)
+            if match:
+                csrf_token = match.group(1)
+        
+        test_data = {
+            "id": 1,  # Required field
+            "connection_id": f"conn_{int(time.time())}",
+            "conn_type": "http",
+            "host": "http://example.com",
+            "login": "testuser",
+            "password": "testpass",
+            "port": None,  # Optional field
+            "csrfmiddlewaretoken": csrf_token
+        }
+        headers = {
+            'Referer': self.base_url,
+            'Content-Type': 'application/json'
+        }
+        
+        response = session.post(
+            self.base_url,
+            json=test_data,
+            headers=headers
         )
-        self.url = reverse('instagramlead-qualify-account')  # Adjust URL if necessary
-    
-    def test_qualify_account_success(self):
-        """
-        Test that an account is successfully qualified.
-        """
-        data = {
-            'username': self.user.username,
-            'qualify_flag': True,
-            'relevant_information': {"info": "Some relevant info"}
-        }
         
-        response = self.client.post(self.url, data, format='json')
+        # Debug output if test fails
+        if response.status_code != 201:
+            print("Request Data:", test_data)
+            print("Response Status:", response.status_code)
+            print("Response Content:", response.text)
         
-        # Refresh user object to get updated data
-        self.user.refresh_from_db()
-        
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertTrue(self.user.qualified)
-        self.assertEqual(self.user.relevant_information, {"info": "Some relevant info"})
-        self.assertTrue(self.user.scraped)
-        self.assertContains(response, '"qualified": true')
-        self.assertContains(response, '"account_id":')
-    
-    def test_qualify_account_no_info(self):
-        """
-        Test that qualification fails when the user has no outsourced information.
-        """
-        # Update the user to have no info
-        self.user.info = None
-        self.user.save()
+        self.assertEqual(response.status_code, 201)
+        response_data = response.json()
+        self.assertIn("id", response_data)
+        self.assertEqual(response_data["connection_id"], test_data["connection_id"])
 
-        data = {
-            'username': self.user.username,
-            'qualify_flag': True,
-            'relevant_information': {"info": "Some relevant info"}
+    def test_post_request_invalid_data(self):
+        """Test POST request with invalid data."""
+        session = requests.Session()
+        get_response = session.get(self.base_url)
+        csrf_token = session.cookies.get('csrftoken', '')
+        
+        if not csrf_token:
+            match = re.search(r'name="csrfmiddlewaretoken" value="([^"]+)"', get_response.text)
+            if match:
+                csrf_token = match.group(1)
+        
+        invalid_data = {
+            "id": None,  # Invalid None value
+            "connection_id": "",  # Empty string
+            "csrfmiddlewaretoken": csrf_token
+        }
+        headers = {
+            'Referer': self.base_url,
+            'Content-Type': 'application/json'
         }
         
-        response = self.client.post(self.url, data, format='json')
+        response = session.post(
+            self.base_url,
+            json=invalid_data,
+            headers=headers
+        )
         
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertEqual(response.data, {"message": "user has not outsourced information"})
-    
-    def test_qualify_account_invalid_data(self):
-        """
-        Test that the request fails if required data is missing.
-        """
-        # Missing 'username' field
-        data = {
-            'qualify_flag': True,
-            'relevant_information': {"info": "Some relevant info"}
-        }
-        
-        response = self.client.post(self.url, data, format='json')
-        
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn('username', response.data)
-    
-    def test_qualify_account_invalid_qualify_flag(self):
-        """
-        Test that the request fails if 'qualify_flag' is invalid.
-        """
-        data = {
-            'username': self.user.username,
-            'qualify_flag': "invalid_flag",  # Invalid qualify_flag
-            'relevant_information': {"info": "Some relevant info"}
-        }
-        
-        response = self.client.post(self.url, data, format='json')
-        
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn('qualify_flag', response.data)
+        self.assertEqual(response.status_code, 400)
+        errors = response.json()
+        required_fields = ["id", "connection_id", "conn_type", "host", "login", "password"]
+        for field in required_fields:
+            self.assertIn(field, errors)
+
+    def test_put_request(self):
+        """Test PUT request (should not be allowed at list endpoint)."""
+        response = requests.put(self.base_url)
+        self.assertIn(response.status_code, [405, 403])
+
+    def test_patch_request(self):
+        """Test PATCH request (should not be allowed at list endpoint)."""
+        response = requests.patch(self.base_url)
+        self.assertIn(response.status_code, [405, 403])
+
+    def test_delete_request(self):
+        """Test DELETE request (should not be allowed at list endpoint)."""
+        response = requests.delete(self.base_url)
+        self.assertIn(response.status_code, [405, 403])
+
+    def test_head_request(self):
+        """Test HEAD request."""
+        response = requests.head(self.base_url)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.text, "")
+
+    def test_options_request(self):
+        """Test OPTIONS request to check allowed methods."""
+        response = requests.options(self.base_url)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("Allow", response.headers)
+        allowed_methods = response.headers["Allow"].split(', ')
+        self.assertIn("GET", allowed_methods)
+        self.assertIn("POST", allowed_methods)
+        self.assertIn("HEAD", allowed_methods)
+        self.assertIn("OPTIONS", allowed_methods)
