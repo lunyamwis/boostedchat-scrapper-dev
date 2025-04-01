@@ -67,7 +67,7 @@ urlpatterns = [
     path('getMediaIds/',views.GetMediaIds.as_view()),
     path('getMediaComments/',views.GetMediaComments.as_view()),
     path('getAccounts/',views.GetAccounts.as_view()),
-    path('fetchPendingInbox/',views.FetchPendingInbox.as_view()),
+    path('fetchPendingInbox/', views.FetchPendingInbox.as_view()),
     path('approveRequests/',views.ApproveRequest.as_view()),
     path('sendDirectAnswer/',views.SendDirectAnswer.as_view()),
     path('qualifyingPayload/',views.PayloadQualifyingAgent.as_view()),
