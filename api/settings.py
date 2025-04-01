@@ -15,6 +15,14 @@ import os
 from pathlib import Path
 import sentry_sdk
 
+
+PHONE_NUMBER_ID = os.environ.get("PHONE_NUMBER_ID","")
+VERIFY_TOKEN = os.environ.get("VERIFY_TOKEN","")
+ACCESS_TOKEN = os.environ.get("ACCESS_TOKEN","")
+WHATSAPP_BUSINESS_ACCOUNT_ID = os.environ.get("WHATSAPP_BUSINESS_ACCOUNT_ID","")
+TOKEN = os.environ.get("TOKEN","")
+OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY","")
+
 sentry_sdk.init(
     dsn=os.getenv("SENTRY_DSN"),
     # Set traces_sample_rate to 1.0 to capture 100%
@@ -98,7 +106,7 @@ SHARED_APPS = [
     # "django_extensions"
 ]
 
-TENANT_APPS = ['api.instagram','api.scout', 'api.helpers','api.prompt','api.analyst']
+TENANT_APPS = ['api.instagram','api.scout', 'api.helpers','api.prompt','api.analyst','api.whatsapp']
 INSTALLED_APPS = SHARED_APPS + [app for app in TENANT_APPS if app not in SHARED_APPS]
 TENANT_MODEL = "boostedchatScrapper.Client"
 TENANT_DOMAIN_MODEL = "boostedchatScrapper.Domain"
