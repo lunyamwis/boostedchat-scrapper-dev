@@ -63,6 +63,7 @@ def get_sql_record(request, pk):
 def dashboard_api(request):
     df_html = None
     df = pd.DataFrame()
+
     if request.method == 'POST':
             # Get the DataEntry instance based on the provided ID if it exists
             # or fetch the last entry if the ID is not provided
@@ -97,7 +98,7 @@ def dashboard_api(request):
                     df_temp = pd.read_sql(query, engine)  # Execute the query
                     df = pd.concat([df, df_temp], ignore_index=True)  # Combine results if multiple queries are executed
                     df_html = df_temp.to_html(classes='table table-striped', index=False)
-                    df.columns = [f'col{i+1}' for i in range(df.shape[1])]
+                    # df.columns = [f'col{i+1}' for i in range(df.shape[1])]
 
                 except Exception as e:
                     return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
@@ -128,7 +129,6 @@ def generate_charts(entry, df):
 
 
 def dashboard_two(request):
-    
     df = None
     df_html = None        
     chart_bokeh_div = None
@@ -301,10 +301,11 @@ def plot_matplotlib(df):
     fig, ax = plt.subplots(figsize=(10, 6))  # Adjust figure size if needed
     
     # Plot the line graph
-    ax.plot(df['col1'], df['col2'], marker='o', linestyle='-', color='skyblue', label='Col2')
-    
+    # ax.plot(df['col1'], df['col2'], marker='o', linestyle='-', color='skyblue', label='total outreach')
+    columns = df.columns
+    ax.plot(df[columns[0]], df[columns[1]], marker='o', linestyle='-', color='skyblue', label='total outreach')
     # Add labels on the line points
-    for x, y in zip(df['col1'], df['col2']):
+    for x, y in zip(df[columns[0]], df[columns[1]]):
         ax.text(
             x, y + 0.1,  # Position slightly above the point
             f'{int(y)}',  # Display the value as an integer
@@ -312,9 +313,9 @@ def plot_matplotlib(df):
         )
     
     # Set titles and labels
-    ax.set_title('Title', fontsize=16)
-    ax.set_xlabel('Col1', fontsize=12)
-    ax.set_ylabel('Col2', fontsize=12)
+    ax.set_title('Total Outreach', fontsize=16)
+    ax.set_xlabel(columns[0], fontsize=12)
+    ax.set_ylabel(columns[1], fontsize=12)
     
     # Rotate x-axis labels for better readability
     ax.tick_params(axis='x', rotation=45)
@@ -336,16 +337,17 @@ def plot_matplotlib(df):
 def plot_bokeh(df):
     # Create a ColumnDataSource for the data
     # source = ColumnDataSource(data=dict(col1=df['col1'].tolist(), col2=df['col2'].tolist()))
-    source = ColumnDataSource(data=dict(col1=df['col1'].astype(str).tolist(), col2=df['col2'].tolist()))
+    columns = df.columns
+    source = ColumnDataSource(data=dict(col1=df[columns[0]].astype(str).tolist(), col2=df[columns[1]].tolist()))
 
 
     # Create the Bokeh plot
     p = figure(
-        title="Title", 
-        x_axis_label='Col1', 
-        y_axis_label='Col2', 
-        x_range=[str(x)for x in df['col1'].tolist()], 
-        y_range=(0, df['col2'].max() + 5), 
+        title="Total outreach", 
+        x_axis_label=columns[0], 
+        y_axis_label=columns[1], 
+        x_range=[str(x)for x in df[columns[0]].tolist()], 
+        y_range=(0, df[columns[1]].max() + 5), 
         width=800, 
         height=400
     )
