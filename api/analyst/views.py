@@ -119,9 +119,10 @@ def generate_charts(entry, df):
     
     if entry.chart_type == 'line':
         chart_data['mpl'] = plot_matplotlib(df)  # Your existing plotting function for matplotlib
+        chart_data['chart_type'] = 'matplotlib'
     elif entry.chart_type == 'bar':
         chart_data['bokeh_div'], chart_data['bokeh_script'] = plot_bokeh(df)  # Your existing plotting function for bokeh
-    
+        chart_data['chart_type'] = 'bokeh'
     return chart_data
 
 
