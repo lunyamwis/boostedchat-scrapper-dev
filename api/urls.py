@@ -13,5 +13,11 @@ urlpatterns = [
     path('whatsapp/',include('api.whatsapp.urls')),
     path('scout/',include('api.scout.urls')),
     path('prompt/',include('api.prompt.urls')),
+    path('authentication/',include('api.authentication.urls')),
+    path('dialogflow/',include('api.dialogflow.urls')),
+    path('outreach/',include('api.outreaches.urls')),
+    path('salesrep/',include('api.sales_rep.urls')),
+    path('serviceManager/',include('api.serviceManager.urls')),
+    path('audittrail/',include('api.audittrails.urls')),
     path('',include('api.analyst.urls')),
 ]
