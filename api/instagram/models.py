@@ -3,6 +3,11 @@ from api.helpers.models import BaseModel
 from django.contrib.postgres.fields import ArrayField
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+
 from api.scout.models import Scout
 import pytz
 
@@ -275,3 +280,177 @@ class Media(BaseModel):
 
     def __str__(self) -> str:
         return self.media_url
+    
+
+
+
+
+class OutSourcedInfo(models.Model):
+    source = models.CharField(null=True, blank=True, max_length=255)
+    results = models.TextField(null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+
+class StatusCheck(BaseModel):
+    STAGES = ((1, "Oven"), (2, "Needs Assessment"), (3, "Overcoming Objections"), (4, "Activation"))
+    stage = models.IntegerField(choices=STAGES, default=1)
+    name = models.CharField(max_length=255)
+
+    def __str__(self) -> str:
+        return f"{self.stage} - {self.name}"
+
+    def get_id(self):
+        return self.id
+
+
+class UnwantedAccount(BaseModel):
+    username = models.CharField(max_length=255, null=True, blank=True, unique=False)
+
+    def __str__(self) -> str:
+        return self.username if self.username else self.id
+
+class Account(BaseModel):
+    igname = models.CharField(max_length=255, null=True, unique=False, blank=True)
+    assigned_to = models.TextField(default="Robot")
+    referral = models.TextField(default="",null=True,blank=True)
+    full_name = models.CharField(max_length=1024, null=True, blank=True)
+    email = models.EmailField(null=True, blank=True)
+    phone_number = models.CharField(max_length=255, null=True, blank=True)
+    profile_url = models.URLField(null=True, blank=True)
+    status = models.ForeignKey(StatusCheck, on_delete=models.CASCADE, null=True, blank=True)
+    script_score = models.IntegerField(null=True, blank=True)
+    script_version = models.CharField(max_length=255,null=True,blank=True)
+    status_param = models.CharField(max_length=255, null=True, unique=False, blank=True)
+    confirmed_problems = models.TextField(null=True, blank=True, default="test")
+    solution_presented = models.BooleanField(default=False)
+    question_asked = models.BooleanField(default=False)
+    rejected_problems = models.TextField(null=True, blank=True, default="test")
+    linked_to = models.CharField(max_length=255, null=True, blank=True, default="no_one")
+    # history = AuditlogHistoryField(pk_indexable=False)
+    dormant_profile_created = models.BooleanField(default=True, null=True, blank=True) # used to check if LLM creates for them a dormant profile
+    qualified = models.BooleanField(default=False)
+    scraped = models.BooleanField(default=False)
+    relevant_information = models.JSONField(null=True,blank=True)
+    is_manually_triggered = models.BooleanField(default=False)
+    index = models.IntegerField(default=1)
+    notes = models.TextField(null=True, blank=True)  # New notes field
+    outreach_time = models.DateTimeField(null=True, blank=True)
+    outreach_success = models.BooleanField(default=False)
+    
+    def __str__(self) -> str:
+        return self.igname if self.igname else self.id
+
+
+class OutSourced(BaseModel):
+    source = models.CharField(null=True, blank=True, max_length=255)
+    results = models.JSONField()
+    account = models.ForeignKey(Account, on_delete=models.CASCADE, null=True, blank=True)
+
+    def __str__(self) -> str:
+        return f"{self.account.igname}==>{self.id}" if self.account else self.id
+    
+# auditlog.register(Account)
+
+
+class HashTag(BaseModel):
+    hashtag_id = models.CharField(max_length=255)
+    name = models.CharField(max_length=255, null=True, blank=True)
+
+
+class Story(BaseModel):
+    story_id = models.CharField(max_length=50, null=True, blank=True)
+    link = models.URLField()
+
+
+class Photo(BaseModel):
+    photo_id = models.CharField(max_length=50)
+    link = models.URLField()
+    name = models.CharField(max_length=255)
+    account = models.ForeignKey(Account, on_delete=models.CASCADE, null=True, blank=True)
+
+
+class Thread(BaseModel):
+    thread_id = models.CharField(max_length=255)
+    account = models.ForeignKey(Account, on_delete=models.CASCADE, null=True, blank=True)
+    unread_message_count = models.IntegerField(default=0)
+    last_message_content = models.TextField(null=True, blank=True)
+    last_message_at = models.DateTimeField(null=True, blank=True)
+
+
+class Message(BaseModel):
+    content = models.TextField(null=True, blank=True, default="test")
+    sent_by = models.CharField(max_length=255, null=True, blank=True)
+    sent_on = models.DateTimeField()
+    thread = models.ForeignKey(Thread, on_delete=models.CASCADE, null=True, blank=True)
+    # New fields
+    content_type = models.CharField(max_length=255, null=True, blank=True)
+    content_link = models.CharField(max_length=255, null=True, blank=True)
+    content_data = models.JSONField(null=True, blank=True)  # Use JSONField for storing JSON data 
+    message_id = models.CharField(max_length=50, null=True, blank=True)
+
+
+class Video(BaseModel):
+    video_id = models.CharField(max_length=50)
+    link = models.URLField()
+    name = models.CharField(max_length=255)
+
+
+class Reel(BaseModel):
+    reel_id = models.CharField(max_length=50)
+    link = models.URLField()
+    name = models.CharField(max_length=255)
+    
+class Comment(BaseModel):
+    comment_id = models.CharField(max_length=50)
+    account = models.ForeignKey(Account, on_delete=models.CASCADE, null=True, blank=True)
+    message = models.TextField(null=True, blank=True)
+    media_id =  models.CharField(max_length=255, null=True, blank=True)
+    target_comment_id =  models.CharField(max_length=255, null=True, blank=True)
+    collapseKey =  models.CharField(max_length=50, null=True, blank=True)
+    optionalAvatarUrl = models.URLField(null=True, blank=True,max_length=2048)
+    pushId =  models.CharField(max_length=255, null=True, blank=True)
+    pushCategory = models.CharField(max_length=255, null=True, blank=True)
+    intendedRecipientUserId = models.CharField(max_length=50, null=True, blank=True)
+    sourceUserId=  models.CharField(max_length=50, null=True, blank=True)
+
+    def __str__(self) -> str:
+        return self.message if self.message else self.id 
+    
+class Like(BaseModel):
+    account = models.ForeignKey(Account, on_delete=models.CASCADE, null=True, blank=True)
+    message = models.TextField(null=True, blank=True)
+    media_id =  models.CharField(max_length=255, null=True, blank=True)
+    collapseKey = models.CharField(max_length=50, null=True, blank=True)
+    optionalAvatarUrl = models.URLField( null=True, blank=True,max_length=2048)
+    pushId =  models.CharField(max_length=50, null=True, blank=True)
+    pushCategory = models.CharField(max_length=255, null=True, blank=True)
+    intendedRecipientUserId = models.CharField(max_length=50, null=True, blank=True)
+    sourceUserId = models.CharField(max_length=50, null=True, blank=True)
+
+    def __str__(self) -> str:
+        return self.message if self.message else self.id
+    
+    
+
+
+@receiver(post_save, sender=OutSourcedInfo)
+def initialize_account(sender, instance, created, **kwargs):
+
+    if created:
+        account = Account()
+        account.outsourced = instance
+        account.save()
+        print(f"initialized outsourced account - {instance}")
+
+
+
+class OutreachTime(BaseModel):
+    time_slot = models.DateTimeField()
+    account_to_be_assigned = models.ForeignKey(Account,on_delete=models.CASCADE,null=True,blank=True)
+
+
+class AccountsClosed(BaseModel):
+    data = models.TextField(null=True,blank=True)
+
+    def __str__(self) -> str:
+        return self.data if self.data else self.id
