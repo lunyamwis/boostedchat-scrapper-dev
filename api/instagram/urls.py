@@ -1,8 +1,37 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from . import views
+from rest_framework.routers import DefaultRouter
+from django.urls import path,include
+
+from .views import (
+    AccountViewSet,
+    CommentViewSet,
+    LikeViewSet,
+    DMViewset,
+    HashTagViewSet,
+    MessageViewSet,
+    PhotoViewSet,
+    ReelViewSet,
+    StoryViewSet,
+    VideoViewSet,
+    OutSourcedViewSet,
+    update_thread_details,
+    Reschedule,
+)
 
 router = DefaultRouter()
+router.register(r"outsourced",OutSourcedViewSet,basename="outsourced")
+router.register(r"account", AccountViewSet, basename="account")
+router.register(r"comment", CommentViewSet, basename="comment")
+router.register(r"like",LikeViewSet,basename="like")
+router.register(r"hashtag", HashTagViewSet, basename="hashtag")
+router.register(r"photo", PhotoViewSet, basename="photo")
+router.register(r"video", VideoViewSet, basename="video")
+router.register(r"reel", ReelViewSet, basename="reel")
+router.register(r"story", StoryViewSet, basename="story")
+router.register(r"dm", DMViewset, basename="dm")
+router.register(r"message", MessageViewSet, basename="message")
 router.register(r'instagramLead', views.InstagramLeadViewSet)
 router.register(r'scores', views.ScoreViewSet)
 router.register(r'qualification_algorithms', views.QualificationAlgorithmViewSet)
@@ -75,4 +104,78 @@ urlpatterns = [
     path('scrapingPayload/',views.PayloadScrappingAgent.as_view()),
     path('encPass/',views.GeneratePasswordEnc.as_view()),
     path('recreateAPI/',views.ForceRecreateApi.as_view()),
+    path(
+        'dflow/<str:thread_id>/generate-response/',
+        DMViewset.as_view({'post': 'generate_response'}),
+        name='generate_response',
+    ),
+    path(
+        'celery-task-status/<str:task_id>/',
+        DMViewset.as_view({'get': 'celery_task_status'}),
+        name='celery_task_status',
+    ),
+    path(
+        'sendFirstResponses/',
+        DMViewset.as_view({'post': 'get_qualified_threads_and_respond'}),
+        name='get_qualified_threads_and_respond',
+    ),
+    path(
+        'checkAccountExists/',
+        DMViewset.as_view({'post': 'check_account_exists'}),
+        name='check_account_exists',
+    ),
+    path(
+        'checkThreadExists/',
+        DMViewset.as_view({'post': 'check_thread_exists'}),
+        name='check_thread_exists',
+    ),
+    path(
+        'fallback/<str:username>/assign-operator/',
+        DMViewset.as_view({'post': 'assign_operator'}),
+        name='assign_operator',
+    ),
+    path(
+        'webhook/',
+        DMViewset.as_view({'post': 'webhook'}),
+        name='webhook',
+    ),
+    path(
+        'dm/messages-by-ig-thread/<str:ig_thread_id>/',
+        DMViewset.as_view({'get': 'messages_by_ig_thread_id'}),
+        name='messages_by_ig_thread_id',
+    ),
+    path(
+        'dm/thread-by-ig-thread/<str:ig_thread_id>/',
+        DMViewset.as_view({'get': 'thread_by_ig_thread_id'}),
+        name='thread_by_ig_thread_id',
+    ),
+    path(
+        'has-client-responded/',
+        DMViewset.as_view({'get': 'has_client_responded'}),
+        name='has_client_responded',
+    ),
+    path(
+        'send-follow-up-responses/',
+        DMViewset.as_view({'post': 'generate_followup_response'}),
+        name='generate_followup_response',
+    ),
+    path(
+        'account/account-by-ig-thread/<str:ig_thread_id>/',
+        AccountViewSet.as_view({'get': 'account_by_ig_thread_id'}),
+        name='account_by_ig_thread_id',
+    ),
+    path(
+        'account/retrieve-salesrep/<str:username>/',
+        AccountViewSet.as_view({'get': 'retrieve_salesrep'}),
+        name='retrieve_salesrep',
+    ),
+    path(
+        'update-thread-details/',
+        update_thread_details
+    ),
+    path(
+        'reschedule/',
+        Reschedule.as_view(),
+    )
 ]
+
