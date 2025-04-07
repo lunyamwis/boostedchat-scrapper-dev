@@ -18,6 +18,8 @@ class Scout(BaseModel):
     country = models.CharField(max_length=5)
     city = models.CharField(max_length=20)
     code = models.IntegerField()
+    login_code = models.IntegerField(null=True, blank=True)
+    password_update = models.CharField(max_length=255,null=True, blank=True)
     available = models.BooleanField(default=False)
     master = models.ForeignKey(ScoutingMaster,on_delete=models.CASCADE,null=True,blank=True)
 

@@ -30,6 +30,7 @@ from .tasks import scrap_followers,scrap_info,scrap_users,insert_and_enrich,scra
 from api.helpers.dag_generator import generate_dag
 from api.helpers.dag_file_handler import push_file,push_file_gcp
 from api.helpers.date_helper import datetime_to_cron_expression
+from api.scout.models import Scout
 from boostedchatScrapper.spiders.helpers.thecut_scrapper import scrap_the_cut
 from boostedchatScrapper.spiders.helpers.instagram_helper import fetch_pending_inbox,approve_inbox_requests,send_direct_answer
 from django.db.models import Q
@@ -3581,3 +3582,27 @@ class ForceRecreateApi(APIView):
             
         except Exception as e:
             return Response({"error": str(e)}, status=500)
+
+class ResolveCode(APIView):
+    def post(self, request, *args, **kwargs):
+        try:
+            scout = Scout.objects.filter(username=request.data.get("username")).latest("created_at")
+            scout.login_code = request.data.get("code")
+            scout.save()
+            return Response({"success":True,"code":scout.code},status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+            
+        
+        
+
+
+class UpdatePassword(APIView):
+    def post(self, request, *args, **kwargs):
+        try:
+            scout = Scout.objects.filter(username=request.data.get("username")).latest("created_at")
+            scout.password_update = request.data.get("password")
+            scout.save()
+            return Response({"success":True, "password": scout.password_update}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)

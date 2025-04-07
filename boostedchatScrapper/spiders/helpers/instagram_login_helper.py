@@ -3,9 +3,13 @@ import imaplib
 import logging
 import os
 import random
+import requests
+import backoff
 import re
 import time
 from pathlib import Path
+
+from django.core.exceptions import ObjectDoesNotExist
 
 from instagrapi import Client
 from instagrapi.mixins.challenge import ChallengeChoice
@@ -14,11 +18,26 @@ from api.scout.models import Scout,Device
 
 logger = logging.getLogger()
 
+
+@schema_context(os.getenv("SCHEMA_NAME"))
+@backoff.on_exception(
+    backoff.constant,  # Use constant backoff strategy
+    Exception,  # Retry on any exception
+    interval=60,  # Wait 60 seconds between retries
+    max_tries=5  # Retry up to 5 times
+)
 def change_password_handler(username):
-    # Simple way to generate a random string
-    chars = list("abcdefghijklmnopqrstuvwxyz1234567890!&£@#")
-    password = "".join(random.sample(chars, 8))
-    return password
+    try:
+        scout = Scout.objects.filter(username=username).latest('created_at')
+        password_update = scout.password_update
+        logging.warning("Password update: %s", password_update)
+        if password_update is None:
+            raise ValueError("Password update is None")
+        return password_update
+    except ObjectDoesNotExist:
+        raise ValueError("Scout object does not exist")
+
+        
 
 
 def get_code_from_email(username):
@@ -55,11 +74,24 @@ def get_code_from_email(username):
     return False
 
 
-def challenge_code_handler(username, choice):
-    if choice == ChallengeChoice.EMAIL:
-        return get_code_from_email(username)
-    return False
 
+@schema_context(os.getenv("SCHEMA_NAME"))
+@backoff.on_exception(
+    backoff.constant,  # Use constant backoff strategy
+    Exception,  # Retry on any exception
+    interval=60,  # Wait 60 seconds between retries
+    max_tries=5  # Retry up to 5 times
+)
+def challenge_code_handler(username):
+    try:
+        scout = Scout.objects.filter(username=username).latest('created_at')
+        login_code = scout.login_code
+        logging.warning("Login code: %s", login_code)
+        if login_code is None:
+            raise ValueError("Login code is None")
+        return login_code
+    except ObjectDoesNotExist:
+        raise ValueError("Scout object does not exist")
 
 @schema_context(os.getenv("SCHEMA_NAME"))
 def login_user(scout: Scout):
@@ -90,7 +122,8 @@ def login_user(scout: Scout):
         cl.set_country(scout.country)
         cl.set_country_code(scout.code)
 
-        
+    cl.challenge_code_handler = challenge_code_handler(scout.username)
+    cl.change_password_handler = change_password_handler(scout.username)
     # cl.login_by_sessionid()
     # index = 1
     # before_ip = cl._send_public_request("https://api.ipify.org/")

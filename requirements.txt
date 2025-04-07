@@ -81,7 +81,9 @@ automat==24.8.1
 babel==2.16.0
     # via jupyterlab-server
 backoff==2.2.1
-    # via posthog
+    # via
+    #   -r requirements.in
+    #   posthog
 bcrypt==4.2.1
     # via
     #   chromadb

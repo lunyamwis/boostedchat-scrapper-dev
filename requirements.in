@@ -5,6 +5,7 @@ asttokens
 async-timeout
 attrs
 Automat
+backoff
 beautifulsoup4
 billiard
 cachetools
