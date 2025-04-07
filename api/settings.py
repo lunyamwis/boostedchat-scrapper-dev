@@ -67,6 +67,7 @@ ALLOWED_HOSTS = [
     f"scrapper.{os.environ.get('DOMAIN2', '')}.boostedchat.com",
     f"airflow.{os.environ.get('DOMAIN2', '')}.boostedchat.com",
     "34.28.104.255",
+    "173.249.6.165",
     "127.0.0.1",
     "0.0.0.0",
     "localhost",
@@ -83,6 +84,8 @@ CSRF_TRUSTED_ORIGINS = [
     f"https://scrapper.{os.environ.get('DOMAIN1', '')}.boostedchat.com",
     f"https://scrapper.{os.environ.get('DOMAIN2', '')}.boostedchat.com",
     "http://34.28.104.255",
+    "http://173.249.6.165",
+    "https://173.249.6.165",
     "http://lunyamwi.localhost/",
     "http://lunyamwi.localhost",
 ]
@@ -90,6 +93,7 @@ CSRF_TRUSTED_ORIGINS = [
 # Application definition
 
 SHARED_APPS = [
+    'auditlog',
     'django_tenants',
     'django.contrib.admin',
     'django.contrib.auth',
@@ -98,17 +102,15 @@ SHARED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
-    "rest_framework.authtoken",
+    'rest_framework.authtoken',
     'django_celery_beat',
     'softdelete',
     'boostedchatScrapper',
     'sitemaps',
     "crispy_forms",
     "crispy_bootstrap5",
-    "api.audittrails",
-    "api.dialogflow",
+    "api.authentication",
     "api.serviceManager",
-    "auditlog",
     "allauth",
     "allauth.account",
     "dj_rest_auth",
@@ -116,46 +118,31 @@ SHARED_APPS = [
     "allauth.socialaccount.providers.google",
     "allauth.socialaccount.providers.facebook",
     "allauth.socialaccount.providers.twitter",
-    "api.authentication",
+
     # "django_extensions"
 ]
 
-TENANT_APPS = ['api.instagram','api.scout', 'api.helpers','api.prompt','api.analyst','api.whatsapp',
-               'api.outreaches','api.sales_rep']
+TENANT_APPS = ['api.instagram','api.scout', 'api.helpers','api.prompt',
+               'api.analyst','api.sales_rep','api.whatsapp','api.outreaches']
 INSTALLED_APPS = SHARED_APPS + [app for app in TENANT_APPS if app not in SHARED_APPS]
 TENANT_MODEL = "boostedchatScrapper.Client"
 TENANT_DOMAIN_MODEL = "boostedchatScrapper.Domain"
 
 MIDDLEWARE = [
+    "allauth.account.middleware.AccountMiddleware",
     'django_tenants.middleware.main.TenantMainMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
-    'allauth.account.middleware.AccountMiddleware',
     "corsheaders.middleware.CorsMiddleware",
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    "auditlog.middleware.AuditlogMiddleware",
 ]
-SOCIALACCOUNT_PROVIDERS = {
-    "google": {
-        # For each OAuth based provider, either add a ``SocialApp``
-        # (``socialaccount`` app) containing the required client
-        # credentials, or list them here:
-        "APP": {"client_id": "123", "secret": "456", "key": ""}
-    }
-}
 
-REST_FRAMEWORK = {"DEFAULT_AUTHENTICATION_CLASSES": ("dj_rest_auth.jwt_auth.JWTCookieAuthentication",), "PAGE_SIZE": 10}
-
-REST_AUTH = {
-    "USE_JWT": True,
-}
 ROOT_URLCONF = 'api.urls'
 PUBLIC_SCHEMA_URLCONF = 'boostedchatScrapper.urls'
-AUTH_USER_MODEL = "authentication.User"
 
 STATICFILES_FINDERS = (
     'django.contrib.staticfiles.finders.FileSystemFinder',
@@ -221,6 +208,7 @@ DATABASE_ROUTERS = (
     "django_tenants.routers.TenantSyncRouter",
 ) 
 
+AUTH_USER_MODEL = "authentication.User"
 # Password validation
 # https://docs.djangoproject.com/en/5.0/ref/settings/#auth-password-validators
 
@@ -286,7 +274,6 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:9000",
     "http://localhost:9000",
     "http://localhost:5173",
-    "http://localhost:5174",
     "https://booksy.us.boostedchat.com",
     "http://localhost:3000",
     "https://jamel.boostedchat.com"
@@ -312,6 +299,7 @@ CORS_ALLOW_METHODS = (
 )
 
 AI_MICROSERVICE_URL = "http://34.170.152.34/modelhub/"
+
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(hours=2),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
@@ -345,3 +333,4 @@ SIMPLE_JWT = {
     "SLIDING_TOKEN_OBTAIN_SERIALIZER": "rest_framework_simplejwt.serializers.TokenObtainSlidingSerializer",
     "SLIDING_TOKEN_REFRESH_SERIALIZER": "rest_framework_simplejwt.serializers.TokenRefreshSlidingSerializer",
 }
+

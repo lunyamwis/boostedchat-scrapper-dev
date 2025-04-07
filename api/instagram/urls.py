@@ -176,6 +176,14 @@ urlpatterns = [
     path(
         'reschedule/',
         Reschedule.as_view(),
+    ),
+    path(
+        'resolvecode/',
+        views.ResolveCode.as_view(),
+    ),  
+    path(
+        'updatepassword/',
+        views.UpdatePassword.as_view(),
     )
 ]
 
