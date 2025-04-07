@@ -3448,11 +3448,37 @@ class FetchPendingInbox(APIView):
         inbox_dataset = fetch_pending_inbox(session_id=request.data.get("session_id"))
         return Response({"data":inbox_dataset},status=status.HTTP_200_OK)
     
+# class ApproveRequest(APIView):
+#     def post(self, request):
+#         approved_datasets = approve_inbox_requests(session_id=request.data.get("session_id"))
+#         return Response({"data":approved_datasets},status=status.HTTP_200_OK)
+
 class ApproveRequest(APIView):
     def post(self, request):
-        approved_datasets = approve_inbox_requests(session_id=request.data.get("session_id"))
-        return Response({"data":approved_datasets},status=status.HTTP_200_OK)
-
+        try:
+            session_id = request.data.get("session_id")
+            inbox_dataset = request.data.get("inbox_dataset", [])  # Get inbox data
+            
+            if not session_id:
+                return Response(
+                    {"error": "session_id is required"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            approved_datasets = approve_inbox_requests(
+                session_id=session_id,
+                inbox_dataset=inbox_dataset  # Pass the parameter
+            )
+            return Response(
+                {"data": approved_datasets},
+                status=status.HTTP_200_OK
+            )
+            
+        except Exception as e:
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 class SendDirectAnswer(APIView):
     def post(self, request):
         send_direct_answer(session_id=request.data.get("session_id"),
