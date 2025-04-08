@@ -100,15 +100,19 @@ class SendBatchWhatsAppView(APIView):
 @api_view(['GET', 'POST'])
 def webhook(request):
     if request.method == 'GET':
+        print(request.GET)
         # Verification
+        # Check if the request is a verification request
         if (request.GET.get("hub.mode") == "subscribe" and
             request.GET.get("hub.verify_token") == TOKEN):
             challenge = request.GET.get("hub.challenge")
+            print(challenge)
             return Response(challenge, status=status.HTTP_200_OK)
         else:
             return Response("Verification failed", status=status.HTTP_403_FORBIDDEN)
 
     elif request.method == 'POST':
+        print(request.data)
         request_data = request.data  # Access POST data via request.data
 
         if (request_data['entry'][0]['changes'][0]['value'].get('messages') is not None):
