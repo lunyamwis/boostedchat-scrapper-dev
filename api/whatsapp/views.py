@@ -109,11 +109,13 @@ def webhook(request):
             challenge = request.GET.get("hub.challenge")
             print(challenge)
             # return Response(challenge, status=status.HTTP_200_OK)
-            return JsonResponse({"challenge": challenge}, status=status.HTTP_200_OK)
+            # return JsonResponse({"challenge": challenge}, status=status.HTTP_200_OK)
+            return HttpResponse(challenge, status=200)
             # return {"challenge":challenge,"status":200}
         else:
             # return Response("Verification failed", status=status.HTTP_403_FORBIDDEN)
-            return JsonResponse({"message": "Verification failed", "status": 403})
+            # return JsonResponse({"message": "Verification failed", "status": 403})
+            return HttpResponse("Verification failed", status=403)
             # return {"message":"Verification failed","status":403}
 
     elif request.method == 'POST':
