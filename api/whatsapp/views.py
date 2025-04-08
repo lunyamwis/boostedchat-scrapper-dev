@@ -45,14 +45,10 @@ ACCESS_TOKEN = os.getenv("ACCESS_TOKEN")
 code_prompt_texts = ["Contact us", "Chat with our chatbot", "YES", "NO"]
 
 service_list = [
-    "Accommodation Services",
-    "Spa Services",
-    "Dining Services",
-    "Recreational Facilities",
-    "Business & Conference Services",
-    "Transportation Services",
-    "Accessibility Services",
-    "Pet-Friendly Services",
+    "Evacuation and Repatriation Insurance",
+    "Personal Accident Insurance",
+    "Medical Expenses Insurance",
+    "Last Expense Insurance",
 ]
 
 
@@ -217,7 +213,7 @@ def send_message(message, phone_number, message_option, name):
     greetings_text_body = (
         "\nHello "
         + name
-        + ". Welcome to our Hotel Online Chatbot. What would you like us to help you with?\nPlease respond with a numeral between 1 and 2.\n\n1. "
+        + ". Welcome to our Chatbot. What would you like us to help you with?\nPlease respond with a numeral between 1 and 2.\n\n1. "
         + code_prompt_texts[0]
         + "\n2. "
         + code_prompt_texts[1]
