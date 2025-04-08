@@ -408,10 +408,10 @@ def flow_reply_processor(data):
 
     reply = "Thanks for taking the survey! Your response has been recorded."
     user_phone_number = data["entry"][0]["changes"][0]["value"]["contacts"][0]["wa_id"]
-    send_message(reply, user_phone_number)
+    send_message_flow(reply, user_phone_number)
 
 
-def send_message(message, phone_number):
+def send_message_flow(message, phone_number):
     payload = {
         "messaging_product": "whatsapp",
         "to": str(phone_number),
