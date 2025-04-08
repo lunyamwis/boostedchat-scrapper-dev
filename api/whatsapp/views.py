@@ -100,6 +100,7 @@ class SendBatchWhatsAppView(APIView):
 @api_view(['GET', 'POST'])
 def webhook(request):
     if request.method == 'GET':
+        print(request.GET)
         # Verification
         # Check if the request is a verification request
         if (request.GET.get("hub.mode") == "subscribe" and
