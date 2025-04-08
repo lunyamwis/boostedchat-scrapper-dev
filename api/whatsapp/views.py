@@ -72,6 +72,8 @@ class SendBatchWhatsAppView(APIView):
             try:
                 if isinstance(content, str):
                     data = json.loads(content)
+                else:
+                    data = request.data
             except json.JSONDecodeError as e:
                 return Response({"error": "Invalid JSON data"}, status=status.HTTP_400_BAD_REQUEST)
             except Exception as e:
