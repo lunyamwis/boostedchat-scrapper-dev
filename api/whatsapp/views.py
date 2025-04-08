@@ -272,8 +272,9 @@ def send_message(message, phone_number, message_option, name):
             }
         )
     elif message_option == "CHATBOT":
-        hotelonline_response = requests.post(f"https://{os.getenv('DOMAIN')}/whatsapp/generateResponse/",data={"question":message,"phone_number":str(phone_number)})
-        output_message = hotelonline_response.json()['message']
+        # hotelonline_response = requests.post(f"https://{os.getenv('DOMAIN')}/whatsapp/generateResponse/",data={"question":message,"phone_number":str(phone_number)})
+        # output_message = hotelonline_response.json()['message']
+        output_message = query_gpt(message)["choices"][0]["message"]["content"]
         payload = json.dumps(
             {
                 "messaging_product": "whatsapp",
