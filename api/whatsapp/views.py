@@ -107,9 +107,12 @@ def webhook(request):
             request.GET.get("hub.verify_token") == TOKEN):
             challenge = request.GET.get("hub.challenge")
             print(challenge)
-            return Response(challenge, status=status.HTTP_200_OK)
+            # return Response(challenge, status=status.HTTP_200_OK)
+
+            return {"challenge":challenge,"status":200}
         else:
-            return Response("Verification failed", status=status.HTTP_403_FORBIDDEN)
+            # return Response("Verification failed", status=status.HTTP_403_FORBIDDEN)
+            return {"message":"Verification failed","status":403}
 
     elif request.method == 'POST':
         print(request.data)
