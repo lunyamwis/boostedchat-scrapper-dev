@@ -276,7 +276,7 @@ def select_whatsapp_template(name,progress,paragraphs):
     return template
 
 
-def send_batch_whatsapp_text(numbers,names,message):
+def send_batch_whatsapp_text_(numbers,names,message):
     message = ' '.join(message.split())
     for i,number in enumerate(numbers):
         
@@ -336,7 +336,7 @@ def send_batch_whatsapp_text(numbers,names,message):
             "to": number,
             "type": "template",
             "template": {
-                "name": "present_truth_message",
+                "name": "lunyamwi_template",
                 "language": {"code": "en_gb"},
                 "components": [{
                         "type":"body",

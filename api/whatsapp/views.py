@@ -185,15 +185,7 @@ def user_message_processor(message, phonenumber, name):
     elif user_prompt == "no":
         print("Chat terminated")
     else:
-        if re.search("njugu", user_prompt):
-            send_message(message, phonenumber, "SERVICE_INTRO_TEXT", name)
-
-        elif re.search(
-            "help|contact|reach|email|problem|issue|more|information", user_prompt
-        ):
-            send_message(message, phonenumber, "CONTACT_US", name)
-
-        elif re.search("hello|hi|greetings", user_prompt):
+        if re.search("hello|hi|greetings", user_prompt):
             
             if re.search("this", user_prompt):
                 send_message(message, phonenumber, "CHATBOT", name)
