@@ -18,7 +18,7 @@ from rest_framework.response import Response
 from django.http import JsonResponse, HttpResponse
 from rest_framework.permissions import AllowAny
 
-from .tasks import send_batch_whatsapp_text_with_template
+from .tasks import send_batch_whatsapp_text
 
 # Define constants
 
@@ -88,21 +88,20 @@ class SendBatchWhatsAppView(APIView):
             if isinstance(names, str):
                 names = ast.literal_eval(names)
             progress = data.get('progress', False)
-            paragraphs = data.get('paragraphs', [])
-            if isinstance(paragraphs, str):
-                paragraphs = ast.literal_eval(paragraphs)
-
-            # get more into detail
+            paragraphs = data.get('paragraphs','')
             
+            # get more into detail
+
             if not numbers or not names or not paragraphs:
                 return Response({"error": "Missing required fields"}, status=status.HTTP_400_BAD_REQUEST)
 
             if len(numbers) != len(names):
                 return Response({"error": "Numbers and names lists must be of equal length"}, status=status.HTTP_400_BAD_REQUEST)
 
-            send_batch_whatsapp_text_with_template.delay(numbers, names, progress, paragraphs)
+            send_batch_whatsapp_text.delay(numbers, names, paragraphs)
             return Response({"message": "Task initiated successfully"}, status=status.HTTP_202_ACCEPTED)
         except Exception as e:
+            logging.warning({"error": f"An error occurred - {str(e)}"})
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['GET', 'POST'])
@@ -185,15 +184,7 @@ def user_message_processor(message, phonenumber, name):
     elif user_prompt == "no":
         print("Chat terminated")
     else:
-        if re.search("njugu", user_prompt):
-            send_message(message, phonenumber, "SERVICE_INTRO_TEXT", name)
-
-        elif re.search(
-            "help|contact|reach|email|problem|issue|more|information", user_prompt
-        ):
-            send_message(message, phonenumber, "CONTACT_US", name)
-
-        elif re.search("hello|hi|greetings", user_prompt):
+        if re.search("hello|hi|greetings", user_prompt):
             
             if re.search("this", user_prompt):
                 send_message(message, phonenumber, "CHATBOT", name)
