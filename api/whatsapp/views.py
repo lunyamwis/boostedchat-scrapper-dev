@@ -103,6 +103,7 @@ class SendBatchWhatsAppView(APIView):
             send_batch_whatsapp_text.delay(numbers, names, paragraphs)
             return Response({"message": "Task initiated successfully"}, status=status.HTTP_202_ACCEPTED)
         except Exception as e:
+            logging.warning({"error": f"An error occurred - {str(e)}"})
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(['GET', 'POST'])
