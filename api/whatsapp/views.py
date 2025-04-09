@@ -92,6 +92,8 @@ class SendBatchWhatsAppView(APIView):
             if isinstance(paragraphs, str):
                 paragraphs = ast.literal_eval(paragraphs)
 
+            # get more into detail
+            
             if not numbers or not names or not paragraphs:
                 return Response({"error": "Missing required fields"}, status=status.HTTP_400_BAD_REQUEST)
 
