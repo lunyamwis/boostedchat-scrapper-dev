@@ -17,6 +17,8 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from django.http import JsonResponse, HttpResponse
 from rest_framework.permissions import AllowAny
+
+from api.whatsapp.models import ChatSession
 from .prompts import hospital_prompt,system_prompt
 
 from .tasks import send_batch_whatsapp_text
@@ -142,6 +144,89 @@ def webhook(request):
                 flow_reply_processor(request_data) # Pass the parsed data
         return Response("PROCESSED", status=status.HTTP_200_OK)
 
+@api_view(['GET', 'POST'])
+def query_gpt_test(request):
+    # print("hahahahahahahahahahhaha--------------------")
+    if request.method == 'GET':
+        print(request.GET)
+        prompt = "Hello, how are you?"
+        phone ='254700000000'
+        chat_session= None
+        res = None
+        
+        try:
+            # Check if session exists
+            chat_session = ChatSession.objects.get(phone=phone)
+            chat_session.add_message("user", prompt)
+        except ChatSession.DoesNotExist:
+            conversation_history=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": prompt},
+                ]
+            chat_session = ChatSession.objects.create(
+                phone=phone,
+                conversation_history=conversation_history
+            )
+        body = {
+            "model": "gpt-4-1106-preview",
+            "messages": chat_session.conversation_history,
+        }
+        header = {"Authorization": "Bearer " + os.getenv("OPENAI_API_KEY").strip()}
+
+        res = requests.post("https://api.openai.com/v1/chat/completions", json=body, headers=header)
+        logging.warn(str(["time elapsed", res.elapsed.total_seconds()]))
+        
+        chat_session.add_message("system", res.json()["choices"][0]["message"]["content"])
+        api_response = {
+            "response": res.json()["choices"][0]["message"]["content"],
+            phone: phone,
+            "conversation_history": chat_session.conversation_history,
+            
+        }
+        return Response(api_response,status=status.HTTP_200_OK) 
+    
+    elif request.method == 'POST':
+        # print("THis is a a post request",request.data)
+        my_prompt = request.data.get('prompt')
+        phone = request.data.get('phone')
+        chat_session=None
+        
+        new_message = {"role": "user", "content": my_prompt}
+
+        try:
+            # Check if session exists
+            chat_session = ChatSession.objects.get(phone=phone)
+            chat_session.add_message(new_message["role"], new_message["content"])
+        except ChatSession.DoesNotExist:
+            print("wooooooiiiiii")
+            conversation_history=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": my_prompt},
+                ]
+            chat_session = ChatSession.objects.create(
+                phone=phone,
+                conversation_history=conversation_history
+            )
+
+        body = {
+            "model": "gpt-4-1106-preview",
+            "messages": chat_session.conversation_history,
+        }
+        header = {"Authorization": "Bearer " + os.getenv("OPENAI_API_KEY").strip()}
+
+        res = requests.post("https://api.openai.com/v1/chat/completions", json=body, headers=header)
+        logging.warn(str(["time elapsed", res.elapsed.total_seconds()]))
+        
+        
+       
+        chat_session.add_message("system", res.json()["choices"][0]["message"]["content"])
+        api_response = {
+            "response": res.json()["choices"][0]["message"]["content"],
+            phone: phone,
+            "conversation_history": chat_session.conversation_history,    
+        }
+        return Response(api_response, status=status.HTTP_200_OK) 
+        
 
 def flow_reply_processor(request_data):  # Modified to accept parsed data
     name = request_data['entry'][0]['changes'][0]['value']['contacts'][0]['profile']['name']
@@ -179,36 +264,59 @@ def extract_string_from_reply(user_input):
 
 
 def user_message_processor(message, phonenumber, name):
-    user_prompt = extract_string_from_reply(message)
-    if user_prompt == "yes":
-        send_message(message, phonenumber, "TALK_TO_AN_AGENT", name)
-    elif user_prompt == "no":
-        print("Chat terminated")
-    else:
-        if re.search("hello|hi|greetings", user_prompt):
+    
+    send_message(message, phonenumber, "CHATBOT", name)
+    # We are not using this for now, we don't want to intercept the
+    # type of messages the client sends. we want to process all messages
+    
+    # user_prompt = extract_string_from_reply(message)
+    # if user_prompt == "yes":
+    #     send_message(message, phonenumber, "TALK_TO_AN_AGENT", name)
+    # elif user_prompt == "no":
+    #     print("Chat terminated")
+    # else:
+    #     if re.search("hello|hi|greetings", user_prompt):
             
-            if re.search("this", user_prompt):
-                send_message(message, phonenumber, "CHATBOT", name)
+    #         if re.search("this", user_prompt):
+    #             send_message(message, phonenumber, "CHATBOT", name)
 
-            else:
-                print(user_prompt)
-                send_message(message, phonenumber, "SEND_GREETINGS_AND_PROMPT", name)
+    #         else:
+    #             print(user_prompt)
+    #             send_message(message, phonenumber, "SEND_GREETINGS_AND_PROMPT", name)
 
-        else:
-            send_message(message, phonenumber, "CHATBOT", name)
+    #     else:
+    #         send_message(message, phonenumber, "CHATBOT", name)
+    
 
-def query_gpt(prompt):
+def query_gpt(prompt,phone_number=None):
+    # declare chat_session variable
+    chat_session= None
+    if phone_number is not None:
+        try:
+            # Check if session exists
+            chat_session = ChatSession.objects.get(phone=phone_number)
+            chat_session.add_message("user", prompt)
+        except ChatSession.DoesNotExist:
+            conversation_history=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": prompt},
+                ]
+            chat_session = ChatSession.objects.create(
+                phone=phone_number,
+                conversation_history=conversation_history
+            )
     body = {
         "model": "gpt-4-1106-preview",
-        "messages": [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": prompt},
-        ],
+        "messages": chat_session.conversation_history,
     }
     header = {"Authorization": "Bearer " + os.getenv("OPENAI_API_KEY").strip()}
 
     res = requests.post("https://api.openai.com/v1/chat/completions", json=body, headers=header)
+    # save the response to the database
+    gpt_response = res.json()["choices"][0]["message"]["content"]
+    chat_session.add_message("system", gpt_response)
     logging.warn(str(["time elapsed", res.elapsed.total_seconds()]))
+
     return res.json()
 
 def send_message(message, phone_number, message_option, name):
@@ -271,7 +379,7 @@ def send_message(message, phone_number, message_option, name):
             }
         )
     elif message_option == "CHATBOT":
-        output_message = query_gpt(hospital_prompt+" "+message)["choices"][0]["message"]["content"]
+        output_message = query_gpt(message,phone_number)["choices"][0]["message"]["content"]
         payload = json.dumps(
             {
                 "messaging_product": "whatsapp",
