@@ -17,6 +17,7 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from django.http import JsonResponse, HttpResponse
 from rest_framework.permissions import AllowAny
+from .prompts import hospital_prompt,system_prompt
 
 from .tasks import send_batch_whatsapp_text
 
@@ -200,7 +201,7 @@ def query_gpt(prompt):
     body = {
         "model": "gpt-4-1106-preview",
         "messages": [
-            {"role": "system", "content": "You are a helpful assistant."},
+            {"role": "system", "content": system_prompt},
             {"role": "user", "content": prompt},
         ],
     }
@@ -270,9 +271,7 @@ def send_message(message, phone_number, message_option, name):
             }
         )
     elif message_option == "CHATBOT":
-        # hotelonline_response = requests.post(f"https://{os.getenv('DOMAIN')}/whatsapp/generateResponse/",data={"question":message,"phone_number":str(phone_number)})
-        # output_message = hotelonline_response.json()['message']
-        output_message = query_gpt(message)["choices"][0]["message"]["content"]
+        output_message = query_gpt(hospital_prompt+" "+message)["choices"][0]["message"]["content"]
         payload = json.dumps(
             {
                 "messaging_product": "whatsapp",
