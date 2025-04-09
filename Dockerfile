@@ -7,7 +7,7 @@ RUN apt-get -y update
 ENV DISPLAY=:99
 
 # upgrade pip
-RUN pip install --upgrade pip
+RUN pip install pip==23.0.1
 
 
 RUN python -m pip install --upgrade pip
