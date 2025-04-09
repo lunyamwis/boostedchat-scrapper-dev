@@ -7,6 +7,7 @@ import uuid
 import logging
 import os
 import re
+import ast
 
 from dotenv import load_dotenv
 from django.conf import settings
@@ -14,6 +15,7 @@ from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
+from django.http import JsonResponse, HttpResponse
 from rest_framework.permissions import AllowAny
 
 from .tasks import send_batch_whatsapp_text_with_template
@@ -44,14 +46,10 @@ ACCESS_TOKEN = os.getenv("ACCESS_TOKEN")
 code_prompt_texts = ["Contact us", "Chat with our chatbot", "YES", "NO"]
 
 service_list = [
-    "Accommodation Services",
-    "Spa Services",
-    "Dining Services",
-    "Recreational Facilities",
-    "Business & Conference Services",
-    "Transportation Services",
-    "Accessibility Services",
-    "Pet-Friendly Services",
+    "Evacuation and Repatriation Insurance",
+    "Personal Accident Insurance",
+    "Medical Expenses Insurance",
+    "Last Expense Insurance",
 ]
 
 
@@ -75,6 +73,8 @@ class SendBatchWhatsAppView(APIView):
             try:
                 if isinstance(content, str):
                     data = json.loads(content)
+                else:
+                    data = request.data
             except json.JSONDecodeError as e:
                 return Response({"error": "Invalid JSON data"}, status=status.HTTP_400_BAD_REQUEST)
             except Exception as e:
@@ -82,10 +82,18 @@ class SendBatchWhatsAppView(APIView):
 
             
             numbers = data.get('numbers', [])
+            if isinstance(numbers, str):
+                numbers = ast.literal_eval(numbers)
             names = data.get('names', [])
+            if isinstance(names, str):
+                names = ast.literal_eval(names)
             progress = data.get('progress', False)
             paragraphs = data.get('paragraphs', [])
+            if isinstance(paragraphs, str):
+                paragraphs = ast.literal_eval(paragraphs)
 
+            # get more into detail
+            
             if not numbers or not names or not paragraphs:
                 return Response({"error": "Missing required fields"}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -107,9 +115,15 @@ def webhook(request):
             request.GET.get("hub.verify_token") == TOKEN):
             challenge = request.GET.get("hub.challenge")
             print(challenge)
-            return Response(challenge, status=status.HTTP_200_OK)
+            # return Response(challenge, status=status.HTTP_200_OK)
+            # return JsonResponse({"challenge": challenge}, status=status.HTTP_200_OK)
+            return HttpResponse(challenge, status=200)
+            # return {"challenge":challenge,"status":200}
         else:
-            return Response("Verification failed", status=status.HTTP_403_FORBIDDEN)
+            # return Response("Verification failed", status=status.HTTP_403_FORBIDDEN)
+            # return JsonResponse({"message": "Verification failed", "status": 403})
+            return HttpResponse("Verification failed", status=403)
+            # return {"message":"Verification failed","status":403}
 
     elif request.method == 'POST':
         print(request.data)
@@ -210,7 +224,7 @@ def send_message(message, phone_number, message_option, name):
     greetings_text_body = (
         "\nHello "
         + name
-        + ". Welcome to our Hotel Online Chatbot. What would you like us to help you with?\nPlease respond with a numeral between 1 and 2.\n\n1. "
+        + ". Welcome to our Chatbot. What would you like us to help you with?\nPlease respond with a numeral between 1 and 2.\n\n1. "
         + code_prompt_texts[0]
         + "\n2. "
         + code_prompt_texts[1]
@@ -265,8 +279,9 @@ def send_message(message, phone_number, message_option, name):
             }
         )
     elif message_option == "CHATBOT":
-        hotelonline_response = requests.post(f"https://{os.getenv('DOMAIN')}/whatsapp/generateResponse/",data={"question":message,"phone_number":str(phone_number)})
-        output_message = hotelonline_response.json()['message']
+        # hotelonline_response = requests.post(f"https://{os.getenv('DOMAIN')}/whatsapp/generateResponse/",data={"question":message,"phone_number":str(phone_number)})
+        # output_message = hotelonline_response.json()['message']
+        output_message = query_gpt(message)["choices"][0]["message"]["content"]
         payload = json.dumps(
             {
                 "messaging_product": "whatsapp",
@@ -389,22 +404,22 @@ class WebhookView(APIView):
                 user_phone_number = data["entry"][0]["changes"][0]["value"]["contacts"][0]["wa_id"]
                 send_flow(created_flow_id, user_phone_number)
             else:
-                flow_reply_processor(data)
+                flow_reply_processor_(data)
 
         return Response({"message": "PROCESSED"}, status=200)
 
 
-def flow_reply_processor(data):
+def flow_reply_processor_(data):
     flow_response = data["entry"][0]["changes"][0]["value"]["messages"][0]["interactive"]["nfm_reply"]["response_json"]
     flow_data = json.loads(flow_response)
     # Process flow_data as needed...
 
     reply = "Thanks for taking the survey! Your response has been recorded."
     user_phone_number = data["entry"][0]["changes"][0]["value"]["contacts"][0]["wa_id"]
-    send_message(reply, user_phone_number)
+    send_message_flow(reply, user_phone_number)
 
 
-def send_message(message, phone_number):
+def send_message_flow(message, phone_number):
     payload = {
         "messaging_product": "whatsapp",
         "to": str(phone_number),
