@@ -88,10 +88,8 @@ class SendBatchWhatsAppView(APIView):
             if isinstance(names, str):
                 names = ast.literal_eval(names)
             progress = data.get('progress', False)
-            paragraphs = data.get('paragraphs', [])
-            if isinstance(paragraphs, str):
-                paragraphs = ast.literal_eval(paragraphs)
-
+            paragraphs = data.get('paragraphs','')
+            
             # get more into detail
 
             if not numbers or not names or not paragraphs:
