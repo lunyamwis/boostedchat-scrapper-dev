@@ -7,6 +7,7 @@ import uuid
 import logging
 import os
 import re
+import ast
 
 from dotenv import load_dotenv
 from django.conf import settings
@@ -81,9 +82,15 @@ class SendBatchWhatsAppView(APIView):
 
             
             numbers = data.get('numbers', [])
+            if isinstance(numbers, str):
+                numbers = ast.literal_eval(numbers)
             names = data.get('names', [])
+            if isinstance(names, str):
+                names = ast.literal_eval(names)
             progress = data.get('progress', False)
             paragraphs = data.get('paragraphs', [])
+            if isinstance(paragraphs, str):
+                paragraphs = ast.literal_eval(paragraphs)
 
             if not numbers or not names or not paragraphs:
                 return Response({"error": "Missing required fields"}, status=status.HTTP_400_BAD_REQUEST)
