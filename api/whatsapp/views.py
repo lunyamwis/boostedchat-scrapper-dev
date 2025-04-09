@@ -1,3 +1,4 @@
+import random
 from django.shortcuts import render
 
 # Create your views here.
@@ -150,7 +151,7 @@ def query_gpt_test(request):
     if request.method == 'GET':
         print(request.GET)
         prompt = "Hello, how are you?"
-        phone ='254700000000'
+        phone = generate_test_phone_number()
         chat_session= None
         res = None
         
@@ -567,3 +568,9 @@ def send_flow(flow_id, recipient_phone_number):
         },
     }
     requests.post(messaging_url, headers=messaging_headers, json=payload)
+
+# This function generates a test phone number in the format "test-2547XXXXXXXX"
+def generate_test_phone_number():
+    # Generate 8 random digits
+    random_digits = ''.join([str(random.randint(0, 9)) for _ in range(8)])
+    return f"test-2547{random_digits}"
