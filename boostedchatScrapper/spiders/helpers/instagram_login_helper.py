@@ -10,7 +10,7 @@ import time
 from pathlib import Path
 
 from django.core.exceptions import ObjectDoesNotExist
-
+from django.core.mail import send_mail
 from instagrapi import Client
 from instagrapi.mixins.challenge import ChallengeChoice
 from django_tenants.utils import schema_context
@@ -166,16 +166,39 @@ def login_user(scout: Scout):
                     else:
                         print("All attempts failed, removing session file and logging in with username and password")
                         os.remove(session_file_path)
-                        cl.login(username=scout.username,password=scout.password)
-                        cl.dump_settings(session_file_path)
-                        device.status = 1
-                        device.save()
-                        print("Session saved to file")
+                        try:
+                            cl.login(username=scout.username,password=scout.password)
+                            cl.dump_settings(session_file_path)
+                            device.status = 1
+                            device.save()
+                            print("Session saved to file")
+                        except Exception as err:
+                            logging.warning("Error during login: %s", err)
+                            try:
+                                subject = 'Login Failure'
+                                message = f'Scout {scout.username} failed to login after 3 attempts with error: {err}'
+                                from_email = 'lutherlunyamwi@gmail.com'
+                                recipient_list = [scout.email,scout.master.email]
+                                send_mail(subject, message, from_email, recipient_list)
+                            except Exception as error:
+                                print(error)
+
     else:
-        cl.login(username=scout.username,password=scout.password)
-        print("Login with username and password")
-        cl.dump_settings(session_file_path)
-        device.status = 1
-        device.save()
-        print("Session saved to file")
+        try:
+            cl.login(username=scout.username,password=scout.password)
+            print("Login with username and password")
+            cl.dump_settings(session_file_path)
+            device.status = 1
+            device.save()
+            print("Session saved to file")
+        except Exception as err:
+            try:
+                subject = 'Login Failure'
+                message = f'Scout {scout.username} failed to login after 3 attempts with error: {err}'
+                from_email = 'lutherlunyamwi@gmail.com'
+                recipient_list = [scout.email,scout.master.email]
+                send_mail(subject, message, from_email, recipient_list)
+            except Exception as error:
+                print(error)
+
     return cl
