@@ -26,7 +26,7 @@ logger = logging.getLogger()
     interval=60,  # Wait 60 seconds between retries
     max_tries=5  # Retry up to 5 times
 )
-def change_password_handler(username):
+def change_password_handler_(username):
     try:
         scout = Scout.objects.filter(username=username).latest('created_at')
         password_update = scout.password_update
@@ -82,7 +82,7 @@ def get_code_from_email(username):
     interval=60,  # Wait 60 seconds between retries
     max_tries=5  # Retry up to 5 times
 )
-def challenge_code_handler(username):
+def challenge_code_handler_(username):
     try:
         scout = Scout.objects.filter(username=username).latest('created_at')
         login_code = scout.login_code
