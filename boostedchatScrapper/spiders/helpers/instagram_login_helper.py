@@ -122,8 +122,8 @@ def login_user(scout: Scout):
         cl.set_country(scout.country)
         cl.set_country_code(scout.code)
 
-    cl.challenge_code_handler = challenge_code_handler(scout.username)
-    cl.change_password_handler = change_password_handler(scout.username)
+    # cl.challenge_code_handler = challenge_code_handler(scout.username)
+    # cl.change_password_handler = change_password_handler(scout.username)
     # cl.login_by_sessionid()
     # index = 1
     # before_ip = cl._send_public_request("https://api.ipify.org/")
