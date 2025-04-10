@@ -290,7 +290,7 @@ def send_batch_whatsapp_text_(numbers,names,message):
             "to": number,
             "type": "template",
             "template": {
-                "name": "lunyamwi_template",
+                "name": "lunyamwi_birdview_template",
                 "language": {"code": "en_gb"},
                 "components": [{
                         "type":"body",
@@ -336,7 +336,7 @@ def send_batch_whatsapp_text(numbers,names,message):
             "to": number,
             "type": "template",
             "template": {
-                "name": "lunyamwi_template",
+                "name": "lunyamwi_birdview_template",
                 "language": {"code": "en_gb"},
                 "components": [{
                         "type":"body",
