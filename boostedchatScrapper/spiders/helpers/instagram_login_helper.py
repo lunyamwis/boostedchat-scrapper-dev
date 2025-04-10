@@ -10,7 +10,7 @@ import time
 from pathlib import Path
 
 from django.core.exceptions import ObjectDoesNotExist
-
+from django.core.mail import send_mail
 from instagrapi import Client
 from instagrapi.mixins.challenge import ChallengeChoice
 from django_tenants.utils import schema_context
@@ -26,7 +26,7 @@ logger = logging.getLogger()
     interval=60,  # Wait 60 seconds between retries
     max_tries=5  # Retry up to 5 times
 )
-def change_password_handler(username):
+def change_password_handler_(username):
     try:
         scout = Scout.objects.filter(username=username).latest('created_at')
         password_update = scout.password_update
@@ -82,7 +82,7 @@ def get_code_from_email(username):
     interval=60,  # Wait 60 seconds between retries
     max_tries=5  # Retry up to 5 times
 )
-def challenge_code_handler(username):
+def challenge_code_handler_(username):
     try:
         scout = Scout.objects.filter(username=username).latest('created_at')
         login_code = scout.login_code
@@ -122,8 +122,8 @@ def login_user(scout: Scout):
         cl.set_country(scout.country)
         cl.set_country_code(scout.code)
 
-    cl.challenge_code_handler = challenge_code_handler(scout.username)
-    cl.change_password_handler = change_password_handler(scout.username)
+    # cl.challenge_code_handler = challenge_code_handler(scout.username)
+    # cl.change_password_handler = change_password_handler(scout.username)
     # cl.login_by_sessionid()
     # index = 1
     # before_ip = cl._send_public_request("https://api.ipify.org/")
@@ -166,16 +166,39 @@ def login_user(scout: Scout):
                     else:
                         print("All attempts failed, removing session file and logging in with username and password")
                         os.remove(session_file_path)
-                        cl.login(username=scout.username,password=scout.password)
-                        cl.dump_settings(session_file_path)
-                        device.status = 1
-                        device.save()
-                        print("Session saved to file")
+                        try:
+                            cl.login(username=scout.username,password=scout.password)
+                            cl.dump_settings(session_file_path)
+                            device.status = 1
+                            device.save()
+                            print("Session saved to file")
+                        except Exception as err:
+                            logging.warning("Error during login: %s", err)
+                            try:
+                                subject = 'Login Failure'
+                                message = f'Scout {scout.username} failed to login after 3 attempts with error: {err}'
+                                from_email = 'lutherlunyamwi@gmail.com'
+                                recipient_list = [scout.email,scout.master.email]
+                                send_mail(subject, message, from_email, recipient_list)
+                            except Exception as error:
+                                print(error)
+
     else:
-        cl.login(username=scout.username,password=scout.password)
-        print("Login with username and password")
-        cl.dump_settings(session_file_path)
-        device.status = 1
-        device.save()
-        print("Session saved to file")
+        try:
+            cl.login(username=scout.username,password=scout.password)
+            print("Login with username and password")
+            cl.dump_settings(session_file_path)
+            device.status = 1
+            device.save()
+            print("Session saved to file")
+        except Exception as err:
+            try:
+                subject = 'Login Failure'
+                message = f'Scout {scout.username} failed to login after 3 attempts with error: {err}'
+                from_email = 'lutherlunyamwi@gmail.com'
+                recipient_list = [scout.email,scout.master.email]
+                send_mail(subject, message, from_email, recipient_list)
+            except Exception as error:
+                print(error)
+
     return cl
