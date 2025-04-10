@@ -299,7 +299,7 @@ def send_batch_whatsapp_text_(numbers,names,message):
                             {
                                 "type": "image",
                                 "image": {
-                                "link": "https://i.ibb.co/pL5yR7C/pexels-victor-150585-448835.jpg"
+                                "link": "https://i.postimg.cc/DwpTnkJW/boda.jpg"
                                 }
                             }
                         ]  
@@ -357,7 +357,7 @@ def send_batch_whatsapp_text(numbers,names,message):
                             {
                                 "type": "image",
                                 "image": {
-                                "link": "https://i.ibb.co/pL5yR7C/pexels-victor-150585-448835.jpg"
+                                "link": "https://i.postimg.cc/DwpTnkJW/boda.jpg"
                                 }
                             }
                         ]  
