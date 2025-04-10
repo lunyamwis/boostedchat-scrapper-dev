@@ -292,7 +292,19 @@ def send_batch_whatsapp_text_(numbers,names,message):
             "template": {
                 "name": "lunyamwi_birdview_template",
                 "language": {"code": "en"},
-                "components": [{
+                "components": [
+                    {
+                       "type": "header",
+                        "parameters": [
+                            {
+                                "type": "image",
+                                "image": {
+                                "link": "https://i.ibb.co/pL5yR7C/pexels-victor-150585-448835.jpg"
+                                }
+                            }
+                        ]  
+                    },
+                    {
                         "type":"body",
                         "parameters":[
                             {
@@ -338,7 +350,19 @@ def send_batch_whatsapp_text(numbers,names,message):
             "template": {
                 "name": "lunyamwi_birdview_template",
                 "language": {"code": "en"},
-                "components": [{
+                "components": [
+                    {
+                       "type": "header",
+                        "parameters": [
+                            {
+                                "type": "image",
+                                "image": {
+                                "link": "https://i.ibb.co/pL5yR7C/pexels-victor-150585-448835.jpg"
+                                }
+                            }
+                        ]  
+                    },
+                    {
                         "type":"body",
                         "parameters":[
                             {
