@@ -7,10 +7,10 @@ from json.decoder import JSONDecodeError
 import requests
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
-from boostedchatScrapper.spiders.helpers.instagram_login_helper import (
-    challenge_code_handler_,
-    change_password_handler_
-)
+# from boostedchatScrapper.spiders.helpers.instagram_login_helper import (
+#     challenge_code_handler_,
+#     change_password_handler_
+# )
 from instagrapi import config
 from instagrapi.exceptions import (
     BadPassword,
@@ -60,8 +60,8 @@ def manual_input_code(self, username: str, choice=None):
     code = None
     while True:
 
-        #code = input(f"Enter code (6 digits) for {username} ({choice}): ").strip()
-        code  = challenge_code_handler_(username)
+        code = input(f"Enter code (6 digits) for {username} ({choice}): ").strip()
+        # code  = challenge_code_handler_(username)
         if code and code.isdigit():
             break
     return code  # is not int, because it can start from 0
@@ -70,8 +70,8 @@ def manual_input_code(self, username: str, choice=None):
 def manual_change_password(self, username: str):
     pwd = None
     while not pwd:
-        pwd = change_password_handler_(username)
-        # pwd = input(f"Enter password for {username}: ").strip()
+        # pwd = change_password_handler_(username)
+        pwd = input(f"Enter password for {username}: ").strip()
     return pwd
 
 
