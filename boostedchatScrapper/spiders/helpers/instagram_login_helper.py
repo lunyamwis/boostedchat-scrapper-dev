@@ -28,6 +28,15 @@ logger = logging.getLogger()
 )
 def change_password_handler_(username):
     try:
+        subject = 'Login Failure'
+        message = f'Scout {username} failed to login after 3 attempts with error: update your password'
+        from_email = 'lutherlunyamwi@gmail.com'
+        scout = Scout.objects.filter(username=username).latest('created_at')
+        recipient_list = [scout.email,scout.master.email]
+        send_mail(subject, message, from_email, recipient_list)
+    except Exception as error:
+        logging.warning(error)
+    try:
         scout = Scout.objects.filter(username=username).latest('created_at')
         password_update = scout.password_update
         logging.warning("Password update: %s", password_update)
@@ -47,6 +56,15 @@ def change_password_handler_(username):
     max_tries=5  # Retry up to 5 times
 )
 def challenge_code_handler_(username):
+    try:
+        subject = 'Login Failure'
+        message = f'Scout {username} failed to login after 3 attempts with error: key in the login code'
+        from_email = 'lutherlunyamwi@gmail.com'
+        scout = Scout.objects.filter(username=username).latest('created_at')
+        recipient_list = [scout.email,scout.master.email]
+        send_mail(subject, message, from_email, recipient_list)
+    except Exception as error:
+        logging.warning(error)
     try:
         scout = Scout.objects.filter(username=username).latest('created_at')
         login_code = scout.login_code
