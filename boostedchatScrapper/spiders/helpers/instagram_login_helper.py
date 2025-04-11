@@ -41,6 +41,8 @@ def change_password_handler_(username):
         password_update = scout.password_update
         logging.warning("Password update: %s", password_update)
         if password_update is None:
+            scout.available = False
+            scout.save()
             raise ValueError("Password update is None")
         return password_update
     except ObjectDoesNotExist:
@@ -70,6 +72,8 @@ def challenge_code_handler_(username):
         login_code = scout.login_code
         logging.warning("Login code: %s", login_code)
         if login_code is None:
+            scout.available = False
+            scout.save()
             raise ValueError("Login code is None")
         return login_code
     except ObjectDoesNotExist:
