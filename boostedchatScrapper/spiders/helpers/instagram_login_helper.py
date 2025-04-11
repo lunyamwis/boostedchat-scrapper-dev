@@ -188,10 +188,10 @@ def login_user(scout: Scout):
                     else:
                         print("All attempts failed, removing session file and logging in with username and password")
                         os.remove(session_file_path)
-                        logging.warning("Error during login: %s", err)
+                        logging.warning("Error during login:")
                         try:
                             subject = 'Login Failure'
-                            message = f'Scout {scout.username} failed to login after 3 attempts with error: {err}'
+                            message = f'Scout {scout.username} failed to login after 3 attempts with error:'
                             from_email = 'lutherlunyamwi@gmail.com'
                             recipient_list = [scout.email,scout.master.email]
                             send_mail(subject, message, from_email, recipient_list)
@@ -207,7 +207,7 @@ def login_user(scout: Scout):
         
         try:
             subject = 'Login Failure'
-            message = f'Scout {scout.username} failed to login after 3 attempts with error: {err}'
+            message = f'Scout {scout.username} failed to login after 3 attempts with error:'
             from_email = 'lutherlunyamwi@gmail.com'
             recipient_list = [scout.email,scout.master.email]
             send_mail(subject, message, from_email, recipient_list)
