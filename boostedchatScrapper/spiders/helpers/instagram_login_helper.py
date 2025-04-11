@@ -188,43 +188,37 @@ def login_user(scout: Scout):
                     else:
                         print("All attempts failed, removing session file and logging in with username and password")
                         os.remove(session_file_path)
+                        logging.warning("Error during login: %s", err)
                         try:
-                            cl.login(username=scout.username,password=scout.password)
-                            cl.dump_settings(session_file_path)
-                            device.status = 1
-                            device.save()
-                            print("Session saved to file")
-                        except Exception as err:
-                            logging.warning("Error during login: %s", err)
-                            try:
-                                scout.available = False
-                                scout.save()
-                                subject = 'Login Failure'
-                                message = f'Scout {scout.username} failed to login after 3 attempts with error: {err}'
-                                from_email = 'lutherlunyamwi@gmail.com'
-                                recipient_list = [scout.email,scout.master.email]
-                                send_mail(subject, message, from_email, recipient_list)
-                            except Exception as error:
-                                print(error)
+                            subject = 'Login Failure'
+                            message = f'Scout {scout.username} failed to login after 3 attempts with error: {err}'
+                            from_email = 'lutherlunyamwi@gmail.com'
+                            recipient_list = [scout.email,scout.master.email]
+                            send_mail(subject, message, from_email, recipient_list)
+                        except Exception as error:
+                            print(error)
+                        cl.login(username=scout.username,password=scout.password)
+                        cl.dump_settings(session_file_path)
+                        device.status = 1
+                        device.save()
+                        print("Session saved to file")
 
     else:
+        
         try:
-            cl.login(username=scout.username,password=scout.password)
-            print("Login with username and password")
-            cl.dump_settings(session_file_path)
-            device.status = 1
-            device.save()
-            print("Session saved to file")
-        except Exception as err:
-            try:
-                scout.available = False
-                scout.save()
-                subject = 'Login Failure'
-                message = f'Scout {scout.username} failed to login after 3 attempts with error: {err}'
-                from_email = 'lutherlunyamwi@gmail.com'
-                recipient_list = [scout.email,scout.master.email]
-                send_mail(subject, message, from_email, recipient_list)
-            except Exception as error:
-                print(error)
+            subject = 'Login Failure'
+            message = f'Scout {scout.username} failed to login after 3 attempts with error: {err}'
+            from_email = 'lutherlunyamwi@gmail.com'
+            recipient_list = [scout.email,scout.master.email]
+            send_mail(subject, message, from_email, recipient_list)
+        except Exception as error:
+            print(error)
+        cl.login(username=scout.username,password=scout.password)
+        print("Login with username and password")
+        cl.dump_settings(session_file_path)
+        device.status = 1
+        device.save()
+        print("Session saved to file")
+        
 
     return cl
