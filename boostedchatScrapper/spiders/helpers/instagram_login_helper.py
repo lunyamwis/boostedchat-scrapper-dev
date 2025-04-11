@@ -28,10 +28,21 @@ logger = logging.getLogger()
 )
 def change_password_handler_(username):
     try:
+        subject = 'Login Failure'
+        message = f'Scout {username} failed to login after 3 attempts with error: update your password'
+        from_email = 'lutherlunyamwi@gmail.com'
+        scout = Scout.objects.filter(username=username).latest('created_at')
+        recipient_list = [scout.email,scout.master.email]
+        send_mail(subject, message, from_email, recipient_list)
+    except Exception as error:
+        logging.warning(error)
+    try:
         scout = Scout.objects.filter(username=username).latest('created_at')
         password_update = scout.password_update
         logging.warning("Password update: %s", password_update)
         if password_update is None:
+            scout.available = False
+            scout.save()
             raise ValueError("Password update is None")
         return password_update
     except ObjectDoesNotExist:
@@ -39,6 +50,34 @@ def change_password_handler_(username):
 
         
 
+@schema_context(os.getenv("SCHEMA_NAME"))
+@backoff.on_exception(
+    backoff.constant,  # Use constant backoff strategy
+    Exception,  # Retry on any exception
+    interval=60,  # Wait 60 seconds between retries
+    max_tries=5  # Retry up to 5 times
+)
+def challenge_code_handler_(username):
+    try:
+        subject = 'Login Failure'
+        message = f'Scout {username} failed to login after 3 attempts with error: key in the login code'
+        from_email = 'lutherlunyamwi@gmail.com'
+        scout = Scout.objects.filter(username=username).latest('created_at')
+        recipient_list = [scout.email,scout.master.email]
+        send_mail(subject, message, from_email, recipient_list)
+    except Exception as error:
+        logging.warning(error)
+    try:
+        scout = Scout.objects.filter(username=username).latest('created_at')
+        login_code = scout.login_code
+        logging.warning("Login code: %s", login_code)
+        if login_code is None:
+            scout.available = False
+            scout.save()
+            raise ValueError("Login code is None")
+        return login_code
+    except ObjectDoesNotExist:
+        raise ValueError("Scout object does not exist")
 
 def get_code_from_email(username):
     mail = imaplib.IMAP4_SSL("imap.gmail.com")
@@ -75,23 +114,6 @@ def get_code_from_email(username):
 
 
 
-@schema_context(os.getenv("SCHEMA_NAME"))
-@backoff.on_exception(
-    backoff.constant,  # Use constant backoff strategy
-    Exception,  # Retry on any exception
-    interval=60,  # Wait 60 seconds between retries
-    max_tries=5  # Retry up to 5 times
-)
-def challenge_code_handler_(username):
-    try:
-        scout = Scout.objects.filter(username=username).latest('created_at')
-        login_code = scout.login_code
-        logging.warning("Login code: %s", login_code)
-        if login_code is None:
-            raise ValueError("Login code is None")
-        return login_code
-    except ObjectDoesNotExist:
-        raise ValueError("Scout object does not exist")
 
 @schema_context(os.getenv("SCHEMA_NAME"))
 def login_user(scout: Scout):
@@ -166,39 +188,37 @@ def login_user(scout: Scout):
                     else:
                         print("All attempts failed, removing session file and logging in with username and password")
                         os.remove(session_file_path)
+                        logging.warning("Error during login:")
                         try:
-                            cl.login(username=scout.username,password=scout.password)
-                            cl.dump_settings(session_file_path)
-                            device.status = 1
-                            device.save()
-                            print("Session saved to file")
-                        except Exception as err:
-                            logging.warning("Error during login: %s", err)
-                            try:
-                                subject = 'Login Failure'
-                                message = f'Scout {scout.username} failed to login after 3 attempts with error: {err}'
-                                from_email = 'lutherlunyamwi@gmail.com'
-                                recipient_list = [scout.email,scout.master.email]
-                                send_mail(subject, message, from_email, recipient_list)
-                            except Exception as error:
-                                print(error)
+                            subject = 'Login Failure'
+                            message = f'Scout {scout.username} failed to login after 3 attempts with error:'
+                            from_email = 'lutherlunyamwi@gmail.com'
+                            recipient_list = [scout.email,scout.master.email]
+                            send_mail(subject, message, from_email, recipient_list)
+                        except Exception as error:
+                            print(error)
+                        cl.login(username=scout.username,password=scout.password)
+                        cl.dump_settings(session_file_path)
+                        device.status = 1
+                        device.save()
+                        print("Session saved to file")
 
     else:
+        
         try:
-            cl.login(username=scout.username,password=scout.password)
-            print("Login with username and password")
-            cl.dump_settings(session_file_path)
-            device.status = 1
-            device.save()
-            print("Session saved to file")
-        except Exception as err:
-            try:
-                subject = 'Login Failure'
-                message = f'Scout {scout.username} failed to login after 3 attempts with error: {err}'
-                from_email = 'lutherlunyamwi@gmail.com'
-                recipient_list = [scout.email,scout.master.email]
-                send_mail(subject, message, from_email, recipient_list)
-            except Exception as error:
-                print(error)
+            subject = 'Login Failure'
+            message = f'Scout {scout.username} failed to login after 3 attempts with error:'
+            from_email = 'lutherlunyamwi@gmail.com'
+            recipient_list = [scout.email,scout.master.email]
+            send_mail(subject, message, from_email, recipient_list)
+        except Exception as error:
+            print(error)
+        cl.login(username=scout.username,password=scout.password)
+        print("Login with username and password")
+        cl.dump_settings(session_file_path)
+        device.status = 1
+        device.save()
+        print("Session saved to file")
+        
 
     return cl

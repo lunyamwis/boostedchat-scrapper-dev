@@ -1159,3 +1159,23 @@ def fetch_request(url):
 def scrap_hash_tag(hashtag):
     inst = InstagramSpider(load_tables=load_tables,db_url=db_url)
     inst.scrap_hashtag(hashtag)
+
+
+
+@shared_task()
+@schema_context(os.getenv("SCHEMA_NAME"))
+def relogin_scouts():
+    with schema_context(os.getenv("SCHEMA_NAME")):
+        updated_count = 0
+        scouts = Scout.objects.all()
+        for scout in scouts:
+            try:
+                client = login_user(scout)
+                scout.available = True
+                scout.save()
+                updated_count += 1
+            except Exception as e:
+                print(e)
+                scout.available = False
+                scout.save()
+                updated_count += 1  # Count even if an exception occurred
