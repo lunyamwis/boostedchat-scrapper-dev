@@ -13,6 +13,12 @@ import os
 @admin.register(Scout)
 class ScoutAdmin(admin.ModelAdmin):
     actions = ['check_scout_availability']
+    search_fields = ['username__icontains']
+    list_filter = [
+        'available', 
+        'country', 
+        'city'
+    ]
     @admin.action(description=_('Relogin Scouts'))
     def check_scout_availability(self, request, queryset):
         """
