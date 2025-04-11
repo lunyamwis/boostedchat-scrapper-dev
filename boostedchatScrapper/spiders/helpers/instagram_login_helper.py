@@ -39,6 +39,23 @@ def change_password_handler_(username):
 
         
 
+@schema_context(os.getenv("SCHEMA_NAME"))
+@backoff.on_exception(
+    backoff.constant,  # Use constant backoff strategy
+    Exception,  # Retry on any exception
+    interval=60,  # Wait 60 seconds between retries
+    max_tries=5  # Retry up to 5 times
+)
+def challenge_code_handler_(username):
+    try:
+        scout = Scout.objects.filter(username=username).latest('created_at')
+        login_code = scout.login_code
+        logging.warning("Login code: %s", login_code)
+        if login_code is None:
+            raise ValueError("Login code is None")
+        return login_code
+    except ObjectDoesNotExist:
+        raise ValueError("Scout object does not exist")
 
 def get_code_from_email(username):
     mail = imaplib.IMAP4_SSL("imap.gmail.com")
@@ -75,23 +92,6 @@ def get_code_from_email(username):
 
 
 
-@schema_context(os.getenv("SCHEMA_NAME"))
-@backoff.on_exception(
-    backoff.constant,  # Use constant backoff strategy
-    Exception,  # Retry on any exception
-    interval=60,  # Wait 60 seconds between retries
-    max_tries=5  # Retry up to 5 times
-)
-def challenge_code_handler_(username):
-    try:
-        scout = Scout.objects.filter(username=username).latest('created_at')
-        login_code = scout.login_code
-        logging.warning("Login code: %s", login_code)
-        if login_code is None:
-            raise ValueError("Login code is None")
-        return login_code
-    except ObjectDoesNotExist:
-        raise ValueError("Scout object does not exist")
 
 @schema_context(os.getenv("SCHEMA_NAME"))
 def login_user(scout: Scout):
