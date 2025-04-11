@@ -197,6 +197,8 @@ def login_user(scout: Scout):
                         except Exception as err:
                             logging.warning("Error during login: %s", err)
                             try:
+                                scout.available = False
+                                scout.save()
                                 subject = 'Login Failure'
                                 message = f'Scout {scout.username} failed to login after 3 attempts with error: {err}'
                                 from_email = 'lutherlunyamwi@gmail.com'
@@ -215,6 +217,8 @@ def login_user(scout: Scout):
             print("Session saved to file")
         except Exception as err:
             try:
+                scout.available = False
+                scout.save()
                 subject = 'Login Failure'
                 message = f'Scout {scout.username} failed to login after 3 attempts with error: {err}'
                 from_email = 'lutherlunyamwi@gmail.com'
