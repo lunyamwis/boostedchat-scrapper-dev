@@ -1164,10 +1164,11 @@ def scrap_hash_tag(hashtag):
 
 @shared_task()
 @schema_context(os.getenv("SCHEMA_NAME"))
-def relogin_scouts():
+def relogin_scouts(selected_scouts=None):
+    
     with schema_context(os.getenv("SCHEMA_NAME")):
         updated_count = 0
-        scouts = Scout.objects.all()
+        scouts = Scout.objects.filter(id__in=selected_scouts) if selected_scouts else Scout.objects.all()
         for scout in scouts:
             try:
                 client = login_user(scout)
