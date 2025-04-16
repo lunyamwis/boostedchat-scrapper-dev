@@ -11,6 +11,7 @@ urlpatterns = [
     # path('',include('boostedchatScrapper.urls')),
     path('instagram/',include('api.instagram.urls')),
     path('whatsapp/',include('api.whatsapp.urls')),
+    path('facebook/',include('api.facebook.urls')),
     path('scout/',include('api.scout.urls')),
     path('prompt/',include('api.prompt.urls')),
     path('authentication/',include('api.authentication.urls')),
