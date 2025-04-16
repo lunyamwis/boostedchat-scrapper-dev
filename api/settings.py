@@ -115,7 +115,6 @@ SHARED_APPS = [
     "dj_rest_auth",
     "allauth.socialaccount",
     "allauth.socialaccount.providers.google",
-    "allauth.socialaccount.providers.facebook",
     "allauth.socialaccount.providers.twitter",
 
     # "django_extensions"
