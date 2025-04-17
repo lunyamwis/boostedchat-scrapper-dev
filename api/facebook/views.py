@@ -37,14 +37,15 @@ def webhook(request):
                         message_text = messaging_event['message'].get('text')
                         if message_text:
                             # Get user profile for personalization
-                            user_profile = get_user_profile(sender_id)
-                            first_name = user_profile.get('first_name', '')
+                            # user_profile = get_user_profile(sender_id)
+                            # first_name = user_profile.get('first_name', '')
 
                             # Create personalized reply
-                            reply = f"Hi {first_name}! You said: {message_text}"
+                            # reply = f"Hi {first_name}! You said: {message_text}"
 
                             # Send reply
-                            send_message(sender_id, reply)
+                            # send_message(sender_id, reply)
+                            send_message("9581548405296563","Been hustling hard")
 
             return HttpResponse('EVENT_RECEIVED')
         else:
