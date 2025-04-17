@@ -24,12 +24,12 @@ def webhook(request):
         else:
             return HttpResponse('Verification token mismatch', status=403)
 
-    elif request.method == 'POST':
+    # elif request.method == 'POST':
         # Handle incoming messages
         data = json.loads(request.body.decode('utf-8'))
 
-        if data.get('object') == 'page':
-            raise Exception("Webhook received a page object")
+        # if data.get('object') == 'page':
+            # raise Exception("Webhook received a page object")
             # continue
             # send_message("9581548405296563","Been hustling hard")
             
@@ -51,8 +51,8 @@ def webhook(request):
             #                 # send_message(sender_id, reply)
 
             # return HttpResponse('ONE_EVENT_RECEIVED')
-        else:
-            return HttpResponse(status=404)
+        # else:
+            # return HttpResponse(status=404)
 
 def get_user_profile(user_id):
     """Fetch user profile info from Facebook Graph API"""
