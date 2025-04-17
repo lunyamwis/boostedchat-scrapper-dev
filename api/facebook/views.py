@@ -29,7 +29,8 @@ def webhook(request):
         data = json.loads(request.body.decode('utf-8'))
 
         if data.get('object') == 'page':
-            send_message("9581548405296563","Been hustling hard")
+            # send_message("9581548405296563","Been hustling hard")
+            
             # for entry in data.get('entry', []):
             #     for messaging_event in entry.get('messaging', []):
             #         sender_id = messaging_event['sender']['id']
