@@ -29,23 +29,23 @@ def webhook(request):
         data = json.loads(request.body.decode('utf-8'))
 
         if data.get('object') == 'page':
-            for entry in data.get('entry', []):
-                for messaging_event in entry.get('messaging', []):
-                    sender_id = messaging_event['sender']['id']
+            send_message("9581548405296563","Been hustling hard")
+            # for entry in data.get('entry', []):
+            #     for messaging_event in entry.get('messaging', []):
+            #         sender_id = messaging_event['sender']['id']
 
-                    if 'message' in messaging_event:
-                        message_text = messaging_event['message'].get('text')
-                        if message_text:
-                            # Get user profile for personalization
-                            # user_profile = get_user_profile(sender_id)
-                            # first_name = user_profile.get('first_name', '')
+            #         if 'message' in messaging_event:
+            #             message_text = messaging_event['message'].get('text')
+            #             if message_text:
+            #                 # Get user profile for personalization
+            #                 # user_profile = get_user_profile(sender_id)
+            #                 # first_name = user_profile.get('first_name', '')
 
-                            # Create personalized reply
-                            # reply = f"Hi {first_name}! You said: {message_text}"
+            #                 # Create personalized reply
+            #                 # reply = f"Hi {first_name}! You said: {message_text}"
 
-                            # Send reply
-                            # send_message(sender_id, reply)
-                            send_message("9581548405296563","Been hustling hard")
+            #                 # Send reply
+            #                 # send_message(sender_id, reply)
 
             return HttpResponse('EVENT_RECEIVED')
         else:
