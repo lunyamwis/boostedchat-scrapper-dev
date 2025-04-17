@@ -29,6 +29,7 @@ def webhook(request):
         data = json.loads(request.body.decode('utf-8'))
 
         if data.get('object') == 'page':
+            break
             # send_message("9581548405296563","Been hustling hard")
             
             # for entry in data.get('entry', []):
@@ -48,7 +49,7 @@ def webhook(request):
             #                 # Send reply
             #                 # send_message(sender_id, reply)
 
-            return HttpResponse('EVENT_RECEIVED')
+            # return HttpResponse('EVENT_RECEIVED')
         else:
             return HttpResponse(status=404)
 
