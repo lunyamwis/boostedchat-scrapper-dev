@@ -37,7 +37,7 @@ def convert_cookies(input_cookies: List[Dict[str, Any]]) -> List[Dict[str, Any]]
 
 
 
-def send_first_message(cookies_, user_id,username=None):
+def send_first_message(cookies_, user_id,username=None,message=None):
     """Define a main entry point."""
 
     # Handle input - Replace with your input method (e.g., command line arguments, config file)
@@ -145,7 +145,7 @@ def send_first_message(cookies_, user_id,username=None):
             )
             # message_box = driver.find_element(By.XPATH,"/html/body/div[1]/div/div[1]/div/div[3]/div/div/div[1]/div[1]/div/div[2]/div/div/div/div[1]/div/div/div/div/div/div[2]/div/div/div/div[2]/div/div/div[4]/div[2]/div/div[1]/div[1]")
             message_textbox.click()
-            message_textbox.send_keys("hello friend")
+            message_textbox.send_keys(message)
             message_textbox.send_keys(Keys.ENTER)
             logging.info(f"Successfully sent message!")
             time.sleep(5)
