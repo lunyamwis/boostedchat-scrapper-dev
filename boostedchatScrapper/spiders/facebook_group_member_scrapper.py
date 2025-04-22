@@ -36,12 +36,11 @@ def convert_cookies(input_cookies: List[Dict[str, Any]]) -> List[Dict[str, Any]]
 
 
 
-def scrap_facebook_group_members(cookies_):
+def scrap_facebook_group_members(cookies_,group_url = "https://www.facebook.com/groups/1339224732945188/members"):
     """Define a main entry point."""
 
     # Handle input - Replace with your input method (e.g., command line arguments, config file)
-    group_url = "https://www.facebook.com/groups/1339224732945188/members"  # Replace with the actual group URL
-    user_id = "8947986651969956"  # Replace with the actual user ID
+    # Replace with the actual group URL
     
     cookies = convert_cookies(cookies_)
     driver_version = "132.0.6834.110"
@@ -152,6 +151,9 @@ def scrap_facebook_group_members(cookies_):
         if driver:  # Check if the driver was initialized before quitting
             driver.quit()
 
+
+
+    return member_data
     # send message
     # get_url(driver, f"https://www.facebook.com/messages/t/{user_id}")
     # message_box = driver.find_element(By.XPATH,"/html/body/div[1]/div/div[1]/div/div[3]/div/div/div[1]/div[1]/div/div[2]/div/div/div/div[1]/div/div/div/div/div/div[2]/div/div/div/div[2]/div/div/div[4]/div[2]/div/div[1]/div[1]")
