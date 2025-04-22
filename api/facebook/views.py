@@ -7,48 +7,62 @@ import requests
 from django.http import HttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.conf import settings
+from rest_framework.decorators import api_view
+from boostedchatScrapper.spiders.facebook_group_member_scrapper import scrap_facebook_group_members 
+from boostedchatScrapper.spiders.facebook_send_first_message import send_first_message
+from .forms import ScrapFacebookGroupForm, SendFirstMessageForm
 
 PAGE_ACCESS_TOKEN = os.getenv('PAGE_ACCESS_TOKEN')
 VERIFY_TOKEN = os.getenv("TOKEN")  # Set this to a secret string you choose
 
-@csrf_exempt
+@api_view(['GET', 'POST'])
 def webhook(request):
     if request.method == 'GET':
-        # Facebook webhook verification
-        mode = request.GET.get('hub.mode')
-        token = request.GET.get('hub.verify_token')
-        challenge = request.GET.get('hub.challenge')
-
-        if mode == 'subscribe' and token == VERIFY_TOKEN:
-            return HttpResponse(challenge)
+        print(request.GET)
+        # Verification
+        # Check if the request is a verification request
+        if (request.GET.get("hub.mode") == "subscribe" and
+            request.GET.get("hub.verify_token") == VERIFY_TOKEN):
+            challenge = request.GET.get("hub.challenge")
+            print(challenge)
+            # return Response(challenge, status=status.HTTP_200_OK)
+            # return JsonResponse({"challenge": challenge}, status=status.HTTP_200_OK)
+            return HttpResponse(challenge, status=200)
+            # return {"challenge":challenge,"status":200}
         else:
-            return HttpResponse('Verification token mismatch', status=403)
-
-    elif request.method == 'POST':
+            # return Response("Verification failed", status=status.HTTP_403_FORBIDDEN)
+            # return JsonResponse({"message": "Verification failed", "status": 403})
+            return HttpResponse("Verification failed", status=403)
+            # return {"message":"Verification failed","status":403}
+    # elif request.method == 'POST':
         # Handle incoming messages
         data = json.loads(request.body.decode('utf-8'))
 
-        if data.get('object') == 'page':
-            for entry in data.get('entry', []):
-                for messaging_event in entry.get('messaging', []):
-                    sender_id = messaging_event['sender']['id']
+        # if data.get('object') == 'page':
+            # raise Exception("Webhook received a page object")
+            # continue
+            # send_message("9581548405296563","Been hustling hard")
+            
+            # for entry in data.get('entry', []):
+            #     for messaging_event in entry.get('messaging', []):
+            #         sender_id = messaging_event['sender']['id']
 
-                    if 'message' in messaging_event:
-                        message_text = messaging_event['message'].get('text')
-                        if message_text:
-                            # Get user profile for personalization
-                            user_profile = get_user_profile(sender_id)
-                            first_name = user_profile.get('first_name', '')
+            #         if 'message' in messaging_event:
+            #             message_text = messaging_event['message'].get('text')
+            #             if message_text:
+            #                 # Get user profile for personalization
+            #                 # user_profile = get_user_profile(sender_id)
+            #                 # first_name = user_profile.get('first_name', '')
 
-                            # Create personalized reply
-                            reply = f"Hi {first_name}! You said: {message_text}"
+            #                 # Create personalized reply
+            #                 # reply = f"Hi {first_name}! You said: {message_text}"
 
-                            # Send reply
-                            send_message(sender_id, reply)
+            #                 # Send reply
+            #                 # send_message(sender_id, reply)
 
-            return HttpResponse('EVENT_RECEIVED')
-        else:
-            return HttpResponse(status=404)
+            # return HttpResponse('ONE_EVENT_RECEIVED')
+        # else:
+            # return HttpResponse(status=404)
 
 def get_user_profile(user_id):
     """Fetch user profile info from Facebook Graph API"""
@@ -75,3 +89,80 @@ def send_message(recipient_id, message_text):
     response = requests.post(url, headers=headers, params=params, json=payload)
     if response.status_code != 200:
         print(f"Failed to send message: {response.text}")
+
+@api_view(['POST'])
+def scrap_facebook_group_members_api(request):
+    """Scrap facebook group members"""
+    # import pdb;pdb.set_trace()
+    data = json.loads(request.body.decode('utf-8'))
+    group_url = data.get('group_url')
+    cookies_ = data.get('cookies')
+    cookies_ = request.POST.get('cookies')
+    # cookies_ = json.loads(cookies_)
+    # cookies_ = json.loads(cookies_)
+    # cookies_ = json.loads(cookies_)
+    print(group_url)
+    print(cookies_)
+    member_data = scrap_facebook_group_members(cookies_,group_url=group_url)
+    return JsonResponse(member_data, safe=False)
+
+@api_view(['POST'])
+def send_first_message_api(request):
+    """Send first message to user"""
+    data = json.loads(request.body.decode('utf-8'))
+    username = data.get('username')
+    cookies_ = data.get('cookies')
+    message = data.get('message')
+    cookies_ = request.POST.get('cookies')
+    # cookies_ = json.loads(cookies_)
+    # cookies_ = json.loads(cookies_)
+    # cookies_ = json.loads(cookies_)
+    print(username)
+    print(cookies_)
+    send_first_message(cookies_=cookies_,username=username,message=message)
+    return JsonResponse({"status":"success"})
+
+
+@csrf_exempt
+def scrap_facebook_group_members_view(request):
+    """Scrap facebook group members"""
+    if request.method == 'POST':
+        form = ScrapFacebookGroupForm(request.POST)
+        if form.is_valid():
+            group_url = form.cleaned_data['group_url']
+            cookies_ = form.cleaned_data['cookies']
+            # import pdb;pdb.set_trace()
+            cookies_ = json.loads(cookies_)
+            # cookies_ = json.loads(cookies_)
+            # cookies_ = json.loads(cookies_)
+
+            print(group_url)
+            print(cookies_)
+            member_data = scrap_facebook_group_members(cookies_,group_url=group_url)
+            print(member_data)
+            return JsonResponse(member_data, safe=False)
+    else:
+        form = ScrapFacebookGroupForm()
+    return render(request, 'facebook/scrap_facebook_group_members.html', {'form': form})
+
+
+@csrf_exempt
+def send_first_message_view(request):
+    """Send first message to user"""
+    if request.method == 'POST':
+        form = SendFirstMessageForm(request.POST)
+        if form.is_valid():
+            username = form.cleaned_data['username']
+            cookies_ = form.cleaned_data['cookies']
+            message = form.cleaned_data['message']
+            cookies_ = json.loads(cookies_)
+            # cookies_ = json.loads(cookies_)
+            # cookies_ = json.loads(cookies_)
+            print(username)
+            print(cookies_)
+            send_first_message(cookies_=cookies_,username=username,message=message)
+            return JsonResponse({"status":"success"})
+    else:
+        form = SendFirstMessageForm()
+    return render(request, 'facebook/send_first_message.html', {'form': form})
+
