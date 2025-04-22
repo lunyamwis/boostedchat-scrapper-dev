@@ -10,6 +10,7 @@ from django.conf import settings
 from rest_framework.decorators import api_view
 from boostedchatScrapper.spiders.facebook_group_member_scrapper import scrap_facebook_group_members 
 from boostedchatScrapper.spiders.facebook_send_first_message import send_first_message
+from .forms import ScrapFacebookGroupForm, SendFirstMessageForm
 
 PAGE_ACCESS_TOKEN = os.getenv('PAGE_ACCESS_TOKEN')
 VERIFY_TOKEN = os.getenv("TOKEN")  # Set this to a secret string you choose
@@ -96,7 +97,7 @@ def scrap_facebook_group_members_api(request):
     data = json.loads(request.body.decode('utf-8'))
     group_url = data.get('group_url')
     cookies_ = data.get('cookies')
-    # cookies_ = request.POST.get('cookies')
+    cookies_ = request.POST.get('cookies')
     # cookies_ = json.loads(cookies_)
     # cookies_ = json.loads(cookies_)
     # cookies_ = json.loads(cookies_)
@@ -111,13 +112,57 @@ def send_first_message_api(request):
     data = json.loads(request.body.decode('utf-8'))
     username = data.get('username')
     cookies_ = data.get('cookies')
-    # cookies_ = request.POST.get('cookies')
+    message = data.get('message')
+    cookies_ = request.POST.get('cookies')
     # cookies_ = json.loads(cookies_)
     # cookies_ = json.loads(cookies_)
     # cookies_ = json.loads(cookies_)
     print(username)
     print(cookies_)
-    send_first_message(cookies_=cookies_,username=username)
+    send_first_message(cookies_=cookies_,username=username,message=message)
     return JsonResponse({"status":"success"})
 
+
+@csrf_exempt
+def scrap_facebook_group_members_view(request):
+    """Scrap facebook group members"""
+    if request.method == 'POST':
+        form = ScrapFacebookGroupForm(request.POST)
+        if form.is_valid():
+            group_url = form.cleaned_data['group_url']
+            cookies_ = form.cleaned_data['cookies']
+            # import pdb;pdb.set_trace()
+            cookies_ = json.loads(cookies_)
+            # cookies_ = json.loads(cookies_)
+            # cookies_ = json.loads(cookies_)
+
+            print(group_url)
+            print(cookies_)
+            member_data = scrap_facebook_group_members(cookies_,group_url=group_url)
+            print(member_data)
+            return JsonResponse(member_data, safe=False)
+    else:
+        form = ScrapFacebookGroupForm()
+    return render(request, 'facebook/scrap_facebook_group_members.html', {'form': form})
+
+
+@csrf_exempt
+def send_first_message_view(request):
+    """Send first message to user"""
+    if request.method == 'POST':
+        form = SendFirstMessageForm(request.POST)
+        if form.is_valid():
+            username = form.cleaned_data['username']
+            cookies_ = form.cleaned_data['cookies']
+            message = form.cleaned_data['message']
+            cookies_ = json.loads(cookies_)
+            # cookies_ = json.loads(cookies_)
+            # cookies_ = json.loads(cookies_)
+            print(username)
+            print(cookies_)
+            send_first_message(cookies_=cookies_,username=username,message=message)
+            return JsonResponse({"status":"success"})
+    else:
+        form = SendFirstMessageForm()
+    return render(request, 'facebook/send_first_message.html', {'form': form})
 
