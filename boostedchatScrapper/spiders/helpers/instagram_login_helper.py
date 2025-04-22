@@ -23,7 +23,7 @@ logger = logging.getLogger()
 @backoff.on_exception(
     backoff.constant,  # Use constant backoff strategy
     Exception,  # Retry on any exception
-    interval=60,  # Wait 60 seconds between retries
+    interval=70,  # Wait 60 seconds between retries
     max_tries=5  # Retry up to 5 times
 )
 def change_password_handler_(username):
@@ -54,7 +54,7 @@ def change_password_handler_(username):
 @backoff.on_exception(
     backoff.constant,  # Use constant backoff strategy
     Exception,  # Retry on any exception
-    interval=60,  # Wait 60 seconds between retries
+    interval=70,  # Wait 60 seconds between retries
     max_tries=5  # Retry up to 5 times
 )
 def challenge_code_handler_(username):
@@ -75,7 +75,7 @@ def challenge_code_handler_(username):
             scout.available = False
             scout.save()
             raise ValueError("Login code is None")
-        return login_code
+        return str(login_code)
     except ObjectDoesNotExist:
         raise ValueError("Scout object does not exist")
 
