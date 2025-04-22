@@ -7,23 +7,32 @@ import requests
 from django.http import HttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.conf import settings
+from rest_framework.decorators import api_view
+from boostedchatScrapper.spiders.facebook_group_member_scrapper import scrap_facebook_group_members 
+from boostedchatScrapper.spiders.facebook_send_first_message import send_first_message
 
 PAGE_ACCESS_TOKEN = os.getenv('PAGE_ACCESS_TOKEN')
 VERIFY_TOKEN = os.getenv("TOKEN")  # Set this to a secret string you choose
 
-@csrf_exempt
+@api_view(['GET', 'POST'])
 def webhook(request):
     if request.method == 'GET':
-        # Facebook webhook verification
-        mode = request.GET.get('hub.mode')
-        token = request.GET.get('hub.verify_token')
-        challenge = request.GET.get('hub.challenge')
-
-        if mode == 'subscribe' and token == VERIFY_TOKEN:
-            return HttpResponse(challenge)
+        print(request.GET)
+        # Verification
+        # Check if the request is a verification request
+        if (request.GET.get("hub.mode") == "subscribe" and
+            request.GET.get("hub.verify_token") == VERIFY_TOKEN):
+            challenge = request.GET.get("hub.challenge")
+            print(challenge)
+            # return Response(challenge, status=status.HTTP_200_OK)
+            # return JsonResponse({"challenge": challenge}, status=status.HTTP_200_OK)
+            return HttpResponse(challenge, status=200)
+            # return {"challenge":challenge,"status":200}
         else:
-            return HttpResponse('Verification token mismatch', status=403)
-
+            # return Response("Verification failed", status=status.HTTP_403_FORBIDDEN)
+            # return JsonResponse({"message": "Verification failed", "status": 403})
+            return HttpResponse("Verification failed", status=403)
+            # return {"message":"Verification failed","status":403}
     # elif request.method == 'POST':
         # Handle incoming messages
         data = json.loads(request.body.decode('utf-8'))
@@ -79,3 +88,36 @@ def send_message(recipient_id, message_text):
     response = requests.post(url, headers=headers, params=params, json=payload)
     if response.status_code != 200:
         print(f"Failed to send message: {response.text}")
+
+@api_view(['POST'])
+def scrap_facebook_group_members_api(request):
+    """Scrap facebook group members"""
+    # import pdb;pdb.set_trace()
+    data = json.loads(request.body.decode('utf-8'))
+    group_url = data.get('group_url')
+    cookies_ = data.get('cookies')
+    # cookies_ = request.POST.get('cookies')
+    # cookies_ = json.loads(cookies_)
+    # cookies_ = json.loads(cookies_)
+    # cookies_ = json.loads(cookies_)
+    print(group_url)
+    print(cookies_)
+    member_data = scrap_facebook_group_members(cookies_,group_url=group_url)
+    return JsonResponse(member_data, safe=False)
+
+@api_view(['POST'])
+def send_first_message_api(request):
+    """Send first message to user"""
+    data = json.loads(request.body.decode('utf-8'))
+    username = data.get('username')
+    cookies_ = data.get('cookies')
+    # cookies_ = request.POST.get('cookies')
+    # cookies_ = json.loads(cookies_)
+    # cookies_ = json.loads(cookies_)
+    # cookies_ = json.loads(cookies_)
+    print(username)
+    print(cookies_)
+    send_first_message(cookies_=cookies_,username=username)
+    return JsonResponse({"status":"success"})
+
+

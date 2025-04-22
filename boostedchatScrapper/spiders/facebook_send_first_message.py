@@ -37,7 +37,7 @@ def convert_cookies(input_cookies: List[Dict[str, Any]]) -> List[Dict[str, Any]]
 
 
 
-def send_first_message(cookies_, user_id,username=None,message=None):
+def send_first_message(cookies_=None, user_id=None,username=None,message=None):
     """Define a main entry point."""
 
     # Handle input - Replace with your input method (e.g., command line arguments, config file)
