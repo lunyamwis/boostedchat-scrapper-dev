@@ -1168,7 +1168,7 @@ def relogin_scouts(selected_scouts=None):
     
     with schema_context(os.getenv("SCHEMA_NAME")):
         updated_count = 0
-        scouts = Scout.objects.filter(id__in=selected_scouts) if selected_scouts else Scout.objects.all()
+        scouts = Scout.objects.filter(id__in=selected_scouts)
         for scout in scouts:
             try:
                 client = login_user(scout)

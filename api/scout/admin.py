@@ -25,7 +25,9 @@ class ScoutAdmin(admin.ModelAdmin):
         Checks the availability of selected scouts by attempting to log them in.
         """
         # Get the list of selected scout IDs
+
         selected_scouts = queryset.values_list('id', flat=True)
+        print(selected_scouts)
         relogin_scouts.delay(list(selected_scouts))
         self.message_user(request, _(
             f'Successfully logging in scout(s).'
