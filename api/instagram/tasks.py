@@ -56,7 +56,6 @@ db_url = f"postgresql://{os.getenv('POSTGRES_USERNAME')}:{os.getenv('POSTGRES_PA
 load_tables = True
 
 
-
 def print_logs():
     logs = OutreachErrorLog.objects.all().order_by('-created_at')[:30]  # Assuming OutreachErrorLog is a Django model
     headers = ["Code", "Account", "Sales Rep", "Error Message", "Error Type", "Created At", "Log Level"]
@@ -312,6 +311,7 @@ def run_scheduler(target_time,username,message):
             break  # Exit the loop after running the task
         time.sleep(1)  # Sleep for 1 second to avoid busy-waiting
 
+@schema_context(os.getenv("SCHEMA_NAME"))
 @shared_task()
 def delete_accounts(duplicate_igname_list):
     for igname in duplicate_igname_list:
@@ -322,6 +322,7 @@ def delete_accounts(duplicate_igname_list):
         print(f"Deleted {delete_count} duplicate(s) for igname: {igname}")
 
 
+@schema_context(os.getenv("SCHEMA_NAME"))
 @shared_task()
 def send_first_compliment(username, message, repeat=True):
     # check if now is within working hours
@@ -406,10 +407,13 @@ def send_first_compliment(username, message, repeat=True):
     # raise Exception("There is something wrong with mqt----t")
     outsourced_data = OutSourced.objects.filter(account=account)
     results = None
-    if isinstance(outsourced_data.last().results, str):
-        results = eval(outsourced_data.last().results)
-    else:
-        results = outsourced_data.last().results
+    try:
+        if isinstance(outsourced_data.last().results, str):
+            results = eval(outsourced_data.last().results)
+        else:
+            results = outsourced_data.last().results
+    except:
+        results = {"media_id": "", "media_comment": ""}
     print(f"results================{results}")
     print(f"results================MMM")
     print(f"results================{message}")
@@ -550,7 +554,7 @@ def send_first_compliment(username, message, repeat=True):
         # raise Exception("There is something wrong with mqtt")
 
 
-
+@schema_context(os.getenv("SCHEMA_NAME"))
 @shared_task()
 def send_report():
     yesterday = timezone.now().date() - timezone.timedelta(days=1)
@@ -582,7 +586,7 @@ def send_report():
 
 
 
-
+@schema_context(os.getenv("SCHEMA_NAME"))
 @shared_task
 def generate_response_automatic(query, thread_id):
     thread = Thread.objects.filter(thread_id=thread_id).latest('created_at')
@@ -682,7 +686,7 @@ def generate_response_automatic(query, thread_id):
     #             "status":200
     #         }
 
-
+@schema_context(os.getenv("SCHEMA_NAME"))
 def assign_salesrepresentative():
     
     yesterday = timezone.now().date() - timezone.timedelta(days=1)
@@ -780,6 +784,7 @@ def assign_salesrepresentative():
     return {"message":"Successfully assigned salesrep","status": 200}
 
 
+@schema_context(os.getenv("SCHEMA_NAME"))
 @shared_task()
 def reschedule():
     #reassign time slots
@@ -828,6 +833,7 @@ def reschedule():
 
 
 @shared_task()
+@schema_context(os.getenv("SCHEMA_NAME"))
 def prequalify_task():
     yesterday = timezone.now().date() - timezone.timedelta(days=1)
     yesterday_start = timezone.make_aware(timezone.datetime.combine(yesterday, timezone.datetime.min.time()))
@@ -875,6 +881,7 @@ def prequalify_task():
             notify_click_up_tech_notifications(comment_text=message,notify_all=True)
         except Exception as error:
             print(error)
+            
             
 @shared_task()
 def scrap_followers(username,delay,round_):
