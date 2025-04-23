@@ -17,7 +17,7 @@ urlpatterns = [
     path('authentication/',include('api.authentication.urls')),
     path('dialogflow/',include('api.dialogflow.urls')),
     path('outreach/',include('api.outreaches.urls')),
-    path('salesrep/',include('api.sales_rep.urls')),
+    path('sales/',include('api.sales_rep.urls')),
     path('serviceManager/',include('api.serviceManager.urls')),
     path('audittrail/',include('api.audittrails.urls')),
     path('',include('api.analyst.urls')),
