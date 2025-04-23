@@ -324,8 +324,8 @@ def delete_accounts(duplicate_igname_list):
         print(f"Deleted {delete_count} duplicate(s) for igname: {igname}")
 
 
-@schema_context(os.getenv("SCHEMA_NAME"))
 @shared_task()
+@schema_context(os.getenv("SCHEMA_NAME"))
 def send_first_compliment(username, message, repeat=True):
     # check if now is within working hours
     # if not_in_interval():
@@ -556,8 +556,8 @@ def send_first_compliment(username, message, repeat=True):
         # raise Exception("There is something wrong with mqtt")
 
 
-@schema_context(os.getenv("SCHEMA_NAME"))
 @shared_task()
+@schema_context(os.getenv("SCHEMA_NAME"))
 def send_report():
     yesterday = timezone.now().date() - timezone.timedelta(days=1)
     yesterday_start = timezone.make_aware(timezone.datetime.combine(yesterday, timezone.datetime.min.time()))
@@ -588,8 +588,8 @@ def send_report():
 
 
 
+@shared_task()
 @schema_context(os.getenv("SCHEMA_NAME"))
-@shared_task
 def generate_response_automatic(query, thread_id):
     thread = Thread.objects.filter(thread_id=thread_id).latest('created_at')
     account = Account.objects.filter(id=thread.account.id).latest('created_at')
@@ -786,8 +786,8 @@ def assign_salesrepresentative():
     return {"message":"Successfully assigned salesrep","status": 200}
 
 
-@schema_context(os.getenv("SCHEMA_NAME"))
 @shared_task()
+@schema_context(os.getenv("SCHEMA_NAME"))
 def reschedule():
     #reassign time slots
     times = OutreachTime.objects.filter(time_slot__gte=timezone.now()-timezone.timedelta(days=1))
