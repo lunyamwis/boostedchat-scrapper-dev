@@ -94,6 +94,7 @@ def sales_rep_is_logged_in(account, salesrep):
         return False
     return False
 
+@schema_context(os.getenv("SCHEMA_NAME"))
 def sales_rep_is_available(account):
     salesrep = account.salesrep_set.filter()
     if salesrep.exists():
@@ -103,6 +104,7 @@ def sales_rep_is_available(account):
         srep.instagram.add(account)
         return srep.available
 
+@schema_context(os.getenv("SCHEMA_NAME"))
 def account_has_sales_rep(account):
     salesrep = account.salesrep_set.first()
     if salesrep is not None:
