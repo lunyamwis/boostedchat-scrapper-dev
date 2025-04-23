@@ -30,13 +30,16 @@ class AccountSerializer(serializers.ModelSerializer):
             "index",
             "is_manually_triggered",
             "relevant_information",
+            "outreach_success",
             "qualified",
             "responded_date",
             "call_scheduled_date",
             "closing_date",
             "won_date",
             "success_story_date",
-            "lost_date"
+            "lost_date",
+            "outreach_time",
+            "notes"
         ]
         extra_kwargs = {"id": {"required": False, "allow_null": True},
                         "index": {"required": False, "allow_null": True},

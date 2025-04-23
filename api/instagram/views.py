@@ -34,6 +34,7 @@ from api.scout.models import Scout
 from boostedchatScrapper.spiders.helpers.thecut_scrapper import scrap_the_cut
 from boostedchatScrapper.spiders.helpers.instagram_helper import fetch_pending_inbox,approve_inbox_requests,send_direct_answer
 from django.db.models import Q
+from django.utils.timezone import make_aware, now
 
 from .models import InstagramUser
 from django_tenants.utils import schema_context
@@ -101,7 +102,7 @@ from .serializers import (
 from urllib.parse import urlparse
 from auditlog.models import LogEntry
 from celery.result import AsyncResult
-from datetime import datetime, timezone as timezone2
+from datetime import datetime, timedelta, timezone as timezone2
 from instagrapi.exceptions import UserNotFound
 from rest_framework.views import APIView
 from rest_framework import status, viewsets
@@ -350,199 +351,77 @@ class AccountViewSet(viewsets.ModelViewSet):
 
     @schema_context(os.getenv('SCHEMA_NAME'))
     def list(self, request, pk=None):
-        queryset = Account.objects.all()
-        accounts = []
-        paginator = self.pagination_class()
-        status_param = request.GET.get('status_param')
-        # status_param = request.GET.get('stage')
-        search_query = request.GET.get("q")
-        start_date = request.GET.get("start_date")
-        end_date = request.GET.get("end_date")
-        created_at_gte = request.GET.get("created_at_gte")
-        created_at_lt = request.GET.get("created_at_lt")
-        qualified = request.GET.get("qualified")
-        outreachSuccess = request.GET.get("outreach_success")
-        total_outreach = None
-        total_scheduled = None
-        datized_queryset = None
-        
-        print("***************************")
-        # print(created_at_gte.split('-'))
-        # print(created_at_lt)
-        
-        
-        if start_date:
-            start_date = start_date.strip('"')
-        if end_date:
-            end_date = end_date.strip('"')
-                    
-        # start_date_parsed = parse_datetime(start_date ) if start_date else None
-        start_date_parsed = datetime.strptime(start_date, '%Y-%m-%d').date() if start_date else None
-        # end_date_parsed = parse_datetime(end_date) if end_date else None
-        end_date_parsed = datetime.strptime(end_date, '%Y-%m-%d').date() if end_date else None
-        
-        if created_at_gte:
-            created_at_gte_date = datetime.strptime(created_at_gte, '%Y-%m-%d').date() 
-            created_at_gte_parsed = timezone.make_aware(datetime.combine(created_at_gte_date, datetime.min.time()) )  # 12 PM UTC
-            # created_at_gte_parsed = created_at_gte_date
-            
-        else:
-            created_at_gte_parsed = None
-        # we have to add one day to the created_at_lt to get the correct date, because >= Today but less than tomorrow does not work
-        
-        if (created_at_gte is not None and created_at_lt is not None and created_at_lt == created_at_gte):
-            # created_at_gte_date = datetime.strptime(created_at_gte, '%Y-%m-%d').date() 
-            created_at_gte_date = created_at_gte.split('-')
-            # created_at_gte_parsed = timezone.make_aware(datetime.combine(created_at_gte_date, datetime.min.time()))
-            created_at_gte_parsed = datetime(int(created_at_gte_date[0]), int(created_at_gte_date[1]),int(created_at_gte_date[2]), tzinfo=timezone.get_current_timezone())
-            # created_at_lt_parsed = timezone.make_aware(datetime.combine(created_at_gte_date, datetime.max.time()))
-            created_at_lt_parsed = created_at_gte_parsed + timedelta(days=1)
-        else:
-            if created_at_lt:
-                # created_at_lt_date =  datetime.strptime(created_at_lt, '%Y-%m-%d').date() + timezone.timedelta(days=1) if created_at_lt == created_at_gte else datetime.strptime(created_at_lt, '%Y-%m-%d').date() 
-                # created_at_lt_parsed = timezone.make_aware(datetime.combine(created_at_lt_date, datetime.min.time()) + timezone.timedelta(hours=12))  # 12 PM UTC
-                
-                created_at_lt_date = created_at_lt.split('-')
-                created_at_lt_parsed = datetime(int(created_at_lt_date[0]), int(created_at_lt_date[1]),int(created_at_lt_date[2]), tzinfo=timezone.get_current_timezone())
-                if created_at_lt == created_at_gte: 
-                    created_at_lt_parsed = created_at_lt_parsed + timedelta(days=1)
-            else: 
-                created_at_lt_parsed = None
-        
-        
-        queryset = queryset.filter(salesrep__isnull=False).annotate(
+        queryset = Account.objects.filter(salesrep__isnull=False)
+
+        # Apply annotations
+        queryset = queryset.annotate(
             last_message_at=F('thread__last_message_at'),
-            # Get the latest sent_on from Message model related to the Thread
-            last_message_sent_at= Subquery(
-                    Message.objects.filter(thread=OuterRef('thread'))
-                    .order_by('-sent_on')
-                    .values('sent_on')[:1]
-                ),
-             # Get the sent_by field of the latest message
+            last_message_sent_at=Subquery(
+                Message.objects.filter(thread=OuterRef('thread'))
+                .order_by('-sent_on')
+                .values('sent_on')[:1]
+            ),
             last_message_sent_by=Subquery(
                 Message.objects.filter(thread=OuterRef('thread'))
                 .order_by('-sent_on')
                 .values('sent_by')[:1]
-            )
-            ).annotate(
-                # Coalesce to get the latest of either last_message_at or last_message_sent_at
-                latest_message_at=Coalesce('last_message_sent_at', 'last_message_at', Value(datetime.min))
-        ).order_by('-latest_message_at')  # Sort by the latest message, whichever comes first
+            ),
+            latest_message_at=Coalesce('last_message_sent_at', 'last_message_at', Value(datetime.min))
+        ).order_by('-created_at')#order_by('-latest_message_at')
 
-        total_scheduled = queryset.filter(qualified=True).exclude(outreach_success=True).count()
-        total_outreach = queryset.filter(outreach_success=True).count()
-        
-        if start_date_parsed:
-            if end_date_parsed:
-                print("gOT end DATE")
-                # Both dates are present
-                #  messages = queryset.filter(last_message_at__gte=datetime(2024, 10, 7).date(), last_message_at__lte=datetime(2024, 11, 7).date())
-                queryset = queryset.filter(
-                    last_message_at__gte=start_date_parsed,
-                    last_message_at__lte=end_date_parsed
-                )
-                # messages = queryset.filter(last_message_at__gte=datetime(2024, 10, 7).date(), last_message_at__lte=datetime(2024, 11, 7).date())
-            else:
-                # Only start_date is present; use it as both
-                print(start_date)
-                print(start_date_parsed)
-                queryset = queryset.filter(
-                    last_message_at__date=start_date_parsed.date() 
-                )
-        elif end_date_parsed:
-            print(end_date_parsed)
-            # If only end_date is present, you can decide how to handle it
-            # queryset = queryset.filter(last_message_at__date=end_date_parsed.date())
-        
-        if status_param:
-            if status_param.lower() == "null":
-                # print("STATUS PARAM null")
-                queryset = queryset.filter(status_param__isnull=True)
-            elif status_param.lower() == "blank":
-                # print("STATUS PARAM blank", status_param)
-                queryset = queryset.filter(status_param="")
-            else:
-                queryset = queryset.filter(status_param=status_param.strip())
-                # print(queryset.first.status_param)
-                # print("After filter",queryset.count())
-        if created_at_gte:
-             #  messages = queryset.filter(last_message_at__gte=datetime(2024, 10, 7).date(), last_message_at__lte=datetime(2024, 11, 7).date())
-                if created_at_lt:
-                    datized_queryset = queryset.filter(
-                        created_at__gte= created_at_gte_parsed,
-                        created_at__lte = created_at_lt_parsed
-                    ).order_by('created_at')
-                    total_scheduled = datized_queryset.filter(qualified=True).exclude(outreach_success=True).count()
-                    total_outreach = datized_queryset.filter(outreach_success=True).count()
-            
-                else:
-                    datized_queryset = queryset.filter(
-                        created_at__gte= created_at_gte_parsed,
-                        # created_at__lt = created_at_lt_parsed
-                    ).order_by('created_at')
-                    total_scheduled = datized_queryset.filter(qualified=True).exclude(outreach_success=True).count()
-                    total_outreach = datized_queryset.filter(outreach_success=True).count()
-                    
-       
+        # Filters from request
+        search_query = request.GET.get("q")
+        created_at_gte = request.GET.get("created_at_gte")
+        created_at_lt = request.GET.get("created_at_lt")
 
-        if qualified:
-            if outreachSuccess == 'true':
-                # qualified_queryset = queryset.filter(qualified=True,outreach_success=True) if qualified == "true" else queryset.filter(qualified=False,outreach_success=True) 
-                # qualified_and_outreach_success = queryset.filter(qualified=True) if qualified == "true" else queryset.filter(qualified=False)  
-                total_scheduled = datized_queryset.filter(qualified=True,outreach_success=True).count()
-                total_outreach = datized_queryset.filter(outreach_success=True).count()
-            else:
-                total_scheduled = datized_queryset.filter(qualified=True).exclude(outreach_success=True).count()
-                total_outreach = datized_queryset.filter(outreach_success=True).count()
-            
-            queryset = queryset.filter(qualified=True).exclude(outreach_success=True) if qualified == "true" else queryset.filter(qualified=False) 
-            
-        if outreachSuccess:
-            total_scheduled = datized_queryset.filter(qualified=True).exclude(outreach_success=True).count()
-            queryset = datized_queryset.filter(outreach_success=True).order_by('created_at') if outreachSuccess == "true" else queryset.filter(outreach_success=False)
-            total_outreach = queryset.count()
-            
-        if search_query is not None:
+        if search_query:
             queryset = queryset.filter(igname__icontains=search_query.strip())
-            # total_scheduled = queryset.count()
-            # total_outreach = queryset.count()
-        if datized_queryset is not None:
-            result_page = paginator.paginate_queryset(datized_queryset, request)  # Apply pagination
-        else:
-            result_page = paginator.paginate_queryset(queryset, request)  # Apply pagination
+
+        # Date parsing
+        created_filter = {}
+        if created_at_gte:
+            created_filter["created_at__gte"] = make_aware(datetime.strptime(created_at_gte, "%Y-%m-%d"))
+
+        if created_at_lt:
+            created_filter["created_at__lt"] = make_aware(datetime.strptime(created_at_lt, "%Y-%m-%d")) + timedelta(days=1)
+
+        if created_filter:
+            queryset = queryset.filter(**created_filter)
+
+        # Paginator for main list
+        paginator = self.pagination_class()
+        paginated_qs = paginator.paginate_queryset(queryset, request)
+        serializer = self.get_serializer(paginated_qs, many=True)
+
+        # Filtered sets with date range
+        qualified_accounts = Account.objects.filter(qualified=True, outreach_success=False,**created_filter)
         
-        for account in result_page:
-            account_ = {
-                "id": account.id,
-                "assigned_to": account.assigned_to,
-                "notes": account.notes,
-                "created_at": account.created_at,
-                "outreach_time": account.outreach_time,
-                "outreach_success": account.outreach_success,
-                "qualified": account.qualified,
-                "confirmed_problems": account.confirmed_problems,
-                "full_name": account.full_name or None,
-                "igname": account.igname,
-                "status": account.status.name if account.status else None,
-                # "outreach": periodic_task.crontab.human_readable if periodic_task else "",
-                "last_message_at": account.last_message_at,
-                "last_message_sent_at": account.last_message_sent_at,
-                "last_message_sent_by": account.last_message_sent_by,
-                "stage": "Null" if account.status_param is None else ("Blank" if account.status_param == "" else account.status_param),
+        outreach_success_accounts = Account.objects.filter(outreach_success=True, **created_filter)
 
+        today_start = make_aware(datetime.combine(now().date(), datetime.min.time()))
+        tomorrow_start = today_start + timedelta(days=1)
 
-            }
-            accounts.append(account_)
+        scheduled_accounts = Account.objects.filter(
+            qualified=True,
+            outreach_success=False,
+            created_at__gte=today_start,
+            created_at__lt=tomorrow_start
+        )
 
-        response_data = {
-            'count': paginator.page.paginator.count,
-            'next': paginator.get_next_link(),
-            'previous': paginator.get_previous_link(),
-            'results': accounts,
-            'total_outreach': total_outreach,
-            'total_scheduled': total_scheduled,
-        }
-        return Response(response_data,status=status.HTTP_200_OK)
+        total_outreach = outreach_success_accounts.count()
+        total_scheduled = qualified_accounts.count()
+
+        return Response({
+            "count": paginator.page.paginator.count,
+            "next": paginator.get_next_link(),
+            "previous": paginator.get_previous_link(),
+            "results": serializer.data,
+            "qualified": AccountSerializer(qualified_accounts, many=True).data,
+            "outreach_success": AccountSerializer(outreach_success_accounts, many=True).data,
+            "scheduled": AccountSerializer(scheduled_accounts, many=True).data,
+            "total_outreach": total_outreach,
+            "total_scheduled": total_scheduled,
+        })
     
 
     @schema_context(os.getenv('SCHEMA_NAME'))
