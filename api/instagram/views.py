@@ -139,6 +139,9 @@ from django.db.models import Count, Case, When, IntegerField
 
 
 
+
+
+
 class PaginationClass(PageNumberPagination):
     page_size = 100  # Set the number of items per page
     page_size_query_param = 'page_size'
@@ -149,7 +152,7 @@ class OutSourcedViewSet(viewsets.ModelViewSet):
     A viewset that provides the standard actions
     """
 
-    queryset = OutSourced.objects.filter(account__isnull=False)
+    with schema_context(os.getenv('SCHEMA_NAME')):queryset = OutSourced.objects.filter(account__isnull=False)
     serializer_class = OutSourcedSerializer
     # import pdb;pdb.set_trace()
     pagination_class = PaginationClass
@@ -160,10 +163,11 @@ class LikeViewSet(viewsets.ModelViewSet):
     A viewset that provides the standard actions
     """
 
-    queryset = Like.objects.filter(account__isnull=False)
+    with schema_context(os.getenv('SCHEMA_NAME')):queryset = Like.objects.filter(account__isnull=False)
     serializer_class = LikeSerializer
     pagination_class = PaginationClass
     
+    @schema_context(os.getenv('SCHEMA_NAME'))
     def create(self, request):   
         title = request.data.get('title')
         message = request.data.get('message')
@@ -204,6 +208,7 @@ class LikeViewSet(viewsets.ModelViewSet):
         
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+    @schema_context(os.getenv('SCHEMA_NAME'))
     def list(self, request, pk=None):
         paginator = self.pagination_class()
         queryset = Like.objects.all()
@@ -241,10 +246,11 @@ class CommentViewSet(viewsets.ModelViewSet):
     A viewset that provides the standard actions
     """
 
-    queryset = Comment.objects.filter(account__isnull=False)
+    with schema_context(os.getenv('SCHEMA_NAME')):queryset = Comment.objects.filter(account__isnull=False)
     serializer_class = CommentSerializer
     pagination_class = PaginationClass
 
+    @schema_context(os.getenv('SCHEMA_NAME'))
     def create(self, request):
         title = request.data.get('title')
         message = request.data.get('message')
@@ -288,6 +294,7 @@ class CommentViewSet(viewsets.ModelViewSet):
         
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+    @schema_context(os.getenv('SCHEMA_NAME'))
     def list(self, request, pk=None):
         paginator = self.pagination_class()
         queryset = Comment.objects.all()
@@ -326,7 +333,7 @@ class AccountViewSet(viewsets.ModelViewSet):
     A viewset that provides the standard actions
     """
 
-    queryset = Account.objects.all()
+    with schema_context(os.getenv('SCHEMA_NAME')):queryset = Account.objects.all()
     serializer_class = AccountSerializer
     pagination_class = PaginationClass
 
@@ -341,8 +348,9 @@ class AccountViewSet(viewsets.ModelViewSet):
             return ScheduleOutreachSerializer
         return self.serializer_class
 
+    @schema_context(os.getenv('SCHEMA_NAME'))
     def list(self, request, pk=None):
-        print(request)
+        queryset = Account.objects.all()
         accounts = []
         paginator = self.pagination_class()
         status_param = request.GET.get('status_param')
@@ -354,6 +362,14 @@ class AccountViewSet(viewsets.ModelViewSet):
         created_at_lt = request.GET.get("created_at_lt")
         qualified = request.GET.get("qualified")
         outreachSuccess = request.GET.get("outreach_success")
+        total_outreach = None
+        total_scheduled = None
+        datized_queryset = None
+        
+        print("***************************")
+        # print(created_at_gte.split('-'))
+        # print(created_at_lt)
+        
         
         if start_date:
             start_date = start_date.strip('"')
@@ -367,29 +383,34 @@ class AccountViewSet(viewsets.ModelViewSet):
         
         if created_at_gte:
             created_at_gte_date = datetime.strptime(created_at_gte, '%Y-%m-%d').date() 
-            # created_at_gte_parsed = timezone.make_aware(datetime.combine(created_at_gte_date, datetime.min.time()) + timezone.timedelta(hours=12))  # 12 PM UTC
-            created_at_gte_parsed = created_at_gte_date
+            created_at_gte_parsed = timezone.make_aware(datetime.combine(created_at_gte_date, datetime.min.time()) )  # 12 PM UTC
+            # created_at_gte_parsed = created_at_gte_date
             
         else:
             created_at_gte_parsed = None
         # we have to add one day to the created_at_lt to get the correct date, because >= Today but less than tomorrow does not work
         
         if (created_at_gte is not None and created_at_lt is not None and created_at_lt == created_at_gte):
-            # Account.objects.filter(created_at__gte=start_datetime, created_at__lte=end_datetime,qualified=True).count()
-            created_at_gte_date = datetime.strptime(created_at_gte, '%Y-%m-%d').date() 
-            created_at_gte_parsed = timezone.make_aware(datetime.combine(created_at_gte_date, datetime.min.time()))
-            created_at_lt_parsed = timezone.make_aware(datetime.combine(created_at_gte_date, datetime.max.time()))
+            # created_at_gte_date = datetime.strptime(created_at_gte, '%Y-%m-%d').date() 
+            created_at_gte_date = created_at_gte.split('-')
+            # created_at_gte_parsed = timezone.make_aware(datetime.combine(created_at_gte_date, datetime.min.time()))
+            created_at_gte_parsed = datetime(int(created_at_gte_date[0]), int(created_at_gte_date[1]),int(created_at_gte_date[2]), tzinfo=timezone.get_current_timezone())
+            # created_at_lt_parsed = timezone.make_aware(datetime.combine(created_at_gte_date, datetime.max.time()))
+            created_at_lt_parsed = created_at_gte_parsed + timedelta(days=1)
         else:
             if created_at_lt:
-                created_at_lt_date =  datetime.strptime(created_at_lt, '%Y-%m-%d').date() + timezone.timedelta(days=1) if created_at_lt == created_at_gte else datetime.strptime(created_at_lt, '%Y-%m-%d').date() 
-                created_at_lt_parsed = timezone.make_aware(datetime.combine(created_at_lt_date, datetime.min.time()) + timezone.timedelta(hours=12))  # 12 PM UTC
-                # created_at_lt_parsed = timezone.make_aware(datetime.combine(created_at_lt_date, datetime.min.time()) + timezone.timedelta(hours=1))  # 11 PM UTC
+                # created_at_lt_date =  datetime.strptime(created_at_lt, '%Y-%m-%d').date() + timezone.timedelta(days=1) if created_at_lt == created_at_gte else datetime.strptime(created_at_lt, '%Y-%m-%d').date() 
+                # created_at_lt_parsed = timezone.make_aware(datetime.combine(created_at_lt_date, datetime.min.time()) + timezone.timedelta(hours=12))  # 12 PM UTC
+                
+                created_at_lt_date = created_at_lt.split('-')
+                created_at_lt_parsed = datetime(int(created_at_lt_date[0]), int(created_at_lt_date[1]),int(created_at_lt_date[2]), tzinfo=timezone.get_current_timezone())
+                if created_at_lt == created_at_gte: 
+                    created_at_lt_parsed = created_at_lt_parsed + timedelta(days=1)
             else: 
                 created_at_lt_parsed = None
         
         
-        
-        queryset = Account.objects.filter(salesrep__isnull=False).annotate(
+        queryset = queryset.filter(salesrep__isnull=False).annotate(
             last_message_at=F('thread__last_message_at'),
             # Get the latest sent_on from Message model related to the Thread
             last_message_sent_at= Subquery(
@@ -407,10 +428,11 @@ class AccountViewSet(viewsets.ModelViewSet):
                 # Coalesce to get the latest of either last_message_at or last_message_sent_at
                 latest_message_at=Coalesce('last_message_sent_at', 'last_message_at', Value(datetime.min))
         ).order_by('-latest_message_at')  # Sort by the latest message, whichever comes first
-   
+
+        total_scheduled = queryset.filter(qualified=True).exclude(outreach_success=True).count()
+        total_outreach = queryset.filter(outreach_success=True).count()
         
         if start_date_parsed:
-            print("gOT START DATE")
             if end_date_parsed:
                 print("gOT end DATE")
                 # Both dates are present
@@ -446,27 +468,48 @@ class AccountViewSet(viewsets.ModelViewSet):
         if created_at_gte:
              #  messages = queryset.filter(last_message_at__gte=datetime(2024, 10, 7).date(), last_message_at__lte=datetime(2024, 11, 7).date())
                 if created_at_lt:
-                    queryset = queryset.filter(
+                    datized_queryset = queryset.filter(
                         created_at__gte= created_at_gte_parsed,
                         created_at__lte = created_at_lt_parsed
                     ).order_by('created_at')
+                    total_scheduled = datized_queryset.filter(qualified=True).exclude(outreach_success=True).count()
+                    total_outreach = datized_queryset.filter(outreach_success=True).count()
+            
                 else:
-                     queryset = queryset.filter(
+                    datized_queryset = queryset.filter(
                         created_at__gte= created_at_gte_parsed,
                         # created_at__lt = created_at_lt_parsed
                     ).order_by('created_at')
+                    total_scheduled = datized_queryset.filter(qualified=True).exclude(outreach_success=True).count()
+                    total_outreach = datized_queryset.filter(outreach_success=True).count()
                     
+       
 
         if qualified:
-            queryset = queryset.filter(qualified=True) if qualified == "true" else queryset.filter(qualified=False) 
+            if outreachSuccess == 'true':
+                # qualified_queryset = queryset.filter(qualified=True,outreach_success=True) if qualified == "true" else queryset.filter(qualified=False,outreach_success=True) 
+                # qualified_and_outreach_success = queryset.filter(qualified=True) if qualified == "true" else queryset.filter(qualified=False)  
+                total_scheduled = datized_queryset.filter(qualified=True,outreach_success=True).count()
+                total_outreach = datized_queryset.filter(outreach_success=True).count()
+            else:
+                total_scheduled = datized_queryset.filter(qualified=True).exclude(outreach_success=True).count()
+                total_outreach = datized_queryset.filter(outreach_success=True).count()
+            
+            queryset = queryset.filter(qualified=True).exclude(outreach_success=True) if qualified == "true" else queryset.filter(qualified=False) 
             
         if outreachSuccess:
-            queryset = queryset.filter(outreach_success=True).order_by('created_at') if outreachSuccess == "true" else queryset.filter(outreach_success=False) 
+            total_scheduled = datized_queryset.filter(qualified=True).exclude(outreach_success=True).count()
+            queryset = datized_queryset.filter(outreach_success=True).order_by('created_at') if outreachSuccess == "true" else queryset.filter(outreach_success=False)
+            total_outreach = queryset.count()
             
         if search_query is not None:
             queryset = queryset.filter(igname__icontains=search_query.strip())
-            
-        result_page = paginator.paginate_queryset(queryset, request)  # Apply pagination
+            # total_scheduled = queryset.count()
+            # total_outreach = queryset.count()
+        if datized_queryset is not None:
+            result_page = paginator.paginate_queryset(datized_queryset, request)  # Apply pagination
+        else:
+            result_page = paginator.paginate_queryset(queryset, request)  # Apply pagination
         
         for account in result_page:
             account_ = {
@@ -496,9 +539,13 @@ class AccountViewSet(viewsets.ModelViewSet):
             'next': paginator.get_next_link(),
             'previous': paginator.get_previous_link(),
             'results': accounts,
+            'total_outreach': total_outreach,
+            'total_scheduled': total_scheduled,
         }
         return Response(response_data,status=status.HTTP_200_OK)
     
+
+    @schema_context(os.getenv('SCHEMA_NAME'))
     @action(detail=True, methods=['post'], url_path="clear-convo")
     def clear_convo(self, request, **kwargs):
         account = self.get_object()
@@ -516,7 +563,7 @@ class AccountViewSet(viewsets.ModelViewSet):
         
         return Response({"success": True, "message": "Conversations successfully reset"}, status=status.HTTP_200_OK)
         
-    
+    @schema_context(os.getenv('SCHEMA_NAME'))
     @action(detail=True, methods=['post'], url_path="add-notes")
     def add_notes(self, request, **kwargs):
         account = self.get_object()
@@ -542,12 +589,14 @@ class AccountViewSet(viewsets.ModelViewSet):
             status=status.HTTP_200_OK
         )    
 
+    @schema_context(os.getenv('SCHEMA_NAME'))
     def retrieve(self, request, pk=None):
         queryset = Account.objects.all()
         user = get_object_or_404(queryset, pk=pk)
         serializer = GetSingleAccountSerializer(user)
         return Response(serializer.data)
 
+    @schema_context(os.getenv('SCHEMA_NAME'))
     @action(detail=False, methods=['get'], url_path="active-stages")
     def active_stages(self, request):
         # Retrieve all unique status_param values
@@ -556,6 +605,7 @@ class AccountViewSet(viewsets.ModelViewSet):
         # Return as an array
         return Response(list(unique_status_params), status=status.HTTP_200_OK)
 
+    @schema_context(os.getenv('SCHEMA_NAME'))
     @action(detail=False, methods=['get'], url_path="active-stage-stats")
     def active_stage_stats(self, request):
         # We'll add this filers as soon as we know when they moved from one stage to the next
@@ -607,6 +657,7 @@ class AccountViewSet(viewsets.ModelViewSet):
         # Return the results as a list of dictionaries
         return Response(stages_with_counts, status=status.HTTP_200_OK)
     
+    @schema_context(os.getenv('SCHEMA_NAME'))
     @action(detail=True, methods=['get'])
     def threads_with_messages(self, request, pk=None):
         """
@@ -632,6 +683,7 @@ class AccountViewSet(viewsets.ModelViewSet):
         except Account.DoesNotExist:
             return Response({"error": "Account not found"}, status=404)
     
+    @schema_context(os.getenv('SCHEMA_NAME'))
     @action(detail=True,methods=["post"],url_path="add-outsourced")
     def add_outsourced(self,request,pk=None):
         account = self.get_object()
@@ -646,7 +698,8 @@ class AccountViewSet(viewsets.ModelViewSet):
                 "source": outsourced.source
             }
         )
-
+    
+    @schema_context(os.getenv('SCHEMA_NAME'))
     @action(detail=False,methods=["post"],url_path="get-id")
     def get_id(self,request,pk=None):
         username = request.data.get("username")
@@ -667,7 +720,7 @@ class AccountViewSet(viewsets.ModelViewSet):
                 }
             )
 
-
+    @schema_context(os.getenv('SCHEMA_NAME'))
     @action(detail=False,methods=['post'],url_path='qualify-account')
     def qualify_account(self, request, pk=None):
         account = Account.objects.filter(igname = request.data.get('username')).latest('created_at')
@@ -686,7 +739,7 @@ class AccountViewSet(viewsets.ModelViewSet):
     
         return Response(accounts_qualified, status=status.HTTP_200_OK)
     
-
+    @schema_context(os.getenv('SCHEMA_NAME'))
     @action(detail=False,methods=['post'],url_path='manually-trigger')
     def manually_trigger(self, request, pk=None):
         account = Account.objects.filter(igname = request.data.get('username')).latest('created_at')
@@ -703,6 +756,7 @@ class AccountViewSet(viewsets.ModelViewSet):
     
         return Response(accounts_triggered, status=status.HTTP_200_OK)
 
+    @schema_context(os.getenv('SCHEMA_NAME'))
     @action(detail=True, methods=["get"], url_path="potential-buy")
     def potential_buy(self, request, pk=None):
         account = self.get_object()
@@ -721,6 +775,7 @@ class AccountViewSet(viewsets.ModelViewSet):
 
         return Response({"status_code": status_code, "potential_buy": potential_buy})
 
+    @schema_context(os.getenv('SCHEMA_NAME'))
     @action(detail=True, methods=["get"], url_path="potential-promote")
     def potential_promote(self, request, pk=None):
         account = self.get_object()
@@ -739,7 +794,7 @@ class AccountViewSet(viewsets.ModelViewSet):
 
         return Response({"status_code": status_code, "potential_promote": potential_promote})
     
-
+    @schema_context(os.getenv('SCHEMA_NAME'))
     @action(detail=True, methods=["get"], url_path="extract-followers")
     def extract_followers(self, request, pk=None):
         account = self.get_object()
@@ -753,6 +808,7 @@ class AccountViewSet(viewsets.ModelViewSet):
             account_.save()
         return Response(followers)
 
+    @schema_context(os.getenv('SCHEMA_NAME'))
     @action(detail=False, methods=["post"], url_path="batch-uploads")
     def batch_uploads(self, request):
         serializer = UploadSerializer(data=request.data)
@@ -776,6 +832,7 @@ class AccountViewSet(viewsets.ModelViewSet):
         else:
             return Response({"status_code": 500})
 
+    @schema_context(os.getenv('SCHEMA_NAME'))
     @action(detail=False, methods=["get"], url_path="extract-action-button", url_name="extract_action_button")
     def extract_action_bution(self, request):
         status_code = 0
@@ -802,6 +859,7 @@ class AccountViewSet(viewsets.ModelViewSet):
         response = {"actions": external_urls, "status_code": status_code}
         return Response(response)
 
+    @schema_context(os.getenv('SCHEMA_NAME'))
     @action(detail=False, methods=["get"], url_path="needs-assessment", url_name="needs_assesment")
     def send_to_needs_assessment(self, request):
 
@@ -810,6 +868,7 @@ class AccountViewSet(viewsets.ModelViewSet):
         account.save()
         return Response({"stage": 2, "success": True})
 
+    @schema_context(os.getenv('SCHEMA_NAME'))
     @action(detail=True, methods=['post'], url_path="reset-account")
     def reset_account(self, request, pk=None):
         account = self.get_object()
@@ -824,6 +883,7 @@ class AccountViewSet(viewsets.ModelViewSet):
             salesRep.instagram.remove(account)
         return Response({"message": "Account reset successfully"})
 
+    @schema_context(os.getenv('SCHEMA_NAME'))
     def account_by_ig_thread_id(self, request, *args, **kwargs):
         # There could be more than one thread with the same thread id
         # thread = Thread.objects.get(thread_id=kwargs.get('ig_thread_id')) 
@@ -836,6 +896,7 @@ class AccountViewSet(viewsets.ModelViewSet):
         else:
             return Response({"error":"Account does not have thread attached"})
     
+    @schema_context(os.getenv('SCHEMA_NAME'))
     def retrieve_salesrep(self, request, *args, **kwargs):
         username = kwargs.get('username')
 
@@ -861,7 +922,7 @@ class AccountViewSet(viewsets.ModelViewSet):
 
         return Response({"salesrep": salesrep_data}, status=status.HTTP_200_OK)
         
-    
+    @schema_context(os.getenv('SCHEMA_NAME'))
     @action(detail=True, methods=['post'], url_path="schedule-outreach")
     def schedule_outreach(self, request, pk=None):
         serializer = ScheduleOutreachSerializer(data=request.data)
@@ -894,6 +955,7 @@ class AccountViewSet(viewsets.ModelViewSet):
         else:
             return Response({"error": True})
 
+    @schema_context(os.getenv('SCHEMA_NAME'))
     @action(detail=False, methods=["get"], url_path="get-connected-accounts")
     def get_connected_accounts(self, request, pk=None):
         response = requests.get(settings.MQTT_BASE_URL+"/accounts/connected")
@@ -948,7 +1010,7 @@ class AccountViewSet(viewsets.ModelViewSet):
                         "success": True,
                     }
                 )
-            
+    
     @action(detail=False, methods=["get"], url_path="check-mqtt-health")
     def get_mqtt_heath(self, request, pk=None):
         response = requests.get(settings.MQTT_BASE_URL+"/health")
@@ -996,6 +1058,7 @@ class AccountViewSet(viewsets.ModelViewSet):
                     }
                 )
             
+    @schema_context(os.getenv('SCHEMA_NAME'))
     @action(detail=False, methods=["get"], url_path="handle-duplicates")
     def find_handle_duplicates(self, request):
         duplicate_igname_list = (
@@ -1014,6 +1077,7 @@ class AccountViewSet(viewsets.ModelViewSet):
             "found": len(duplicate_igname_list)
         }, status = status.HTTP_202_ACCEPTED)
     
+    @schema_context(os.getenv('SCHEMA_NAME'))
     @action(detail=False, methods=["post"], url_path="qualify-test-accounts")
     def qualify_test_accounts(self, request):
         # test_account = Account.objects.filter(igname__icontains=request.data.get("igname")).latest('created_at')
@@ -1053,7 +1117,7 @@ class HashTagViewSet(viewsets.ModelViewSet):
     A viewset that provides the standard actions
     """
 
-    queryset = HashTag.objects.all()
+    with schema_context(os.getenv('SCHEMA_NAME')):queryset = HashTag.objects.all()
     serializer_class = HashTagSerializer
 
     def get_serializer_class(self):
@@ -1061,6 +1125,7 @@ class HashTagViewSet(viewsets.ModelViewSet):
             return UploadSerializer
         return self.serializer_class
 
+    @schema_context(os.getenv('SCHEMA_NAME'))
     @action(detail=False, methods=["post"], url_path="batch-uploads")
     def batch_uploads(self, request):
         serializer = UploadSerializer(data=request.data)
@@ -1090,7 +1155,7 @@ class PhotoViewSet(viewsets.ModelViewSet):
     A viewset that provides the standard actions
     """
 
-    queryset = Photo.objects.all()
+    with schema_context(os.getenv('SCHEMA_NAME')):queryset = Photo.objects.all()
     serializer_class = PhotoSerializer
 
     def get_serializer_class(self):
@@ -1100,6 +1165,7 @@ class PhotoViewSet(viewsets.ModelViewSet):
             return AddContentSerializer
         return self.serializer_class
 
+    @schema_context(os.getenv('SCHEMA_NAME'))
     def perform_create(self, request, *args, **kwargs):
         cl = login_user()
         serializer = self.get_serializer(data=request.data)
@@ -1120,6 +1186,7 @@ class PhotoViewSet(viewsets.ModelViewSet):
 
         return Response({"data": serializer.data})
 
+    @schema_context(os.getenv('SCHEMA_NAME'))
     @action(detail=True, methods=["get"], url_path="retrieve-likers")
     def retrieve_likers(self, request, pk=None):
         photo = self.get_object()
@@ -1133,6 +1200,7 @@ class PhotoViewSet(viewsets.ModelViewSet):
             account.save()
         return Response(likers)
 
+    @schema_context(os.getenv('SCHEMA_NAME'))
     @action(detail=True, methods=["get"], url_path="fetch-comments")
     def fetch_comments(self, request, pk=None):
         try:
@@ -1148,6 +1216,7 @@ class PhotoViewSet(viewsets.ModelViewSet):
             error_message = str(error)
             return Response({"error": error_message})
 
+    @schema_context(os.getenv('SCHEMA_NAME'))
     @action(detail=True, methods=["post"], url_path="generate-comment")
     def generate_comment(self, request, pk=None):
         photo = self.get_object()
@@ -1167,6 +1236,7 @@ class PhotoViewSet(viewsets.ModelViewSet):
             }
         )
 
+    @schema_context(os.getenv('SCHEMA_NAME'))
     @action(detail=False, methods=["post"], url_path="batch-uploads")
     def batch_uploads(self, request):
         serializer = UploadSerializer(data=request.data)
@@ -1196,7 +1266,7 @@ class VideoViewSet(viewsets.ModelViewSet):
     A viewset that provides the standard actions
     """
 
-    queryset = Video.objects.all()
+    with schema_context(os.getenv('SCHEMA_NAME')):queryset = Video.objects.all()
     serializer_class = VideoSerializer
 
     def get_serializer_class(self):
@@ -1206,6 +1276,7 @@ class VideoViewSet(viewsets.ModelViewSet):
             return AddContentSerializer
         return self.serializer_class
 
+    @schema_context(os.getenv('SCHEMA_NAME'))
     @action(detail=True, methods=["get"], url_path="fetch-comments")
     def fetch_comments(self, request, pk=None):
         try:
@@ -1220,6 +1291,7 @@ class VideoViewSet(viewsets.ModelViewSet):
             error_message = str(error)
             return Response({"error": error_message})
 
+    @schema_context(os.getenv('SCHEMA_NAME'))
     @action(detail=True, methods=["post"], url_path="generate-comment")
     def generate_comment(self, request, pk=None):
         video = self.get_object()
@@ -1239,6 +1311,7 @@ class VideoViewSet(viewsets.ModelViewSet):
             }
         )
 
+    @schema_context(os.getenv('SCHEMA_NAME'))
     @action(detail=True, methods=["get"], url_path="retrieve-likers")
     def retrieve_likers(self, request, pk=None):
         video = self.get_object()
@@ -1252,6 +1325,7 @@ class VideoViewSet(viewsets.ModelViewSet):
             account.save()
         return Response(likers)
 
+    @schema_context(os.getenv('SCHEMA_NAME'))
     @action(detail=True, methods=["get"], url_path="retrieve-commenters")
     def retrieve_commenters(self, request, pk=None):
         video = self.get_object()
@@ -1265,6 +1339,7 @@ class VideoViewSet(viewsets.ModelViewSet):
             account.save()
         return Response(comments)
 
+    @schema_context(os.getenv('SCHEMA_NAME'))
     @action(detail=False, methods=["post"], url_path="batch-uploads")
     def batch_uploads(self, request):
         serializer = UploadSerializer(data=request.data)
@@ -1294,7 +1369,7 @@ class ReelViewSet(viewsets.ModelViewSet):
     A viewset that provides the standard actions
     """
 
-    queryset = Reel.objects.all()
+    with schema_context(os.getenv('SCHEMA_NAME')):queryset = Reel.objects.all()
     serializer_class = ReelSerializer
 
     def get_serializer_class(self):
@@ -1305,6 +1380,7 @@ class ReelViewSet(viewsets.ModelViewSet):
 
         return self.serializer_class
 
+    @schema_context(os.getenv('SCHEMA_NAME'))
     @action(detail=True, methods=["get"], url_path="fetch-comments")
     def fetch_comments(self, request, pk=None):
         try:
@@ -1319,6 +1395,7 @@ class ReelViewSet(viewsets.ModelViewSet):
             error_message = str(error)
             return Response({"error": error_message})
 
+    @schema_context(os.getenv('SCHEMA_NAME'))
     @action(detail=True, methods=["post"], url_path="generate-comment")
     def generate_comment(self, request, pk=None):
         reel = self.get_object()
@@ -1338,6 +1415,7 @@ class ReelViewSet(viewsets.ModelViewSet):
             }
         )
 
+    @schema_context(os.getenv('SCHEMA_NAME'))
     @action(detail=True, methods=["post"], url_path="add-comment")
     def add_comment(self, request, pk=None):
         reel = self.get_object()
@@ -1357,6 +1435,7 @@ class ReelViewSet(viewsets.ModelViewSet):
                 {"status": status.HTTP_200_OK, "message": serializer.data.get("human_response"), "success": True}
             )
 
+    @schema_context(os.getenv('SCHEMA_NAME'))
     @action(detail=True, methods=["get"], url_path="retrieve-likers")
     def retrieve_likers(self, request, pk=None):
         reel = self.get_object()
@@ -1370,6 +1449,7 @@ class ReelViewSet(viewsets.ModelViewSet):
             account.save()
         return Response(likers)
 
+    @schema_context(os.getenv('SCHEMA_NAME'))
     @action(detail=True, methods=["get"], url_path="retrieve-commenters")
     def retrieve_commenters(self, request, pk=None):
         reel = self.get_object()
@@ -1383,6 +1463,7 @@ class ReelViewSet(viewsets.ModelViewSet):
             account.save()
         return Response(comments)
 
+    @schema_context(os.getenv('SCHEMA_NAME'))
     @action(detail=False, methods=["post"], url_path="batch-uploads")
     def batch_uploads(self, request):
         serializer = UploadSerializer(data=request.data)
@@ -1414,7 +1495,7 @@ class StoryViewSet(viewsets.ModelViewSet):
     A viewset that provides the standard actions
     """
 
-    queryset = Story.objects.all()
+    with schema_context(os.getenv('SCHEMA_NAME')):queryset = Story.objects.all()
     serializer_class = StorySerializer
 
     def get_serializer_class(self):
@@ -1424,6 +1505,7 @@ class StoryViewSet(viewsets.ModelViewSet):
             return AddContentSerializer
         return self.serializer_class
 
+    @schema_context(os.getenv('SCHEMA_NAME'))
     @action(detail=True, methods=["get"], url_path="fetch-comments")
     def fetch_comments(self, request, pk=None):
         try:
@@ -1438,6 +1520,7 @@ class StoryViewSet(viewsets.ModelViewSet):
             error_message = str(error)
             return Response({"error": error_message})
 
+    @schema_context(os.getenv('SCHEMA_NAME'))
     @action(detail=True, methods=["post"], url_path="generate-comment")
     def generate_comment(self, request, pk=None):
         story = self.get_object()
@@ -1457,6 +1540,7 @@ class StoryViewSet(viewsets.ModelViewSet):
             }
         )
 
+    @schema_context(os.getenv('SCHEMA_NAME'))
     @action(detail=True, methods=["post"], url_path="add-comment")
     def add_comment(self, request, pk=None):
         story = self.get_object()
@@ -1476,6 +1560,7 @@ class StoryViewSet(viewsets.ModelViewSet):
                 {"status": status.HTTP_200_OK, "message": serializer.data.get("human_response"), "success": True}
             )
 
+    @schema_context(os.getenv('SCHEMA_NAME'))
     @action(detail=True, methods=["get"], url_path="retrieve-info")
     def like_story(self, request, pk=None):
         story = self.get_object()
@@ -1485,6 +1570,7 @@ class StoryViewSet(viewsets.ModelViewSet):
         cl.story_like(story_id=info.id)
         return Response({"status": status.HTTP_200_OK, "success": True})
 
+    @schema_context(os.getenv('SCHEMA_NAME'))
     @action(detail=True, methods=["get"], url_path="retrieve-info")
     def retrieve_info(self, request, pk=None):
         story = self.get_object()
@@ -1494,6 +1580,7 @@ class StoryViewSet(viewsets.ModelViewSet):
         info = cl.story_info(story_pk).dict()
         return Response(info)
 
+    @schema_context(os.getenv('SCHEMA_NAME'))
     @action(detail=False, methods=["post"], url_path="batch-uploads")
     def batch_uploads(self, request):
         serializer = UploadSerializer(data=request.data)
@@ -1519,7 +1606,7 @@ class StoryViewSet(viewsets.ModelViewSet):
 
 
 class DMViewset(viewsets.ModelViewSet):
-    queryset = Thread.objects.all()
+    with schema_context(os.getenv('SCHEMA_NAME')):queryset = Thread.objects.all()
     serializer_class = ThreadSerializer
     pagination_class = PaginationClass
 
@@ -1530,6 +1617,7 @@ class DMViewset(viewsets.ModelViewSet):
             return AddContentSerializer
         return self.serializer_class
 
+    @schema_context(os.getenv('SCHEMA_NAME'))
     def list(self, request, pk=None):
         assigned_to_filter = request.GET.get("assigned_to")
         stage_filter = request.GET.get("stage")
@@ -1636,6 +1724,7 @@ class DMViewset(viewsets.ModelViewSet):
 
         return Response(response_data)
 
+    @schema_context(os.getenv('SCHEMA_NAME'))
     @action(detail=False, methods=["get"], url_path="handle-duplicates")
     def find_handle_duplicates(self, request):
         duplicate_igname_list = (
@@ -1657,6 +1746,7 @@ class DMViewset(viewsets.ModelViewSet):
             "handled":True
         }, status = status.HTTP_202_ACCEPTED)
 
+    @schema_context(os.getenv('SCHEMA_NAME'))
     @action(detail=False,methods=['post'],url_path="create-with-account")
     def create_with_account(self, request):
         account = get_object_or_404(Account,id = request.data.pop('account_id'))
@@ -1666,6 +1756,7 @@ class DMViewset(viewsets.ModelViewSet):
         return Response({'id':thread.id}, status=status.HTTP_200_OK)
 
 
+    @schema_context(os.getenv('SCHEMA_NAME'))
     @action(detail=False, methods=["post"], url_path="download-csv")
     def download_csv(self, request):
         date_format = "%Y-%m-%d %H:%M:%S"
@@ -1690,7 +1781,7 @@ class DMViewset(viewsets.ModelViewSet):
         return Response(accounts, status=status.HTTP_200_OK)
 
     
-
+    @schema_context(os.getenv('SCHEMA_NAME'))
     @action(detail=False, methods=["get"], url_path="response-rate")
     def response_rate(self, request):
         response_rate_object = []
@@ -1708,6 +1799,7 @@ class DMViewset(viewsets.ModelViewSet):
                     })
         return Response(data=response_rate_object, status=status.HTTP_200_OK)
 
+    @schema_context(os.getenv('SCHEMA_NAME'))
     @action(detail=True, methods=["post"], url_path="save-client-message")
     def save_client_message(self, request, pk=None):
         thread = self.get_object()
@@ -1728,6 +1820,7 @@ class DMViewset(viewsets.ModelViewSet):
                 print(error)
         return Response({"success": True}, status=status.HTTP_201_CREATED)
 
+    @schema_context(os.getenv('SCHEMA_NAME'))
     @action(detail=True, methods=["post"], url_path="save-salesrep-message")
     def save_salesrep_message(self, request, pk=None):
         thread = self.get_object()
@@ -1746,6 +1839,7 @@ class DMViewset(viewsets.ModelViewSet):
                 print(error)
         return Response({"success": True}, status=status.HTTP_201_CREATED)
 
+    @schema_context(os.getenv('SCHEMA_NAME'))
     @action(detail=True, methods=["post"], url_path="send-message-manually")
     def send_message_manually(self, request, pk=None):
         thread = self.get_object()
@@ -1801,7 +1895,8 @@ class DMViewset(viewsets.ModelViewSet):
                     "success": True
                 }
             )
-  
+    
+    @schema_context(os.getenv('SCHEMA_NAME'))
     @action(detail=False, methods=["post"], url_path="sync-messages")
     def sync_messages(self, request, *args, **kwargs):
         # Get data from request
@@ -1944,6 +2039,8 @@ class DMViewset(viewsets.ModelViewSet):
         except Exception as e:  
             return Response({"success": False, "message": e}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
+
+    @schema_context(os.getenv('SCHEMA_NAME'))
     def generate_outreach_times(self, request, *args,**kwargs):
         start_time = request.data.get("start_time")
         end_time = requests.data.get("end_time")
@@ -1958,7 +2055,7 @@ class DMViewset(viewsets.ModelViewSet):
             print(time_slot)
         return Response({"message":"time slots successfully generated"})
 
-        
+    @schema_context(os.getenv('SCHEMA_NAME'))    
     def check_account_exists(self,request,*args,**kwargs):
         account = Account.objects.filter(igname = request.data.get('username'))
         if account.exists():
@@ -1966,6 +2063,7 @@ class DMViewset(viewsets.ModelViewSet):
         else:
             return Response({"exists":False})
         
+    @schema_context(os.getenv('SCHEMA_NAME'))
     def check_thread_exists(self,request,*args,**kwargs):
         account = Account.objects.filter(igname = request.data.get('username')).latest('created_at')
         if account.thread_set.exists():
@@ -1989,7 +2087,26 @@ class DMViewset(viewsets.ModelViewSet):
         # Check if time_slot is within the window
         return start_time <= time_slot <= end_time
 
+    @schema_context(os.getenv('SCHEMA_NAME'))
+    def get_accounts_to_be_reached_out_to_today(self, request, *args, **kwargs):
+        
+        # Get the start of yesterday's date
+        yesterday = timezone.now().date() - timezone.timedelta(days=1)
+        tomorrow = timezone.now().date() + timezone.timedelta(days=1)
+        yesterday_start = timezone.make_aware(timezone.datetime.combine(yesterday, timezone.datetime.min.time()))
+        unwanted_usernames = UnwantedAccount.objects.values_list('username', flat=True)
 
+        # Filter accounts that are qualified and created from yesterday onwards, and exclude accounts that are not wanted
+        accounts = Account.objects.filter(
+            Q(qualified=True) & Q(created_at__gte=yesterday_start) & Q(created_at__lte=tomorrow)
+        ).exclude(
+            status__name="sent_compliment"
+        ).exclude(
+            igname__in=unwanted_usernames
+        )
+        return Response({'accounts': accounts.values('id','igname')},status=status.HTTP_200_OK)
+
+    @schema_context(os.getenv('SCHEMA_NAME'))
     def get_qualified_threads_and_respond(self, request, *args, **kwargs):
         
         # Get the start of yesterday's date
@@ -2028,8 +2145,8 @@ class DMViewset(viewsets.ModelViewSet):
                                 try:
                                     schedule = None
                                     # set a window to which it cannot by pass
-                                    
-                                    time_slot = timezone.now()+timezone.timedelta(hours=i/2)
+                                    random_number = 1.5 + (2.5 - 1.5) * random.random()
+                                    time_slot = timezone.now()+timezone.timedelta(hours=i/random_number)
                                     if self.is_time_slot_within_window(time_slot):
                                         send_first_compliment.apply_async(args=[[account.igname],thread.last_message_content], eta=time_slot,task_id=f"compliment_{account.id}_{time_slot.timestamp()}")
                                         try:
@@ -2048,8 +2165,9 @@ class DMViewset(viewsets.ModelViewSet):
                         print("inbound sales")
                         # import pdb;pdb.set_trace()
                         time_slots = OutreachTime.objects.filter(time_slot__gte=timezone.now()).order_by('time_slot')
+                        random_number = 1.5 + (2.5 - 1.5) * random.random()
                         try:
-                            time_slot = timezone.now()+timezone.timedelta(hours=i/2)
+                            time_slot = timezone.now()+timezone.timedelta(hours=i/random_number)
                             # run_scheduler.delay(target_time=time_slot,username=account.igname,message="")
                             # time_slot = timezone.now()+timezone.timedelta(hours=i/2)
                             if self.is_time_slot_within_window(time_slot):
@@ -2070,6 +2188,7 @@ class DMViewset(viewsets.ModelViewSet):
             return Response({'message': 'accounts do not exist'})
 
 
+    @schema_context(os.getenv('SCHEMA_NAME'))
     def generate_followup_response(self, request, *args, **kwargs):
         date_threshold = timezone.now() - timezone.timedelta(days=30)
         last_message_subquery = (
@@ -2123,7 +2242,7 @@ class DMViewset(viewsets.ModelViewSet):
             if account.thread_set.exists():
                 thread = account.thread_set.latest('created_at')
 
-                generate_response_endpoint = f"https://api.booksy.us.boostedchat.com/v1/instagram/dflow/{thread.thread_id}/generate-response/"
+                generate_response_endpoint = f"{os.getenv('API_URL')}/v1/instagram/dflow/{thread.thread_id}/generate-response/"
                 
                 try:
                     data = {"message": ""}
@@ -2133,7 +2252,7 @@ class DMViewset(viewsets.ModelViewSet):
                         task_id = response.json()['task_id']
                         if task_id:
                             # Polling for task completion
-                            celery_url = f"https://api.booksy.us.boostedchat.com/v1/instagram/celery-task-status/{task_id}/"
+                            celery_url = f"{os.getenv('API_URL')}/v1/instagram/celery-task-status/{task_id}/"
                             while True:
                                 celery_response = requests.get(celery_url)
 
@@ -2171,7 +2290,7 @@ class DMViewset(viewsets.ModelViewSet):
 
         return Response({"message": "Followup responses generated successfully"}, status=status.HTTP_200_OK)
 
-    
+    @schema_context(os.getenv('SCHEMA_NAME'))
     def generate_response(self, request, *args, **kwargs):
         thread = Thread.objects.filter(thread_id=kwargs.get('thread_id')).latest('created_at')
         req = request.data
@@ -2197,6 +2316,8 @@ class DMViewset(viewsets.ModelViewSet):
             'result': result.result if result.state == 'SUCCESS' else None,
         })
 
+
+    @schema_context(os.getenv('SCHEMA_NAME'))
     def assign_operator(self, request, *args, **kwargs):
         try:
             thread = Thread.objects.filter(account__igname=kwargs.get('username')).latest('created_at')
@@ -2224,7 +2345,7 @@ class DMViewset(viewsets.ModelViewSet):
         )
 
     
-
+    @schema_context(os.getenv('SCHEMA_NAME'))
     @action(detail=False, methods=["post"], url_path="save-external-messages")
     def save_external_messages(self, request, pk=None):
         
@@ -2270,6 +2391,7 @@ class DMViewset(viewsets.ModelViewSet):
 
             )
 
+    @schema_context(os.getenv('SCHEMA_NAME'))
     @action(detail=True, methods=["get"], url_path="get-thread-messages")
     def get_thread_messages(self, request, pk=None):
 
@@ -2278,13 +2400,15 @@ class DMViewset(viewsets.ModelViewSet):
         serializer = MessageSerializer(messages, many=True)
         return Response(serializer.data)
 
+    @schema_context(os.getenv('SCHEMA_NAME'))
     @action(detail=True, methods=["post"], url_path="delete-all-thread-messages")
     def delete_thread_messages(self, request, pk=None):
 
         thread = self.get_object()
         Message.objects.filter(thread=thread).delete()
         return Response({"message": "Messages deleted successfully"}, status=status.HTTP_204_NO_CONTENT)
-
+    
+    @schema_context(os.getenv('SCHEMA_NAME'))
     @action(detail=True, methods=["post"], url_path="reset-thread-count")
     def reset_thread_count(self, request, pk=None):
 
@@ -2293,7 +2417,7 @@ class DMViewset(viewsets.ModelViewSet):
         thread.save()
         return Response({"message": "OK"}, status=status.HTTP_204_NO_CONTENT)
     
-
+    @schema_context(os.getenv('SCHEMA_NAME'))
     def messages_by_ig_thread_id(self, request, *args, **kwargs):
         # There come more than one threads with the same id
         # thread = Thread.objects.get(thread_id=kwargs.get('ig_thread_id'))
@@ -2302,6 +2426,7 @@ class DMViewset(viewsets.ModelViewSet):
         serializer = MessageSerializer(messages, many=True)
         return Response(serializer.data)
 
+    @schema_context(os.getenv('SCHEMA_NAME'))
     def thread_by_ig_thread_id(self, request, *args, **kwargs):
         # There come more than one threads with the same id
         # thread = Thread.objects.get(thread_id=kwargs.get('ig_thread_id'))
@@ -2311,6 +2436,7 @@ class DMViewset(viewsets.ModelViewSet):
         return Response(serializer.data)
 
     
+    @schema_context(os.getenv('SCHEMA_NAME'))
     def has_client_responded(self, request, *args, **kwargs):
         date_threshold = timezone.now() - timezone.timedelta(days=30)
         last_message_subquery = (
@@ -2354,6 +2480,7 @@ class DMViewset(viewsets.ModelViewSet):
             return Response({"has_responded":False}, status=status.HTTP_200_OK)
     
 
+    @schema_context(os.getenv('SCHEMA_NAME'))
     def webhook(self,request,*args,**kwargs):
         data = None
         try:
@@ -2396,7 +2523,7 @@ class Reschedule(APIView):
 
 
 class MessageViewSet(viewsets.ModelViewSet):
-    queryset = Message.objects.all()
+    with schema_context(os.getenv('SCHEMA_NAME')):queryset = Message.objects.all()
     serializer_class = MessageSerializer
 
     def get_serializer_class(self):

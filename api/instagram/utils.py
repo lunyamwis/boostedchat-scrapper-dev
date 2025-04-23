@@ -20,6 +20,7 @@ from api.sales_rep.models import SalesRep
 from rest_framework import status
 from datetime import datetime, timedelta
 
+@schema_context(os.getenv('SCHEMA_NAME'))
 def assign_salesrep(account):
     salesrep = None
     try:
@@ -32,6 +33,7 @@ def assign_salesrep(account):
     return salesrep
 
 
+@schema_context(os.getenv('SCHEMA_NAME'))
 def get_account(username):
     account = None
     check_unwanted = UnwantedAccount.objects.filter(username__icontains=''.join(username).split('-')[0])
@@ -50,6 +52,7 @@ def get_account(username):
         print(error)
     return account
 
+@schema_context(os.getenv('SCHEMA_NAME'))
 def get_account_for_salesrep(username):
     account = None
     try:
@@ -65,7 +68,7 @@ def get_account_for_salesrep(username):
         print(error)
     return account
 
-
+@schema_context(os.getenv('SCHEMA_NAME'))
 def get_sales_rep_for_account(username):
     salesrep = None
     username = username
@@ -76,6 +79,7 @@ def get_sales_rep_for_account(username):
         
     return salesrep
 
+@schema_context(os.getenv('SCHEMA_NAME'))
 def lead_is_for_salesrep(username, salesrep_to_check):
     ret = False
     account_salesrep = get_sales_rep_for_account(username)
@@ -86,6 +90,7 @@ def lead_is_for_salesrep(username, salesrep_to_check):
     return ret
 
 
+@schema_context(os.getenv('SCHEMA_NAME'))
 def tasks_by_sales_rep(task_name, sales_rep, task_status="any", order=1, number=-1, ret_tasks = False):
     tasks = PeriodicTask.objects.filter(task=task_name).order_by('start_time')
 
@@ -124,7 +129,7 @@ def tasks_by_sales_rep(task_name, sales_rep, task_status="any", order=1, number=
 
 
 
-
+@schema_context(os.getenv('SCHEMA_NAME'))
 def generate_time_slots(start_datetime, end_datetime, interval):
     start = datetime.strptime(start_datetime, "%Y-%m-%d %H:%M")
     end = datetime.strptime(end_datetime, "%Y-%m-%d %H:%M")

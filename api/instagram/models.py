@@ -283,8 +283,6 @@ class Media(BaseModel):
     
 
 
-
-
 class OutSourcedInfo(models.Model):
     source = models.CharField(null=True, blank=True, max_length=255)
     results = models.TextField(null=True, blank=True)
@@ -336,7 +334,13 @@ class Account(BaseModel):
     notes = models.TextField(null=True, blank=True)  # New notes field
     outreach_time = models.DateTimeField(null=True, blank=True)
     outreach_success = models.BooleanField(default=False)
-    
+    responded_date = models.DateField(null=True, blank=True)
+    call_scheduled_date = models.DateField(null=True, blank=True)
+    closing_date = models.DateField(null=True, blank=True)
+    won_date = models.DateField(null=True, blank=True)
+    success_story_date = models.DateField(null=True, blank=True)
+    lost_date = models.DateField(null=True, blank=True)
+
     def __str__(self) -> str:
         return self.igname if self.igname else self.id
 

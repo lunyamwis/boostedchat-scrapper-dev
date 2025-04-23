@@ -1,10 +1,12 @@
 import json
+import os
 import logging
 import requests
 
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
+from django_tenants.utils import schema_context
 from django_celery_beat.models import CrontabSchedule, PeriodicTask
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
@@ -24,7 +26,7 @@ from .serializers import AccountAssignmentSerializer, SalesRepSerializer
 
 
 class SalesRepManager(viewsets.ModelViewSet):
-    queryset = SalesRep.objects.all()
+    with schema_context(os.getenv('SCHEMA_NAME')):queryset = SalesRep.objects.all()
     serializer_class = SalesRepSerializer
 
     def get_serializer_class(self):
@@ -33,6 +35,8 @@ class SalesRepManager(viewsets.ModelViewSet):
 
         return self.serializer_class
 
+
+    @schema_context(os.getenv('SCHEMA_NAME'))
     def list(self, request):
 
         reps = SalesRep.objects.filter(available=True)
@@ -55,6 +59,7 @@ class SalesRepManager(viewsets.ModelViewSet):
         response = {"status_code": status.HTTP_200_OK, "info": user_info}
         return Response(response, status=status.HTTP_200_OK)
 
+    @schema_context(os.getenv('SCHEMA_NAME'))
     @action(detail=False, methods=["get"], url_path="all")
     def get_all_flattened(self, request, pk=None):
         sales_reps = SalesRep.objects.all()
@@ -63,6 +68,7 @@ class SalesRepManager(viewsets.ModelViewSet):
     
 
 
+    @schema_context(os.getenv('SCHEMA_NAME'))
     @action(detail=True, methods=["post"], url_path="reassign")
     def reassign_salesrep(self, request, pk=None):
         salesrep = self.get_object()
@@ -79,6 +85,7 @@ class SalesRepManager(viewsets.ModelViewSet):
 
         return Response({"success":True}, status=status.HTTP_200_OK)
 
+    @schema_context(os.getenv('SCHEMA_NAME'))
     def assign_salesrep(self, request):
         # import pdb;pdb.set_trace()
 
@@ -86,7 +93,7 @@ class SalesRepManager(viewsets.ModelViewSet):
         
         return Response({"message":"Successfully assigned salesrep"},status = status.HTTP_200_OK)
 
-
+    @schema_context(os.getenv('SCHEMA_NAME'))
     def assign_influencer(self, request):
         print(request.data)
         yesterday = timezone.now().date() - timezone.timedelta(days=1)
@@ -144,7 +151,7 @@ class SalesRepManager(viewsets.ModelViewSet):
 
         return Response({"message":"Successfully assigned salesrep"},status = status.HTTP_200_OK)
 
-
+    @schema_context(os.getenv('SCHEMA_NAME'))
     @action(detail=False, methods=["post"], url_path="assign-accounts")
     def assign_accounts(self, request, pk=None):
         serializer = AccountAssignmentSerializer(data=request.data)

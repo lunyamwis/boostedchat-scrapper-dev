@@ -120,6 +120,11 @@ urlpatterns = [
         name='get_qualified_threads_and_respond',
     ),
     path(
+        'getOutreachAccounts/',
+        DMViewset.as_view({'post': 'get_accounts_to_be_reached_out_to_today'}),
+        name='get_accounts_to_be_reached_out_to_today',
+    ),
+    path(
         'checkAccountExists/',
         DMViewset.as_view({'post': 'check_account_exists'}),
         name='check_account_exists',
