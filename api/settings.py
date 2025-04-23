@@ -288,6 +288,16 @@ CORS_ALLOW_METHODS = (
 )
 
 AI_MICROSERVICE_URL = "http://34.170.152.34/modelhub/"
+DIALOGFLOW_BASE_URL = (
+    "https://us-central1-dialogflow.googleapis.com/v3beta1/projects/boostedchatapi/locations/us-central1/"
+)
+OPENAI_BASE_URL = "https://api.openai.com/v1"
+# Application definition
+
+MQTT_BASE_URL = os.environ.get('MQTT_URL', "http://mqtt:3000")
+print(MQTT_BASE_URL)
+SCRAPPER_BASE_URL = os.environ.get('SCRAPPER_URL', "http://web:8003")
+API_BASE_URL = os.environ.get('API_BASE_URL', os.environ.get('API_URL', "http://web:8003"))
 
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(hours=2),
