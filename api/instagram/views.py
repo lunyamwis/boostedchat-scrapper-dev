@@ -384,17 +384,19 @@ class AccountViewSet(viewsets.ModelViewSet):
             return Response({"error": str(error)}, status=status.HTTP_400_BAD_REQUEST)
 
     
-    def update(self, request, pk=None):
+    @schema_context(os.getenv('SCHEMA_NAME'))
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop('partial', False)
         try:
-            account = self.get_object()
-            serializer = self.get_serializer(account, data=request.data, partial=False)
+            instance = self.get_object()
+            serializer = self.get_serializer(instance, data=request.data, partial=partial)
             serializer.is_valid(raise_exception=True)
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
         except Exception as error:
             return Response({"error": str(error)}, status=status.HTTP_400_BAD_REQUEST)
-        
-        
+
+
     @schema_context(os.getenv('SCHEMA_NAME'))
     def list(self, request, pk=None):
         queryset = Account.objects.filter(salesrep__isnull=False)
