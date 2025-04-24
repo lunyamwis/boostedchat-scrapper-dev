@@ -71,9 +71,11 @@ def webhook(request):
             # return JsonResponse({"message": "Verification failed", "status": 403})
             return HttpResponse("Verification failed", status=403)
             # return {"message":"Verification failed","status":403}
-    # elif request.method == 'POST':
+    elif request.method == 'POST':
+
         # Handle incoming messages
-        # data = json.loads(request.body.decode('utf-8'))
+        data = json.loads(request.body.decode('utf-8'))
+        print(data)
         # output_message = query_gpt(message,recepient_id)
         # if data.get('object') == 'page':
             # raise Exception("Webhook received a page object")
