@@ -5,11 +5,13 @@ import requests
 from api.dialogflow.helpers.notify_click_up import create_click_up_task, notify_click_up_tech_notifications
 from api.instagram.helpers.llm import query_gpt
 from urllib.parse import urlparse
+from django_tenants.utils import schema_context
 from api.dialogflow.helpers.conversations import get_conversation_so_far
 from django.core.mail import send_mail
 from api.instagram.models import OutSourced
 
 from lunyamwi import get_agent, setup_agent
+
 
 def get_status_number(val, pattern=r"\d+"):
     list_of_values = re.findall(pattern=pattern, string=val)
@@ -32,6 +34,7 @@ def get_if_asked_first_question(val, pattern=r"`([^`]+)`"):
     return str(list_of_values[0])
 
 
+@schema_context(os.getenv("SCHEMA_NAME"))
 def save_gpt_response(result, payload):
     print("===========now============")
     print(result.get("confirmed_problems"))
@@ -75,6 +78,7 @@ def clean_text(text):
 
     return text
 
+@schema_context(os.getenv("SCHEMA_NAME"))
 def get_gpt_response(account, message, thread_id=None):
    
     outsourced = None

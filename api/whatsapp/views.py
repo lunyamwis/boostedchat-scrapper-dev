@@ -145,20 +145,7 @@ def webhook(request):
             elif (request_data['entry'][0]['changes'][0]['value']['messages'][0]['interactive']['nfm_reply']['response_json'] is not None):
                 # Process flow reply
                 flow_reply_processor(request_data) # Pass the parsed data
-            else:
-                url = f"https://graph.facebook.com/v22.0/me/messages"
-                headers = {'Content-Type': 'application/json'}
-                payload = {
-                    'messaging_type': 'RESPONSE',
-                    'recipient': {'id': ""},
-                    'message': {'text': ""}
-                }
-                params = {'access_token': PAGE_ACCESS_TOKEN}
-                response = requests.post(url, headers=headers, params=params, json=payload)
-                if response.status_code != 200:
-                    print(f"Failed to send message: {response.text}")
-                logging.warning("No text or interactive message found in the request data.")
-
+            
         return Response("PROCESSED", status=status.HTTP_200_OK)
 
 @api_view(['GET', 'POST'])

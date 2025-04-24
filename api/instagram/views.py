@@ -48,7 +48,7 @@ from .models import Score, QualificationAlgorithm, Scheduler, AirflowCreds, Inst
 
 from django.shortcuts import render, redirect, get_object_or_404
 from .forms import WorkflowModelForm
-from .utils import generate_dag_script
+from .utils import assign_salesrep, generate_dag_script
 
 
 # 6th
@@ -349,6 +349,41 @@ class AccountViewSet(viewsets.ModelViewSet):
             return ScheduleOutreachSerializer
         return self.serializer_class
 
+
+    @schema_context(os.getenv('SCHEMA_NAME'))
+    def create(self, request, *args, **kwargs):
+        try:
+            serializer = AccountSerializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            return Response(
+                serializer.data,
+                status=status.HTTP_201_CREATED
+            )
+        except Exception as error:
+            return Response(
+                {"error": str(error)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+    
+    @schema_context(os.getenv('SCHEMA_NAME'))
+    @action(detail=False, methods=['post'], url_path="create-account-manually")
+    def create_account_manually(self, request):
+        igname = request.data.get('igname')
+        full_name = request.data.get('full_name')
+        
+        # Get or create account based on title
+        try:
+            account,created = Account.objects.get_or_create(igname=igname,full_name=full_name)
+            serializer = AccountSerializer(account)
+            assign_salesrep(account)
+            return Response(serializer.data)
+            # return Response(serializer_class(account).data, status=status.HTTP_201_CREATED)
+        except Exception as error:
+            print(error)
+            return Response({"error": str(error)}, status=status.HTTP_400_BAD_REQUEST)
+
+    
     @schema_context(os.getenv('SCHEMA_NAME'))
     def update(self, request, pk=None):
         try:
@@ -363,7 +398,6 @@ class AccountViewSet(viewsets.ModelViewSet):
     @schema_context(os.getenv('SCHEMA_NAME'))
     def list(self, request, pk=None):
         queryset = Account.objects.filter(salesrep__isnull=False)
-
         # Apply annotations
         queryset = queryset.annotate(
             last_message_at=F('thread__last_message_at'),
