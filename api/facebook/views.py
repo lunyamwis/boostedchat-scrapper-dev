@@ -9,7 +9,9 @@ from django.http import HttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.conf import settings
 from django_tenants.utils import schema_context
+from rest_framework import status
 from rest_framework.decorators import api_view
+from rest_framework.response import Response
 from boostedchatScrapper.spiders.facebook_group_member_scrapper import scrap_facebook_group_members 
 from boostedchatScrapper.spiders.facebook_send_first_message import send_first_message
 from .forms import ScrapFacebookGroupForm, SendFirstMessageForm
@@ -101,7 +103,7 @@ def webhook(request):
                             break
                             # continue
 
-            return HttpResponse('EVENT_RECEIVED')
+            return Response({"success":True},status=status.HTTP_200_OK)
         # else:
             # return HttpResponse(status=404)
 
