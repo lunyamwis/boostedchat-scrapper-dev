@@ -56,6 +56,10 @@ def query_gpt(prompt,recipient_id=None):
 
 @api_view(['GET', 'POST'])
 def webhook(request):
+    """
+    request from facebook post looks like:
+    {'object': 'page', 'entry': [{'time': 1745483896270, 'id': '100747912772086', 'messaging': [{'sender': {'id': '9784957798194096'}, 'recipient': {'id': '100747912772086'}, 'timestamp': 1745483895815, 'message': {'mid': 'm_r6NHj8BWOWVSQkWzoHFoGyUkvyqnSW7o0hfluI2whxeYioAcNozLLN_eG9pCd93V5C-SeXC4-ikJX5hmg_bCWQ', 'text': 'give me more information about last expense?'}}]}]}
+    """
     if request.method == 'GET':
         print(request.GET)
         # Verification
@@ -78,6 +82,7 @@ def webhook(request):
         # Handle incoming messages
         data = json.loads(request.body.decode('utf-8'))
         logging.warning(data)
+
         if data.get('object') == 'page':
             # raise Exception("Webhook received a page object")
             # continue
