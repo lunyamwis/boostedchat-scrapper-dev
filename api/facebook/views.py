@@ -76,30 +76,32 @@ def webhook(request):
         # Handle incoming messages
         data = json.loads(request.body.decode('utf-8'))
         print(data)
-        # output_message = query_gpt(message,recepient_id)
-        # if data.get('object') == 'page':
+        if data.get('object') == 'page':
             # raise Exception("Webhook received a page object")
             # continue
             # send_message("9581548405296563","Been hustling hard")
             
-            # for entry in data.get('entry', []):
-            #     for messaging_event in entry.get('messaging', []):
-            #         sender_id = messaging_event['sender']['id']
+            for entry in data.get('entry', []):
+                for messaging_event in entry.get('messaging', []):
+                    sender_id = messaging_event['sender']['id']
 
-            #         if 'message' in messaging_event:
-            #             message_text = messaging_event['message'].get('text')
-            #             if message_text:
-            #                 # Get user profile for personalization
-            #                 # user_profile = get_user_profile(sender_id)
-            #                 # first_name = user_profile.get('first_name', '')
+                    if 'message' in messaging_event:
+                        message_text = messaging_event['message'].get('text')
+                        if message_text:
+                            # Get user profile for personalization
+                            # user_profile = get_user_profile(sender_id)
+                            # first_name = user_profile.get('first_name', '')
 
-            #                 # Create personalized reply
-            #                 # reply = f"Hi {first_name}! You said: {message_text}"
+                            # Create personalized reply
+                            # reply = f"Hi {first_name}! You said: {message_text}"
 
-            #                 # Send reply
-            #                 # send_message(sender_id, reply)
+                            # Send reply
+                            output_message = query_gpt(message_text,sender_id)
+                            send_message(sender_id, output_message)
+                            break
+                            # continue
 
-            # return HttpResponse('ONE_EVENT_RECEIVED')
+            return HttpResponse('EVENT_RECEIVED')
         # else:
             # return HttpResponse(status=404)
 
