@@ -77,7 +77,7 @@ def webhook(request):
 
         # Handle incoming messages
         data = json.loads(request.body.decode('utf-8'))
-        print(data)
+        logging.warning(data)
         if data.get('object') == 'page':
             # raise Exception("Webhook received a page object")
             # continue
@@ -85,6 +85,9 @@ def webhook(request):
             
             for entry in data.get('entry', []):
                 for messaging_event in entry.get('messaging', []):
+                    if messaging_event.get('message') and messaging_event['message'].get('is_echo'):
+                        # Ignore messages sent by the page itself to prevent loops
+                        continue
                     sender_id = messaging_event['sender']['id']
 
                     if 'message' in messaging_event:
@@ -100,7 +103,7 @@ def webhook(request):
                             # Send reply
                             output_message = query_gpt(message_text,sender_id)
                             send_message(sender_id, output_message)
-                            break
+                            # break
                             # continue
 
             return Response({"success":True},status=status.HTTP_200_OK)
