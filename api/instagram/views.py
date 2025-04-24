@@ -388,7 +388,7 @@ class AccountViewSet(viewsets.ModelViewSet):
     def update(self, request, pk=None):
         try:
             account = self.get_object()
-            serializer = self.get_serializer(account, data=request.data, partial=True)
+            serializer = self.get_serializer(account, data=request.data)
             serializer.is_valid(raise_exception=True)
             serializer.save()
             return Response(serializer.data)
