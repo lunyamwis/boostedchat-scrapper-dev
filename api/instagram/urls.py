@@ -174,10 +174,15 @@ urlpatterns = [
         AccountViewSet.as_view({'get': 'retrieve_salesrep'}),
         name='retrieve_salesrep',
     ),
-     path(
+    path(
         'account/create-account-manually/',
         AccountViewSet.as_view({'post': 'create-account-manually'}),
         name='create-account-manually',
+    ),
+    path(
+        'account/weekly-reporting/',
+        AccountViewSet.as_view({'get': 'weekly-reporting'}),
+        name='weekly-reporting',
     ),
     path(
         'update-thread-details/',

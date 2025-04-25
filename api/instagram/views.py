@@ -484,7 +484,59 @@ class AccountViewSet(viewsets.ModelViewSet):
             "total_scheduled": total_scheduled,
         })
     
+    @schema_context(os.getenv('SCHEMA_NAME'))
+    @action(detail=False, methods=['get'], url_path="weekly-reporting")
+    def weekly_reporting(self, request):
+        start_of_year = datetime(datetime.now().year, 1, 1, tzinfo=timezone.get_current_timezone())
+        today = timezone.now()
+        current_week = start_of_year
+        results = []
 
+        while current_week < today:
+            next_week = current_week + timedelta(days=7)
+
+            outreach_count = Account.objects.filter(
+                created_at__gte=current_week,
+                created_at__lt=next_week,
+                outreach_success=True
+            ).count()
+
+            responded_messages = Message.objects.filter(
+                sent_by='Client',
+                sent_on__gte=current_week,
+                sent_on__lt=next_week
+            ).values_list('thread__account__igname', flat=True).distinct()
+
+            responded_count = responded_messages.count()
+            
+            call_scheduled_date = Account.objects.filter(call_scheduled_date__range=(current_week, next_week)).count()
+            closing_date = Account.objects.filter(closing_date__range=(current_week, next_week)).count()
+            won_date = Account.objects.filter(won_date__range=(current_week, next_week)).count()
+            success_story_date = Account.objects.filter(success_story_date__range=(current_week, next_week)).count()
+            lost_date = Account.objects.filter(lost_date__range=(current_week, next_week)).count()
+            responded_date = Account.objects.filter(responded_date__range=(current_week, next_week)).count()
+
+            results.append({
+                "week_start": current_week.strftime("%Y-%m-%d"),
+                "outreach": outreach_count,
+                "responded": responded_count,
+                "responded_ignames": list(responded_messages),
+                "call_scheduled_date": call_scheduled_date,
+                "closing_date": closing_date,
+                "won_date": won_date,
+                "success_story_date": success_story_date,
+                "lost_date": lost_date,
+                "responded_date": responded_date,
+            })
+
+            current_week = next_week
+            
+        return Response({
+            "results": results
+        })
+
+    
+    
     @schema_context(os.getenv('SCHEMA_NAME'))
     @action(detail=True, methods=['post'], url_path="clear-convo")
     def clear_convo(self, request, **kwargs):
