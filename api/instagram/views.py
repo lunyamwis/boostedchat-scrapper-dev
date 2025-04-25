@@ -371,10 +371,24 @@ class AccountViewSet(viewsets.ModelViewSet):
     def create_account_manually(self, request):
         igname = request.data.get('igname')
         full_name = request.data.get('full_name')
+        responded_date = request.data.get('responded_date')
+        call_scheduled_date = request.data.get('call_scheduled_date')
+        closing_date = request.data.get('closing_date')
+        won_date = request.data.get('won_date')
+        success_story_date = request.data.get('success_story_date')
+        lost_date = request.data.get('lost_date')
         
         # Get or create account based on title
         try:
-            account,created = Account.objects.get_or_create(igname=igname,full_name=full_name)
+            account,created = Account.objects.get_or_create(igname=igname,  
+                                                            qualified=True,
+                                                            responded_date=responded_date,
+                                                            call_scheduled_date=call_scheduled_date,
+                                                            closing_date=closing_date,
+                                                            won_date=won_date,
+                                                            success_story_date=success_story_date,
+                                                            lost_date=lost_date,
+                                                            full_name=full_name)
             serializer = AccountSerializer(account)
             assign_salesrep(account)
             return Response(serializer.data)
