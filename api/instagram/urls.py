@@ -16,7 +16,6 @@ from .views import (
     StoryViewSet,
     VideoViewSet,
     OutSourcedViewSet,
-    update_thread_details,
     Reschedule,
 )
 
@@ -174,14 +173,15 @@ urlpatterns = [
         AccountViewSet.as_view({'get': 'retrieve_salesrep'}),
         name='retrieve_salesrep',
     ),
-     path(
+    path(
         'account/create-account-manually/',
         AccountViewSet.as_view({'post': 'create-account-manually'}),
         name='create-account-manually',
     ),
     path(
-        'update-thread-details/',
-        update_thread_details
+        'account/weekly-reporting/',
+        AccountViewSet.as_view({'get': 'weekly-reporting'}),
+        name='weekly-reporting',
     ),
     path(
         'reschedule/',
