@@ -16,7 +16,6 @@ from .views import (
     StoryViewSet,
     VideoViewSet,
     OutSourcedViewSet,
-    update_thread_details,
     Reschedule,
 )
 
@@ -183,10 +182,6 @@ urlpatterns = [
         'account/weekly-reporting/',
         AccountViewSet.as_view({'get': 'weekly-reporting'}),
         name='weekly-reporting',
-    ),
-    path(
-        'update-thread-details/',
-        update_thread_details
     ),
     path(
         'reschedule/',

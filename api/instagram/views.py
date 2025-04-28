@@ -144,7 +144,7 @@ from django.db.models import Count, Case, When, IntegerField
 
 
 class PaginationClass(PageNumberPagination):
-    page_size = 100  # Set the number of items per page
+    page_size = 20  # Set the number of items per page
     page_size_query_param = 'page_size'
     max_page_size = 100
 
@@ -2529,31 +2529,6 @@ class MessageViewSet(viewsets.ModelViewSet):
         return Response({"message": "Message deleted successfully"}, status=status.HTTP_204_NO_CONTENT)
 
 
-@api_view(['POST'])
-def initialize_db(request):
-    init_db()
-    return Response({"message": "Db initialized successfully"})
-
-
-@api_view(['POST'])
-def update_thread_details(request):
-    threads = Thread.objects.filter()
-    for thread in threads:
-        messages = Message.objects.filter(thread=thread).order_by("-sent_on")
-
-        if len(messages) > 0:
-            thread.unread_message_count = len(messages)
-            thread.last_message_content = messages[0].content
-            thread.last_message_at = messages[0].sent_on
-            thread.save()
-
-    return Response({"message": "Db initialized successfully"})
-
-
-class PaginationClass(PageNumberPagination):
-    page_size = 20  # Set the number of items per page
-    page_size_query_param = 'page_size'
-    max_page_size = 100
 
 
 
