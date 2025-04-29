@@ -434,9 +434,18 @@ class AccountViewSet(viewsets.ModelViewSet):
         search_query = request.GET.get("q")
         created_at_gte = request.GET.get("created_at_gte")
         created_at_lt = request.GET.get("created_at_lt")
+        status_param = request.GET.get('status_param')
 
         if search_query:
             queryset = queryset.filter(igname__icontains=search_query.strip())
+        
+        if status_param:
+            if status_param.lower() == "null":
+                queryset = queryset.filter(status_param__isnull=True)
+            elif status_param.lower() == "blank":
+                queryset = queryset.filter(status_param="")
+            else:
+                queryset = queryset.filter(status_param=status_param.strip())
 
         # Date parsing
         created_filter = {}
@@ -487,9 +496,13 @@ class AccountViewSet(viewsets.ModelViewSet):
     @schema_context(os.getenv('SCHEMA_NAME'))
     @action(detail=False, methods=['get'], url_path="weekly-reporting")
     def weekly_reporting(self, request):
-        start_of_year = datetime(datetime.now().year, 1, 1, tzinfo=timezone.get_current_timezone())
+        # Get January 1st of the current year with timezone
+        jan_first = datetime(datetime.now().year, 1, 1, tzinfo=timezone.get_current_timezone())
+        # Adjust to the Monday of that week (0 = Monday, 6 = Sunday)
+        start_of_week = jan_first - timedelta(days=jan_first.weekday())
+        # start_of_year = datetime(datetime.now().year, 1, 1, tzinfo=timezone.get_current_timezone())
         today = timezone.now()
-        current_week = start_of_year
+        current_week = start_of_week 
         results = []
 
         while current_week < today:
