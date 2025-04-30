@@ -521,18 +521,26 @@ class AccountViewSet(viewsets.ModelViewSet):
             ).values_list('thread__account__igname', flat=True).distinct()
 
             responded_count = responded_messages.count()
+            responded_rate = (responded_count / outreach_count) * 100 if outreach_count > 0 else 0
             
             call_scheduled_date = Account.objects.filter(call_scheduled_date__range=(current_week, next_week)).count()
+            call_scheduled_rate = (call_scheduled_date / outreach_count) * 100 if outreach_count > 0 else 0
             closing_date = Account.objects.filter(closing_date__range=(current_week, next_week)).count()
+            closing_rate = (closing_date / outreach_count) * 100 if outreach_count > 0 else 0
             won_date = Account.objects.filter(won_date__range=(current_week, next_week)).count()
+            won_rate = (won_date / outreach_count) * 100 if outreach_count > 0 else 0
             success_story_date = Account.objects.filter(success_story_date__range=(current_week, next_week)).count()
+            success_story_rate = (success_story_date / outreach_count) * 100 if outreach_count > 0 else 0
             lost_date = Account.objects.filter(lost_date__range=(current_week, next_week)).count()
+            lost_rate = (lost_date / outreach_count) * 100 if outreach_count > 0 else 0
             responded_date = Account.objects.filter(responded_date__range=(current_week, next_week)).count()
+            # sq_conversion_rate = call_scheduled_date + responded_count
 
             results.append({
                 "week_start": current_week.strftime("%Y-%m-%d"),
                 "outreach": outreach_count,
                 "responded": responded_count,
+                "responded_rate": responded_rate,
                 "responded_ignames": list(responded_messages),
                 "call_scheduled_date": call_scheduled_date,
                 "closing_date": closing_date,
@@ -540,6 +548,12 @@ class AccountViewSet(viewsets.ModelViewSet):
                 "success_story_date": success_story_date,
                 "lost_date": lost_date,
                 "responded_date": responded_date,
+                "call_scheduled_rate": call_scheduled_rate,
+                "closing_rate": closing_rate,
+                "won_rate": won_rate,
+                "success_story_rate": success_story_rate,
+                "lost_rate": lost_rate,
+                
             })
 
             current_week = next_week
