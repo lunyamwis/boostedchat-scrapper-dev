@@ -434,9 +434,18 @@ class AccountViewSet(viewsets.ModelViewSet):
         search_query = request.GET.get("q")
         created_at_gte = request.GET.get("created_at_gte")
         created_at_lt = request.GET.get("created_at_lt")
+        status_param = request.GET.get('status_param')
 
         if search_query:
             queryset = queryset.filter(igname__icontains=search_query.strip())
+        
+        if status_param:
+            if status_param.lower() == "null":
+                queryset = queryset.filter(status_param__isnull=True)
+            elif status_param.lower() == "blank":
+                queryset = queryset.filter(status_param="")
+            else:
+                queryset = queryset.filter(status_param=status_param.strip())
 
         # Date parsing
         created_filter = {}
@@ -487,9 +496,13 @@ class AccountViewSet(viewsets.ModelViewSet):
     @schema_context(os.getenv('SCHEMA_NAME'))
     @action(detail=False, methods=['get'], url_path="weekly-reporting")
     def weekly_reporting(self, request):
-        start_of_year = datetime(datetime.now().year, 1, 1, tzinfo=timezone.get_current_timezone())
+        # Get January 1st of the current year with timezone
+        jan_first = datetime(datetime.now().year, 1, 1, tzinfo=timezone.get_current_timezone())
+        # Adjust to the Monday of that week (0 = Monday, 6 = Sunday)
+        start_of_week = jan_first - timedelta(days=jan_first.weekday())
+        # start_of_year = datetime(datetime.now().year, 1, 1, tzinfo=timezone.get_current_timezone())
         today = timezone.now()
-        current_week = start_of_year
+        current_week = start_of_week 
         results = []
 
         while current_week < today:
@@ -508,18 +521,26 @@ class AccountViewSet(viewsets.ModelViewSet):
             ).values_list('thread__account__igname', flat=True).distinct()
 
             responded_count = responded_messages.count()
+            responded_rate = (responded_count / outreach_count) * 100 if outreach_count > 0 else 0
             
             call_scheduled_date = Account.objects.filter(call_scheduled_date__range=(current_week, next_week)).count()
+            call_scheduled_rate = (call_scheduled_date / outreach_count) * 100 if outreach_count > 0 else 0
             closing_date = Account.objects.filter(closing_date__range=(current_week, next_week)).count()
+            closing_rate = (closing_date / outreach_count) * 100 if outreach_count > 0 else 0
             won_date = Account.objects.filter(won_date__range=(current_week, next_week)).count()
+            won_rate = (won_date / outreach_count) * 100 if outreach_count > 0 else 0
             success_story_date = Account.objects.filter(success_story_date__range=(current_week, next_week)).count()
+            success_story_rate = (success_story_date / outreach_count) * 100 if outreach_count > 0 else 0
             lost_date = Account.objects.filter(lost_date__range=(current_week, next_week)).count()
+            lost_rate = (lost_date / outreach_count) * 100 if outreach_count > 0 else 0
             responded_date = Account.objects.filter(responded_date__range=(current_week, next_week)).count()
+            # sq_conversion_rate = call_scheduled_date + responded_count
 
             results.append({
                 "week_start": current_week.strftime("%Y-%m-%d"),
                 "outreach": outreach_count,
                 "responded": responded_count,
+                "responded_rate": responded_rate,
                 "responded_ignames": list(responded_messages),
                 "call_scheduled_date": call_scheduled_date,
                 "closing_date": closing_date,
@@ -527,6 +548,12 @@ class AccountViewSet(viewsets.ModelViewSet):
                 "success_story_date": success_story_date,
                 "lost_date": lost_date,
                 "responded_date": responded_date,
+                "call_scheduled_rate": call_scheduled_rate,
+                "closing_rate": closing_rate,
+                "won_rate": won_rate,
+                "success_story_rate": success_story_rate,
+                "lost_rate": lost_rate,
+                
             })
 
             current_week = next_week
