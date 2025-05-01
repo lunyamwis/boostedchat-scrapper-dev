@@ -35,6 +35,8 @@ class QueryAdmin(admin.ModelAdmin):
 
 @admin.register(Department)
 class DepartmentAdmin(admin.ModelAdmin):
+    list_display = ('name','version',)
+    
     def get_form(self, request, obj=None, **kwargs):
         self.exclude = ("id",)
         form = super(DepartmentAdmin, self).get_form(request, obj, **kwargs)

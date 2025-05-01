@@ -340,6 +340,7 @@ class Account(BaseModel):
     won_date = models.DateField(null=True, blank=True)
     success_story_date = models.DateField(null=True, blank=True)
     lost_date = models.DateField(null=True, blank=True)
+    engagement_version = models.CharField(max_length=255, null=True, blank=True)
 
     def __str__(self) -> str:
         return self.igname if self.igname else self.id

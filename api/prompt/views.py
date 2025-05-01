@@ -1162,7 +1162,7 @@ class agentSetup(APIView):
         with schema_context(os.getenv("SCHEMA_NAME")):
 
             # import pdb;pdb.set_trace()          
-            department = Department.objects.filter(name = data.get("department")).last()
+            department = Department.objects.filter(name = data.get("department")).get(version = data.get("version"))
             logging.warning(f"Department: {data.get('department')}")
             logging.warning(f"Department: {department}")
             logging.warning(f"Schema: {os.getenv('SCHEMA_NAME')}")
