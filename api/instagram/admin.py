@@ -158,7 +158,7 @@ class AccountAdmin(admin.ModelAdmin):
 
         selected_instagram_account = queryset.values_list('igname', flat=True)
         print(selected_instagram_account)
-        send_first_compliment.delay(list(selected_instagram_account))
+        send_first_compliment.delay(username=list(selected_instagram_account),message="")
         self.message_user(request, _(
             f'Successfully sending compliment.'
         ), messages.INFO)
