@@ -140,7 +140,7 @@ class UnscheduledFilter(admin.SimpleListFilter):
 @admin.register(Account)
 class AccountAdmin(admin.ModelAdmin):
     search_fields = ['igname__icontains']
-    actions = [get_cut_info_action, set_qualified_true_action, set_disqualified_true_action]
+    actions = [get_cut_info_action, set_qualified_true_action, set_disqualified_true_action,'send_compliment']
     list_filter = [
         'qualified',  # Filter for unqualified accounts
         ('created_at', YesterdayFilter),  # Custom filter for created_at
