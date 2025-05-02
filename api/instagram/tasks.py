@@ -1214,6 +1214,17 @@ def relogin_scouts(selected_scouts=None):
                 updated_count += 1  # Count even if an exception occurred
 
 @shared_task()
+@schema_context(os.getenv("SCHEMA_NAME"))
+def load_info_to_database_v2():
+    print(InstagramUser.objects.filter(created_at__gte=timezone.now()-timezone.timedelta(days=1)).count())
+    instagram_users = InstagramUser.objects.filter(created_at__gte=timezone.now()-timezone.timedelta(days=1))
+    for user in instagram_users:
+        account =  Account.objects.create(igname=user.username,relevant_information=user.info if user.info else {"media_id":user.item_id,"username":user.username})
+        outsourced = OutSourced.objects.create(results=user.info if user.info else {"media_id":user.item_id,"username":user.username},account=account)
+    return
+
+
+@shared_task()
 def qualify_and_reschedule():
     with schema_context(os.environ.get("SCHEMA_NAME")):
         # Your code that requires the tenant schema context goes here
