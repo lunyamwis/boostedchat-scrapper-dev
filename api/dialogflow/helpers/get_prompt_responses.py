@@ -148,6 +148,7 @@ def get_gpt_response(account, message, thread_id=None):
     relevant_information = str(account.relevant_information) if account.relevant_information else ""
     payload = {
         "department":"Engagement Department",
+        "version": account.engagement_version,
         "agent_name": agent_name,
         "agent_task": agent_task,
         "text":message if message else "",

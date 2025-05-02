@@ -8,6 +8,7 @@ import json
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from django.contrib.admin import DateFieldListFilter
+from django.contrib import messages
 
 from .models import Account, Message, OutSourced, Photo, StatusCheck, Thread, Video,OutreachTime,AccountsClosed, UnwantedAccount, Comment, Like
 
@@ -17,6 +18,7 @@ admin.site.register(Video)
 from django.http import HttpResponseRedirect
 from django.urls import reverse
 from .utils import get_the_cut_info  # Import your function
+from .tasks import send_first_compliment
 
 @admin.action(description='Get The Cut Info')
 def get_cut_info_action(modeladmin, request, queryset):
@@ -30,6 +32,7 @@ def get_cut_info_action(modeladmin, request, queryset):
         # Do something with the info, for example, update a field
         obj.referral = json.dumps(info)
         obj.save()
+    
 
     # Redirect to the admin page after the action is done
     return HttpResponseRedirect(reverse('admin:app_list', args=('instagram',)))
@@ -137,7 +140,7 @@ class UnscheduledFilter(admin.SimpleListFilter):
 @admin.register(Account)
 class AccountAdmin(admin.ModelAdmin):
     search_fields = ['igname__icontains']
-    actions = [get_cut_info_action, set_qualified_true_action, set_disqualified_true_action]
+    actions = [get_cut_info_action, set_qualified_true_action, set_disqualified_true_action,'send_compliment']
     list_filter = [
         'qualified',  # Filter for unqualified accounts
         ('created_at', YesterdayFilter),  # Custom filter for created_at
@@ -145,6 +148,22 @@ class AccountAdmin(admin.ModelAdmin):
         StatusFilter,
         'dormant_profile_created',
     ]
+
+    @admin.action(description=_('Send Compliment'))
+    def send_compliment(self, request, queryset):
+        """
+        Checks the availability of selected scouts by attempting to log them in.
+        """
+        # Get the list of selected scout IDs
+
+        selected_instagram_account = queryset.values_list('igname', flat=True)
+        print(selected_instagram_account)
+        send_first_compliment.delay(username=list(selected_instagram_account),message="")
+        self.message_user(request, _(
+            f'Successfully sending compliment.'
+        ), messages.INFO)
+
+    send_compliment.short_description = _('Send Compliment')
 
     def get_form(self, request, obj=None, **kwargs):
         self.exclude = ("id",)

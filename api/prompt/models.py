@@ -1,3 +1,4 @@
+import uuid
 from django.db import models, connections
 from django.shortcuts import get_object_or_404
 from api.helpers.models import BaseModel
@@ -154,10 +155,10 @@ class Department(BaseModel):
     prompt = models.ForeignKey(Prompt,on_delete=models.CASCADE, null=True, blank=True)
     next_department = models.JSONField(null=True,blank=True)
     baton = models.ForeignKey(Baton, on_delete=models.CASCADE, null=True, blank=True)
-    
+    version  = models.CharField(max_length=255, null=True, blank=True)
 
     def __str__(self):
-        return self.name
+        return f"{self.name} - {self.version}"
     
 class Query(BaseModel):
     name = models.CharField(max_length=255)
