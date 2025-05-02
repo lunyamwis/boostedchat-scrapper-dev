@@ -18,7 +18,7 @@ admin.site.register(Video)
 from django.http import HttpResponseRedirect
 from django.urls import reverse
 from .utils import get_the_cut_info  # Import your function
-from .tasks import send_first_compliment
+from .tasks import send_first_compliment,qualify_and_reschedule
 
 @admin.action(description='Get The Cut Info')
 def get_cut_info_action(modeladmin, request, queryset):
@@ -140,7 +140,8 @@ class UnscheduledFilter(admin.SimpleListFilter):
 @admin.register(Account)
 class AccountAdmin(admin.ModelAdmin):
     search_fields = ['igname__icontains']
-    actions = [get_cut_info_action, set_qualified_true_action, set_disqualified_true_action,'send_compliment']
+    actions = [get_cut_info_action, set_qualified_true_action, set_disqualified_true_action,
+               'send_compliment','qualify_reschedule']
     list_filter = [
         'qualified',  # Filter for unqualified accounts
         ('created_at', YesterdayFilter),  # Custom filter for created_at
@@ -164,6 +165,20 @@ class AccountAdmin(admin.ModelAdmin):
         ), messages.INFO)
 
     send_compliment.short_description = _('Send Compliment')
+
+    @admin.action(description=_('Qualify and Reschedule'))
+    def qualify_reschedule(self, request, queryset):
+        """
+        Checks the availability of selected scouts by attempting to log them in.
+        """
+        # Get the list of selected scout IDs
+
+        qualify_and_reschedule.delay()
+        self.message_user(request, _(
+            f'Successfully qualifying and rescheduling.'
+        ), messages.INFO)
+
+    qualify_reschedule.short_description = _('Qualify and Reschedule')
 
     def get_form(self, request, obj=None, **kwargs):
         self.exclude = ("id",)
