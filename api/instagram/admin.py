@@ -196,7 +196,7 @@ class AccountAdmin(admin.ModelAdmin):
         for account in queryset:
             account.engagement_version = str(int(Department.objects.filter(name="Engagement Department").latest("version").version) - 1)
             account.save()
-        logging.warning(f"Previous prompt version {str(int(Department.objects.filter(name="Engagement Department").latest("version").version) - 1)} assigned to {queryset.count()} accounts.")
+        logging.warning(f"Previous prompt version set {str(int(Department.objects.filter(name="Engagement Department").latest("version").version) - 1)}")
         self.message_user(request, _(
             f'Successfully assigned to previous prompt.'
         ), messages.INFO)
