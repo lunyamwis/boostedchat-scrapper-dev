@@ -1087,21 +1087,21 @@ def load_info_to_database():
         yesterday_start = timezone.make_aware(timezone.datetime.combine(yesterday,timezone.datetime.min.time()))
 
         instagram_users = None
-        # try:
-        #     response = requests.post(
-        #         f"{os.getenv('API_URL')}/instagram/getOutreachAccounts/",
-        #         headers={"Content-Type": "application/json"},
-        #         data={}
-        #     )
-        #     accounts_ = response.json()['accounts']
-        #     instagram_users = InstagramUser.objects.filter(username__in=[account['igname'] for account in accounts_])
-        #     print(f"found the following number of instagram accounts: {instagram_users.count()}")
-        # except Exception as error:
-        #     logging.warning(error)
-        # if instagram_users.exists():
-        #     pass
-        # else:
-        instagram_users = InstagramUser.objects.filter(created_at__gte=yesterday_start).distinct('username')
+        try:
+            response = requests.post(
+                f"{os.getenv('API_URL')}/instagram/getOutreachAccounts/",
+                headers={"Content-Type": "application/json"},
+                data={}
+            )
+            accounts_ = response.json()['accounts']
+            instagram_users = InstagramUser.objects.filter(username__in=[account['igname'] for account in accounts_])
+            print(f"found the following number of instagram accounts: {instagram_users.count()}")
+        except Exception as error:
+            logging.warning(error)
+        if instagram_users.exists():
+            pass
+        else:
+            instagram_users = InstagramUser.objects.filter(created_at__gte=yesterday_start).distinct('username')
         for user in instagram_users:
             try:
                 user_exists = False

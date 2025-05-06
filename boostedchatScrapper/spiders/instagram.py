@@ -539,14 +539,29 @@ class InstagramSpider:
         yesterday_start = timezone.make_aware(timezone.datetime.combine(yesterday, timezone.datetime.min.time()))
         # the instagram users who are manually triggered need to be given first priority
         instagram_users = None
-        instagram_users = InstagramUser.objects.filter(Q(created_at__gte=yesterday_start) & Q(is_manually_triggered=True)).distinct('username')
+        try:
+            response = requests.post(
+                f"{os.getenv('API_URL')}/instagram/getOutreachAccounts/",
+                headers={"Content-Type": "application/json"},
+                data={}
+            )
+            accounts_ = response.json()['accounts']
+            instagram_users = InstagramUser.objects.filter(username__in=[account['igname'] for account in accounts_])
+            print(f"found the following number of instagram accounts: {instagram_users.count()}")
+        except Exception as error:
+            logging.warning(error)
         if instagram_users.exists():
             pass
         else:
-            # pick the automatically generated ones
-            instagram_users = InstagramUser.objects.filter(Q(created_at__gte=yesterday_start)).distinct('username')
+            instagram_users = InstagramUser.objects.filter(Q(created_at__gte=yesterday_start) & Q(is_manually_triggered=True)).distinct('username')
+            if instagram_users.exists():
+                pass
+            else:
+                # pick the automatically generated ones
+                instagram_users = InstagramUser.objects.filter(Q(created_at__gte=yesterday_start)).distinct('username')
                 
         print(len(instagram_users))
+        
         cl = HikerClient(os.getenv("HIKER_API_KEY"))
         for i, user in enumerate(instagram_users[index:], start=1):
             user.info = cl.user_by_username_v1(user.username)
