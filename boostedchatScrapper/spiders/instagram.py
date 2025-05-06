@@ -27,7 +27,7 @@ from .constants import STYLISTS_WORDS,STYLISTS_NEGATIVE_WORDS
 from sqlalchemy import create_engine, text,Table,MetaData,select,update
 from hikerapi import Client as HikerClient
 from api.instagram.models import InstagramUser
-from api.scout.models import Scout,Devic
+from api.scout.models import Scout,Device
 from django.core.mail import send_mail
 
 
