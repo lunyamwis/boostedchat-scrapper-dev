@@ -465,6 +465,7 @@ grpcio-tools==1.68.0
     # via qdrant-client
 gunicorn==23.0.0
     # via -r requirements.in
+hikerapi==1.6.6
 h11==0.14.0
     # via
     #   -r requirements.in

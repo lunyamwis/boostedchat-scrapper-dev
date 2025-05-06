@@ -904,9 +904,9 @@ def scrap_users(query,round_,index):
     inst.scrap_users(query,round_=round_,index=index)
     
 @shared_task()
-def scrap_info(delay_before_requests,delay_after_requests,step,accounts,round):
+def scrap_info(delay_before_requests,delay_after_requests,step,accounts,round_):
     inst = InstagramSpider(load_tables=load_tables,db_url=db_url)
-    inst.scrap_info(delay_before_requests,delay_after_requests,step,accounts,round)
+    inst.scrap_info_v1(delay_before_requests,delay_after_requests,step,accounts,round_)
     load_info_to = 1
     if load_info_to == 1:
         load_info_to_database()
@@ -1087,21 +1087,21 @@ def load_info_to_database():
         yesterday_start = timezone.make_aware(timezone.datetime.combine(yesterday,timezone.datetime.min.time()))
 
         instagram_users = None
-        try:
-            response = requests.post(
-                f"{os.getenv('API_URL')}/instagram/getOutreachAccounts/",
-                headers={"Content-Type": "application/json"},
-                data={}
-            )
-            accounts_ = response.json()['accounts']
-            instagram_users = InstagramUser.objects.filter(username__in=[account['igname'] for account in accounts_])
-            print(f"found the following number of instagram accounts: {instagram_users.count()}")
-        except Exception as error:
-            logging.warning(error)
-        if instagram_users.exists():
-            pass
-        else:
-            instagram_users = InstagramUser.objects.filter(created_at__gte=yesterday_start).distinct('username')
+        # try:
+        #     response = requests.post(
+        #         f"{os.getenv('API_URL')}/instagram/getOutreachAccounts/",
+        #         headers={"Content-Type": "application/json"},
+        #         data={}
+        #     )
+        #     accounts_ = response.json()['accounts']
+        #     instagram_users = InstagramUser.objects.filter(username__in=[account['igname'] for account in accounts_])
+        #     print(f"found the following number of instagram accounts: {instagram_users.count()}")
+        # except Exception as error:
+        #     logging.warning(error)
+        # if instagram_users.exists():
+        #     pass
+        # else:
+        instagram_users = InstagramUser.objects.filter(created_at__gte=yesterday_start).distinct('username')
         for user in instagram_users:
             try:
                 user_exists = False

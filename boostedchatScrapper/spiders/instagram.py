@@ -25,9 +25,13 @@ from urllib.parse import urlparse
 from collections import ChainMap
 from .constants import STYLISTS_WORDS,STYLISTS_NEGATIVE_WORDS
 from sqlalchemy import create_engine, text,Table,MetaData,select,update
+from hikerapi import Client as HikerClient
 from api.instagram.models import InstagramUser
-from api.scout.models import Scout,Device
+from api.scout.models import Scout,Devic
 from django.core.mail import send_mail
+
+
+
 from django.db.models import Q
 from django_tenants.utils import schema_context
 
@@ -529,7 +533,26 @@ class InstagramSpider:
 
         return "successfully scrapped media content"
 
+    @schema_context(os.getenv("SCHEMA_NAME"))
+    def scrap_info_v1(self,delay_before_requests,delay_after_requests,step,accounts,round,index=0):
+        yesterday = timezone.now().date() - timezone.timedelta(days=1)
+        yesterday_start = timezone.make_aware(timezone.datetime.combine(yesterday, timezone.datetime.min.time()))
+        # the instagram users who are manually triggered need to be given first priority
+        instagram_users = None
+        instagram_users = InstagramUser.objects.filter(Q(created_at__gte=yesterday_start) & Q(is_manually_triggered=True)).distinct('username')
+        if instagram_users.exists():
+            pass
+        else:
+            # pick the automatically generated ones
+            instagram_users = InstagramUser.objects.filter(Q(created_at__gte=yesterday_start)).distinct('username')
                 
+        print(len(instagram_users))
+        cl = HikerClient(os.getenv("HIKER_API_KEY"))
+        for i, user in enumerate(instagram_users[index:], start=1):
+            user.info = cl.user_by_username_v1(user.username)
+            user.save()
+
+
 
     @schema_context(os.getenv("SCHEMA_NAME"))   
     def scrap_info(self,delay_before_requests,delay_after_requests,step,accounts,round,index=0):
