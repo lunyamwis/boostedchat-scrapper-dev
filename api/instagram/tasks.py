@@ -904,9 +904,9 @@ def scrap_users(query,round_,index):
     inst.scrap_users(query,round_=round_,index=index)
     
 @shared_task()
-def scrap_info(delay_before_requests,delay_after_requests,step,accounts,round):
+def scrap_info(delay_before_requests,delay_after_requests,step,accounts,round_):
     inst = InstagramSpider(load_tables=load_tables,db_url=db_url)
-    inst.scrap_info(delay_before_requests,delay_after_requests,step,accounts,round)
+    inst.scrap_info_v1(delay_before_requests,delay_after_requests,step,accounts,round_)
     load_info_to = 1
     if load_info_to == 1:
         load_info_to_database()
@@ -1094,7 +1094,7 @@ def load_info_to_database():
                 data={}
             )
             accounts_ = response.json()['accounts']
-            instagram_users = InstagramUser.objects.filter(username__in=[account['igname'] for account in accounts_])
+            instagram_users = InstagramUser.objects.filter(username__in=[account['igname'] for account in accounts_]).distinct('username')  
             print(f"found the following number of instagram accounts: {instagram_users.count()}")
         except Exception as error:
             logging.warning(error)

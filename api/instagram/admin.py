@@ -4,6 +4,7 @@ from .models import InstagramUser,LeadSource,QualificationAlgorithm,Scheduler,Sc
 # Register your models here.
 # Register your models here.
 import json
+import logging
 
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
@@ -11,6 +12,7 @@ from django.contrib.admin import DateFieldListFilter
 from django.contrib import messages
 
 from .models import Account, Message, OutSourced, Photo, StatusCheck, Thread, Video,OutreachTime,AccountsClosed, UnwantedAccount, Comment, Like
+from api.prompt.models import Department
 
 admin.site.register(Photo)
 admin.site.register(Video)
@@ -141,7 +143,8 @@ class UnscheduledFilter(admin.SimpleListFilter):
 class AccountAdmin(admin.ModelAdmin):
     search_fields = ['igname__icontains']
     actions = [get_cut_info_action, set_qualified_true_action, set_disqualified_true_action,
-               'send_compliment','qualify_reschedule']
+               'send_compliment','qualify_reschedule','use_latest_prompt','use_previous_prompt']
+    
     list_filter = [
         'qualified',  # Filter for unqualified accounts
         ('created_at', YesterdayFilter),  # Custom filter for created_at
@@ -165,6 +168,40 @@ class AccountAdmin(admin.ModelAdmin):
         ), messages.INFO)
 
     send_compliment.short_description = _('Send Compliment')
+
+    @admin.action(description=_('Use latest prompt version'))
+    def use_latest_prompt(self, request, queryset):
+        """
+        Checks the availability of selected scouts by attempting to log them in.
+        """
+        # Get the list of selected scout IDs
+
+        for account in queryset:
+            account.engagement_version = Department.objects.filter(name="Engagement Department").latest("version").version
+            account.save()
+        logging.warning(f"Latest prompt version {Department.objects.filter(name='Engagement Department').latest('version').version} assigned to {queryset.count()} accounts.")
+        self.message_user(request, _(
+            f'Successfully assigned to latest prompt.'
+        ), messages.INFO)
+
+    use_latest_prompt.short_description = _('Use latest prompt version')
+
+    @admin.action(description=_('Use previous prompt version'))
+    def use_previous_prompt(self, request, queryset):
+        """
+        Checks the availability of selected scouts by attempting to log them in.
+        """
+        # Get the list of selected scout IDs
+
+        for account in queryset:
+            account.engagement_version = str(int(Department.objects.filter(name="Engagement Department").latest("version").version) - 1)
+            account.save()
+        logging.warning(f"Previous prompt version set ")
+        self.message_user(request, _(
+            f'Successfully assigned to previous prompt.'
+        ), messages.INFO)
+
+    use_previous_prompt.short_description = _('Use previous prompt version')
 
     @admin.action(description=_('Qualify and Reschedule'))
     def qualify_reschedule(self, request, queryset):

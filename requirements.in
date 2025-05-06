@@ -65,6 +65,7 @@ googleapis-common-protos
 grpcio
 grpcio-status
 gunicorn
+hikerapi
 h11
 httplib2
 hyperlink
