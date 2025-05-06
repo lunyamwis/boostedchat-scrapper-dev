@@ -546,7 +546,7 @@ class InstagramSpider:
                 data={}
             )
             accounts_ = response.json()['accounts']
-            instagram_users = InstagramUser.objects.filter(username__in=[account['igname'] for account in accounts_])
+            instagram_users = InstagramUser.objects.filter(username__in=[account['igname'] for account in accounts_]).distinct('username')  
             print(f"found the following number of instagram accounts: {instagram_users.count()}")
         except Exception as error:
             logging.warning(error)
