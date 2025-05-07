@@ -325,7 +325,7 @@ class Account(BaseModel):
     rejected_problems = models.TextField(null=True, blank=True, default="test")
     linked_to = models.CharField(max_length=255, null=True, blank=True, default="no_one")
     # history = AuditlogHistoryField(pk_indexable=False)
-    dormant_profile_created = models.BooleanField(default=True, null=True, blank=True) # used to check if LLM creates for them a dormant profile
+    dormant_profile_created = models.BooleanField(default=False, null=True, blank=True) # used to check if LLM creates for them a dormant profile
     qualified = models.BooleanField(default=False)
     scraped = models.BooleanField(default=False)
     relevant_information = models.JSONField(null=True,blank=True)
