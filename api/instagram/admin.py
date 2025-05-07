@@ -144,7 +144,8 @@ class UnscheduledFilter(admin.SimpleListFilter):
 class AccountAdmin(admin.ModelAdmin):
     search_fields = ['igname__icontains']
     actions = [get_cut_info_action, set_qualified_true_action, set_disqualified_true_action,
-               'send_compliment','qualify_reschedule','use_latest_prompt','use_previous_prompt']
+               'send_compliment','qualify_reschedule','use_latest_prompt','use_previous_prompt',
+               'remove_duplicates']
     
     list_filter = [
         'qualified',  # Filter for unqualified accounts
