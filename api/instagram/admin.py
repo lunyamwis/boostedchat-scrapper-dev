@@ -229,7 +229,7 @@ class AccountAdmin(admin.ModelAdmin):
         )
         print(f"How many duplicates? {len(duplicate_igname_list)}")
         if len(duplicate_igname_list) > 0:
-            delete_accounts.delay(duplicate_igname_list)
+            delete_accounts.delay(list(duplicate_igname_list))
         self.message_user(request, _(
             f'Successfully removed duplicates.'
         ), messages.INFO)
