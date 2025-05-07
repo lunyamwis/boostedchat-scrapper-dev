@@ -10,6 +10,7 @@ from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from django.contrib.admin import DateFieldListFilter
 from django.contrib import messages
+from django.db.models import Count
 
 from .models import Account, Message, OutSourced, Photo, StatusCheck, Thread, Video,OutreachTime,AccountsClosed, UnwantedAccount, Comment, Like
 from api.prompt.models import Department
@@ -20,7 +21,7 @@ admin.site.register(Video)
 from django.http import HttpResponseRedirect
 from django.urls import reverse
 from .utils import get_the_cut_info  # Import your function
-from .tasks import send_first_compliment,qualify_and_reschedule
+from .tasks import send_first_compliment,qualify_and_reschedule, delete_accounts
 
 @admin.action(description='Get The Cut Info')
 def get_cut_info_action(modeladmin, request, queryset):
@@ -216,6 +217,23 @@ class AccountAdmin(admin.ModelAdmin):
         ), messages.INFO)
 
     qualify_reschedule.short_description = _('Qualify and Reschedule')
+
+    @admin.action(description=_('Remove Duplicates'))
+    def remove_duplicates(self, request, queryset):
+        duplicate_igname_list = (
+            queryset.objects.values('igname')
+            .annotate(igname_count=Count('igname'))
+            .filter(igname_count__gt=1)
+            .values_list('igname', flat=True)
+        )
+        print(f"How many duplicates? {len(duplicate_igname_list)}")
+        if len(duplicate_igname_list) > 0:
+            delete_accounts.delay(duplicate_igname_list)
+        self.message_user(request, _(
+            f'Successfully removed duplicates.'
+        ), messages.INFO)
+
+    remove_duplicates.short_description = _('Remove Duplicates')
 
     def get_form(self, request, obj=None, **kwargs):
         self.exclude = ("id",)
