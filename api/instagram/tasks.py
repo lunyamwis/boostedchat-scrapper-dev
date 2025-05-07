@@ -1002,7 +1002,7 @@ def update_account_information(user:InstagramUser):
     account_dict = {
         "igname": user.username,
         "is_manually_triggered":True,
-        "relevant_information": {**user.info } if user.info else {"username":user.username,"media_id": user.item_id}
+        "relevant_information": user.info if user.info else {"username": user.username, "media_id": user.item_id}
     }
     response = requests.patch(
         f"{os.getenv('API_URL')}/instagram/account/{account_id}/",
@@ -1018,7 +1018,7 @@ def update_account_information(user:InstagramUser):
 
         if user.info:
             outsourced_dict = {
-                "results": {**user.info, "media_id": user.item_id},  # yet to test
+                "results": user.info if user.info else {"username": user.username, "media_id": user.item_id},  # yet to test
                 "source": "instagram"
             }
         else:
@@ -1058,7 +1058,7 @@ def create_account_information(user:InstagramUser):
 
     if user.info:
         outsourced_dict = {
-            "results": {**user.info},  # yet to test
+            "results": user.info,  # yet to test
             "source": "instagram"
         }
     else:
