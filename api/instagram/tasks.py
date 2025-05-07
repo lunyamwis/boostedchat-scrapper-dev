@@ -549,12 +549,12 @@ def send_first_compliment(username, message, repeat=True):
             print(f"Response message: {response.text}")
 
             # sav
-            response = requests.post(f"{os.getenv('API_URL')}/serviceManager/restart-container/",
-                                     headers={'Content-Type': 'application/json'},
-                                     data=json.dumps({"container_id":"boostedchat-site-mqtt-1"}))
+            # response = requests.post(f"{os.getenv('API_URL')}/serviceManager/restart-container/",
+            #                          headers={'Content-Type': 'application/json'},
+            #                          data=json.dumps({"container_id":"boostedchat-site-mqtt-1"}))
             
-            if response.status_code in [200,201]:
-                logging.warning("Succesfully restarted mqtt")
+            # if response.status_code in [200,201]:
+            #     logging.warning("Succesfully restarted mqtt")
             # repeatLocal = handleMqTTErrors(account, salesrep, response.status_code, response.text, numTries, repeat)
             # if repeatLocal and numTries <= 1:
                 # send(numTries)
