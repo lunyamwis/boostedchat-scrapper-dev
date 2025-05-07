@@ -565,7 +565,7 @@ class InstagramSpider:
         cl = HikerClient(os.getenv("HIKER_API_KEY"))
         for i, user in enumerate(instagram_users[index:], start=1):
             if not user.info:
-                user.info = cl.user_by_username_v1(user.username)
+                user.info = str(cl.user_by_username_v1(user.username))
                 user.save()
 
 

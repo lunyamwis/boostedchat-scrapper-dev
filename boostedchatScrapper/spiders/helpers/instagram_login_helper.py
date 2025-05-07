@@ -154,7 +154,7 @@ def login_user(scout: Scout):
     password = os.getenv('PROXY_PASSWORD').strip()
     proxy = None
     
-    proxy = f"http://{username}:{password}@gate.smartproxy.com:10001"
+    proxy = f"http://{username}:{password}@gate.decodo.com:10001"
 
     
     cl.set_proxy(

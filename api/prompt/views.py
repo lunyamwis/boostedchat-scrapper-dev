@@ -869,7 +869,7 @@ class PrequalifyingWorkflow(Flow):
       get_id_account_data = {
          "username": username
       }
-      response = requests.post(f"http://api:8000/v1/instagram/account/get-id/",data=get_id_account_data)
+      response = requests.post(f"{os.getenv('API_URL')}/instagram/account/get-id/",data=get_id_account_data)
       account_id = response.json()['id']
       prequalified_flag = False
       try:
@@ -889,15 +889,16 @@ class PrequalifyingWorkflow(Flow):
       # import pdb;pdb.set_trace()
       # print(prequalified_flag)
       account_dict = {
-         "igname": username,
-         "is_manually_triggered":True,
-         "relevant_information": output if output else {},
-         "qualified": prequalified_flag,
+        "igname": username,
+        "is_manually_triggered":True,
+        "relevant_information": output if output else {},
+        #  "qualified": prequalified_flag,
+        "qualified": True
       }
       response = requests.patch(
-         f"http://api:8000/v1/instagram/account/{account_id}/",
-         headers=self.headers,
-         data=json.dumps(account_dict)
+        f"{os.getenv('API_URL')}/instagram/account/{account_id}/",
+        headers=self.headers,
+        data=json.dumps(account_dict)
       )
       print(response.json())
       return response

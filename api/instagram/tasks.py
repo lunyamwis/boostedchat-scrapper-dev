@@ -549,12 +549,12 @@ def send_first_compliment(username, message, repeat=True):
             print(f"Response message: {response.text}")
 
             # sav
-            response = requests.post(f"{os.getenv('API_URL')}/serviceManager/restart-container/",
-                                     headers={'Content-Type': 'application/json'},
-                                     data=json.dumps({"container_id":"boostedchat-site-mqtt-1"}))
+            # response = requests.post(f"{os.getenv('API_URL')}/serviceManager/restart-container/",
+            #                          headers={'Content-Type': 'application/json'},
+            #                          data=json.dumps({"container_id":"boostedchat-site-mqtt-1"}))
             
-            if response.status_code in [200,201]:
-                logging.warning("Succesfully restarted mqtt")
+            # if response.status_code in [200,201]:
+            #     logging.warning("Succesfully restarted mqtt")
             # repeatLocal = handleMqTTErrors(account, salesrep, response.status_code, response.text, numTries, repeat)
             # if repeatLocal and numTries <= 1:
                 # send(numTries)
@@ -845,18 +845,33 @@ def reschedule():
 @shared_task()
 @schema_context(os.getenv("SCHEMA_NAME"))
 def prequalify_task():
+
+    # yesterday = timezone.now().date() - timezone.timedelta(days=1)
+    # yesterday_start = timezone.make_aware(timezone.datetime.combine(yesterday, timezone.datetime.min.time()))
+    # unwanted_usernames = UnwantedAccount.objects.values_list('username', flat=True)
+
+    # # Filter accounts that are qualified and created from yesterday onwards, and exclude accounts that are not wanted
+    # accounts = Account.objects.filter(
+    #     Q(qualified=False) & Q(created_at__gte=yesterday_start)
+    # ).exclude(
+    #     status__name="sent_compliment"
+    # ).exclude(
+    #     igname__in=unwanted_usernames
+    # )
     yesterday = timezone.now().date() - timezone.timedelta(days=1)
+    tomorrow = timezone.now().date() + timezone.timedelta(days=1)
     yesterday_start = timezone.make_aware(timezone.datetime.combine(yesterday, timezone.datetime.min.time()))
     unwanted_usernames = UnwantedAccount.objects.values_list('username', flat=True)
 
     # Filter accounts that are qualified and created from yesterday onwards, and exclude accounts that are not wanted
     accounts = Account.objects.filter(
-        Q(qualified=False) & Q(created_at__gte=yesterday_start)
+        Q(qualified=True) & Q(created_at__gte=yesterday_start) & Q(created_at__lte=tomorrow)
     ).exclude(
         status__name="sent_compliment"
     ).exclude(
         igname__in=unwanted_usernames
     )
+    
     if accounts.exists():
         
         for account in accounts:
@@ -987,7 +1002,7 @@ def update_account_information(user:InstagramUser):
     account_dict = {
         "igname": user.username,
         "is_manually_triggered":True,
-        "relevant_information": {**user.info } if user.info else {"username":user.username,"media_id": user.item_id}
+        "relevant_information": user.info if user.info else {"username": user.username, "media_id": user.item_id}
     }
     response = requests.patch(
         f"{os.getenv('API_URL')}/instagram/account/{account_id}/",
@@ -1003,7 +1018,7 @@ def update_account_information(user:InstagramUser):
 
         if user.info:
             outsourced_dict = {
-                "results": {**user.info, "media_id": user.item_id},  # yet to test
+                "results": user.info if user.info else {"username": user.username, "media_id": user.item_id},  # yet to test
                 "source": "instagram"
             }
         else:
@@ -1043,7 +1058,7 @@ def create_account_information(user:InstagramUser):
 
     if user.info:
         outsourced_dict = {
-            "results": {**user.info},  # yet to test
+            "results": user.info,  # yet to test
             "source": "instagram"
         }
     else:
