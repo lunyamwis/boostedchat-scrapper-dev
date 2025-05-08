@@ -21,6 +21,7 @@ class OutSourcedSerializer(serializers.ModelSerializer):
 class AccountSerializer(serializers.ModelSerializer):
     # account_history = serializers.CharField(source="history.latest",read_only=True)
     # print(account_history)
+    thread_id = serializers.SerializerMethodField()
     class Meta:
         model = Account
         fields = [
@@ -39,7 +40,8 @@ class AccountSerializer(serializers.ModelSerializer):
             "success_story_date",
             "lost_date",
             "outreach_time",
-            "notes"
+            "notes",
+            "thread_id",
         ]
         extra_kwargs = {"id": {"required": False, "allow_null": True},
                         "index": {"required": False, "allow_null": True},
@@ -53,6 +55,12 @@ class AccountSerializer(serializers.ModelSerializer):
                         "success_story_date": {"required": False, "allow_null": True},
                         "lost_date": {"required": False, "allow_null": True}
                         }
+    def get_thread_id(self, obj):
+        # Get the first thread related to the account
+        # thread = Thread.objects.filter(account=obj).first()
+        # return thread.thread_id if thread else None
+        return getattr(obj, 'thread_id', None) or \
+            Thread.objects.filter(account=obj).values_list('thread_id', flat=True).first()
 
 class GetAccountSerializer(serializers.ModelSerializer):
     # status = serializers.CharField(source="account.status.name", read_only=True)
