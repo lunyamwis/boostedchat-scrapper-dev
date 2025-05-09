@@ -102,7 +102,7 @@ from .serializers import (
 from urllib.parse import urlparse
 from auditlog.models import LogEntry
 from celery.result import AsyncResult
-from datetime import datetime, timedelta, timezone as timezone2
+from datetime import datetime, timedelta, time, timezone as timezone2
 from instagrapi.exceptions import UserNotFound
 from rest_framework.views import APIView
 from rest_framework import status, viewsets
@@ -412,7 +412,7 @@ class AccountViewSet(viewsets.ModelViewSet):
 
 
     @schema_context(os.getenv('SCHEMA_NAME'))
-    def list(self, request, pk=None):
+    def list(self, request, pk=None): 
         queryset = Account.objects.filter(salesrep__isnull=False)
         # Apply annotations
         queryset = queryset.annotate(
@@ -428,7 +428,7 @@ class AccountViewSet(viewsets.ModelViewSet):
                 .values('sent_by')[:1]
             ),
             latest_message_at=Coalesce('last_message_sent_at', 'last_message_at', Value(datetime.min)),
-            thread_id=Subquery(Thread.objects.filter(account=OuterRef('pk')).values('thread_id')[:1])
+            # thread_id=Subquery(Thread.objects.filter(account=OuterRef('pk')).values('thread_id')[:1])
         ).order_by('-created_at')#order_by('-latest_message_at')
 
         # Filters from request
@@ -463,31 +463,45 @@ class AccountViewSet(viewsets.ModelViewSet):
         paginator = self.pagination_class()
         paginated_qs = paginator.paginate_queryset(queryset, request)
         serializer = self.get_serializer(paginated_qs, many=True)
+        
+        
 
         # Filtered sets with date range
         qualified_accounts = Account.objects.filter(qualified=True, outreach_success=False,**created_filter)
         
-        outreach_success_accounts = Account.objects.filter(outreach_success=True, **created_filter)
+        
 
         today_start = make_aware(datetime.combine(now().date(), datetime.min.time()))
         tomorrow_start = today_start + timedelta(days=1)
+        yesterday_start = today_start - timedelta(days=1)
+        
 
+        
+
+        # yesterday's date range
         scheduled_accounts = Account.objects.filter(
             qualified=True,
             outreach_success=False,
             created_at__gte=today_start,
             created_at__lt=tomorrow_start
         )
-
+        
+        outreach_success_accounts = Account.objects.filter(
+            outreach_success=True,
+            created_at__gte=yesterday_start,
+            created_at__lt=today_start
+        )
+        
         total_outreach = outreach_success_accounts.count()
         total_scheduled = qualified_accounts.count()
-
+        
+        
         return Response({
             "count": paginator.page.paginator.count,
             "next": paginator.get_next_link(),
             "previous": paginator.get_previous_link(),
             "results": serializer.data,
-            "qualified": AccountSerializer(qualified_accounts, many=True).data,
+            # "qualified": [],# AccountSerializer(qualified_accounts, many=True).data,
             "outreach_success": AccountSerializer(outreach_success_accounts, many=True).data,
             "scheduled": AccountSerializer(scheduled_accounts, many=True).data,
             "total_outreach": total_outreach,
@@ -514,6 +528,19 @@ class AccountViewSet(viewsets.ModelViewSet):
                 created_at__lt=next_week,
                 outreach_success=True
             ).count()
+            
+            print("Outrech count **",outreach_count)
+            
+            sales_qualified_accounts = Account.objects.filter(
+                created_at__gte=current_week,
+                created_at__lt=next_week,
+                salesrep__isnull=False,
+                responded_date__isnull=False,
+                call_scheduled_date__isnull=False,
+                won_date__isnull=True,
+                lost_date__isnull=True
+            )
+            
 
             responded_messages = Message.objects.filter(
                 sent_by='Client',
@@ -535,7 +562,9 @@ class AccountViewSet(viewsets.ModelViewSet):
             lost_date = Account.objects.filter(lost_date__range=(current_week, next_week)).count()
             lost_rate = round((lost_date / outreach_count) * 100,2) if outreach_count > 0 else 0
             responded_date = Account.objects.filter(responded_date__range=(current_week, next_week)).count()
-            # sq_conversion_rate = call_scheduled_date + responded_count
+            sq_conversion_rate = round((sales_qualified_accounts.count()/outreach_count) * 100,2) if outreach_count > 0 else 0
+            
+           
 
             results.append({
                 "week_start": current_week.strftime("%Y-%m-%d"),
@@ -554,6 +583,8 @@ class AccountViewSet(viewsets.ModelViewSet):
                 "won_rate": won_rate,
                 "success_story_rate": success_story_rate,
                 "lost_rate": lost_rate,
+                "sq_conversion_rate": sq_conversion_rate,
+                "sales_qualified_count": sales_qualified_accounts.count(),
                 
             })
 
