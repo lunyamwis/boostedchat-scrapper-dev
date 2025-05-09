@@ -314,14 +314,13 @@ def run_scheduler(target_time,username,message):
             break  # Exit the loop after running the task
         time.sleep(1)  # Sleep for 1 second to avoid busy-waiting
 
-@schema_context(os.getenv("SCHEMA_NAME"))
 @shared_task()
+@schema_context(os.getenv("SCHEMA_NAME"))
 def delete_accounts(duplicate_igname_list):
     for igname in duplicate_igname_list:
         accounts = Account.objects.filter(igname=igname).order_by('-created_at')
         accounts_to_delete = accounts[1:]  # Keep the latest one, delete the rest
         delete_count = Account.objects.filter(id__in=[acc.id for acc in accounts_to_delete]).delete()
-        deleted_accounts = delete_count
         print(f"Deleted {delete_count} duplicate(s) for igname: {igname}")
 
 
@@ -871,7 +870,6 @@ def prequalify_task():
     ).exclude(
         igname__in=unwanted_usernames
     )
-    
     if accounts.exists():
         
         for account in accounts:
@@ -1002,7 +1000,7 @@ def update_account_information(user:InstagramUser):
     account_dict = {
         "igname": user.username,
         "is_manually_triggered":True,
-        "relevant_information": user.info if user.info else {"username": user.username, "media_id": user.item_id}
+        "relevant_information": {**user.info } if user.info else {"username":user.username,"media_id": user.item_id}
     }
     response = requests.patch(
         f"{os.getenv('API_URL')}/instagram/account/{account_id}/",
@@ -1018,7 +1016,7 @@ def update_account_information(user:InstagramUser):
 
         if user.info:
             outsourced_dict = {
-                "results": user.info if user.info else {"username": user.username, "media_id": user.item_id},  # yet to test
+                "results": {**user.info, "media_id": user.item_id},  # yet to test
                 "source": "instagram"
             }
         else:
@@ -1058,7 +1056,7 @@ def create_account_information(user:InstagramUser):
 
     if user.info:
         outsourced_dict = {
-            "results": user.info,  # yet to test
+            "results": {**user.info},  # yet to test
             "source": "instagram"
         }
     else:
