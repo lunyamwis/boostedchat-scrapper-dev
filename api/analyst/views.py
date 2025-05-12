@@ -216,11 +216,11 @@ def dashboard(request):
             if query:
                 # Database connection parameters
                 db_params = {
-                    'username': os.getenv('POSTGRES_USERNAME'),
-                    'password': os.getenv('POSTGRES_PASSWORD'),
-                    'host': os.getenv('POSTGRES_HOST'),
-                    'port': os.getenv('POSTGRES_PORT'),
-                    'database': os.getenv('POSTGRES_DBNAME')
+                    'username': os.getenv('POSTGRES_USERNAME_ETL'),
+                    'password': os.getenv('POSTGRES_PASSWORD_ETL'),
+                    'host': os.getenv('POSTGRES_HOST_ETL'),
+                    'port': os.getenv('POSTGRES_PORT_ETL'),
+                    'database': os.getenv('POSTGRES_DBNAME_ETL')
                 }
 
                 # Create a connection string
