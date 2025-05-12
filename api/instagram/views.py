@@ -536,7 +536,7 @@ class AccountViewSet(viewsets.ModelViewSet):
                 created_at__lt=next_week,
                 salesrep__isnull=False,
                 responded_date__isnull=False,
-                call_scheduled_date__isnull=False,
+                #call_scheduled_date__isnull=False,
                 won_date__isnull=True,
                 lost_date__isnull=True
             )
