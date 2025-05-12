@@ -382,6 +382,7 @@ class AccountViewSet(viewsets.ModelViewSet):
         try:
             account,created = Account.objects.get_or_create(igname=igname,  
                                                             qualified=True,
+                                                            outreach_success=True,
                                                             responded_date=responded_date,
                                                             call_scheduled_date=call_scheduled_date,
                                                             closing_date=closing_date,
@@ -390,7 +391,7 @@ class AccountViewSet(viewsets.ModelViewSet):
                                                             lost_date=lost_date,
                                                             full_name=full_name)
             serializer = AccountSerializer(account)
-            assign_salesrep(account)
+            assign_salesrep(account)    
             return Response(serializer.data)
             # return Response(serializer_class(account).data, status=status.HTTP_201_CREATED)
         except Exception as error:
