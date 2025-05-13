@@ -808,12 +808,14 @@ class AccountViewSet(viewsets.ModelViewSet):
         won_date = request.data.get('won_date')
         success_story_date = request.data.get('success_story_date')
         lost_date = request.data.get('lost_date')
+        outreach_date = request.data.get('outreach_time')
         
         # Get or create account based on title
         try:
             account,created = Account.objects.get_or_create(igname=igname,  
                                                             qualified=True,
-                                                            outreach_success=True,
+                                                            outreach_success=False,
+                                                            outreach_time=outreach_date,
                                                             responded_date=responded_date,
                                                             call_scheduled_date=call_scheduled_date,
                                                             closing_date=closing_date,
