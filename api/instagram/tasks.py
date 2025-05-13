@@ -668,6 +668,18 @@ def generate_response_automatic(query, thread_id):
             }
 
         except Exception as error:
+            logging.warning(error)
+            # send email
+            try:
+                subject = f'Error in generate_response_automatic for {thread.account.igname}'
+                message = f'Error: {error}, this is in effort to debug what is wrong with consistent messaging'
+                from_email = 'lutherlunyamwi@gmail.com'
+                recipient_list = ['lutherlunyamwi@gmail.com','tomek@boostedchat.com']
+                send_mail(subject, message, from_email, recipient_list)
+                notify_click_up_tech_notifications(comment_text=message,notify_all=True)
+            except Exception as error:
+                print(error)
+
             return {
                 "error": str(error),
                 "success": False,
