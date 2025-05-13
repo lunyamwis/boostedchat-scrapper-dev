@@ -828,6 +828,10 @@ class AccountViewSet(viewsets.ModelViewSet):
                                                                 relevant_information={},
                                                                 lost_date=lost_date,
                                                                 full_name=full_name)
+                OutSourced.objects.create(
+                        results = {},
+                        account = account
+                    )
             else:
                 account.qualified = True
                 account.outreach_success = False
@@ -841,6 +845,12 @@ class AccountViewSet(viewsets.ModelViewSet):
                 account.full_name = full_name
                 if account.relevant_information is None:
                     account.relevant_information = {}
+                if OutSourced.objects.filter(account=account).first() is None:
+                    OutSourced.objects.create(
+                        results = {},
+                        account = account
+                    )
+                    
                     
                 account.save()
                 
