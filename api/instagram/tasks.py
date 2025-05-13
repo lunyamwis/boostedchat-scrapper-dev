@@ -668,6 +668,7 @@ def generate_response_automatic(query, thread_id):
             }
 
         except Exception as error:
+            logging.warning(error)
             return {
                 "error": str(error),
                 "success": False,
