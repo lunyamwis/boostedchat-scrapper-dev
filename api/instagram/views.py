@@ -812,7 +812,7 @@ class AccountViewSet(viewsets.ModelViewSet):
         
         # Get or create account based on title
         try:
-            account,created = Account.objects.get_or_create(igname=igname,  
+            account,created = Account.objects.get_or_create(igname=igname.strip(),  
                                                             qualified=True,
                                                             outreach_success=False,
                                                             outreach_time=outreach_date,
@@ -823,6 +823,11 @@ class AccountViewSet(viewsets.ModelViewSet):
                                                             success_story_date=success_story_date,
                                                             lost_date=lost_date,
                                                             full_name=full_name)
+            if outreach_date:
+                account.outreach_success = True
+                account.status = StatusCheck.objects.get(name="sent_compliment")
+                account.save()
+          
             serializer = AccountSerializer(account)
             assign_salesrep(account)    
             return Response(serializer.data)
