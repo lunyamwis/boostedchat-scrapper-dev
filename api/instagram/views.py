@@ -825,6 +825,7 @@ class AccountViewSet(viewsets.ModelViewSet):
                                                             full_name=full_name)
             if outreach_date:
                 account.outreach_success = True
+                account.created_at = outreach_date
                 account.status = StatusCheck.objects.get(name="sent_compliment")
                 account.save()
           
