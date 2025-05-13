@@ -17,6 +17,9 @@ from .views import (
     VideoViewSet,
     OutSourcedViewSet,
     Reschedule,
+    GetMediaLikers,
+    GetMediaCommenters,
+    GetUserMediaId
 )
 
 router = DefaultRouter()
@@ -194,6 +197,18 @@ urlpatterns = [
     path(
         'updatepassword/',
         views.UpdatePassword.as_view(),
-    )
+    ),
+    path(
+        'getmedialikers/',
+        GetMediaLikers.as_view(),
+    ),
+    path(
+        'getmediacommenters/',
+        GetMediaCommenters.as_view(),
+    ),
+    path(
+        'getusermediaid/',
+        GetUserMediaId.as_view(),
+    ),
 ]
 
