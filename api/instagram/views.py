@@ -48,7 +48,7 @@ from .models import Score, QualificationAlgorithm, Scheduler, AirflowCreds, Inst
 
 from django.shortcuts import render, redirect, get_object_or_404
 from .forms import WorkflowModelForm
-from .utils import assign_salesrep, generate_dag_script
+from .utils import assign_salesrep, generate_dag_script, initialize_hikerapi_client
 
 
 # 6th
@@ -142,6 +142,437 @@ from django.db.models import Count, Case, When, IntegerField
 
 
 
+class GetCommentLikers(APIView):
+    def post(self, request, *args, **kwargs):
+        # Get the media ID from the request data
+        media_id = request.data.get('media_id')
+        if not media_id:
+            return Response({"error": "Media ID is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Initialize the HikerAPI client
+        cl = initialize_hikerapi_client()
+        try:
+            # Fetch the likers of the media
+            likers = cl.comment_likers_chunk_gql(media_id)
+            likers_list = []
+            for liker in likers:
+                liker_data = {
+                    "username": liker.username,
+                    "full_name": liker.full_name,
+                    "profile_pic_url": liker.profile_pic_url,
+                    "is_verified": liker.is_verified
+                }
+                try:
+                    InstagramUser.objects.create(
+                        username=liker.username,
+                        full_name=liker.full_name,
+                        profile_pic_url=liker.profile_pic_url,
+                        is_verified=liker.is_verified
+                    )
+                except Exception as e:
+                    # Handle the case where the user already exists
+                    print(f"User {liker.username} already exists in the database.")
+                # Add the liker data to the list
+                likers_list.append(liker_data)
+            return Response({"likers": likers_list}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+
+class GetComments(APIView):
+    def post(self, request, *args, **kwargs):
+        # Get the media ID from the request data
+        media_id = request.data.get('media_id')
+        if not media_id:
+            return Response({"error": "Media ID is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Initialize the HikerAPI client
+        cl = initialize_hikerapi_client()
+        try:
+            # Fetch the comments of the media
+            comments = cl.comments_chunk_gql(media_id)
+            comments_list = []
+            for comment in comments:
+                comment_data = {
+                    "id": comment.id,
+                    "text": comment.text,
+                    "user": comment.user.username,
+                    "created_at": comment.created_at,
+                    "likers": [liker.username for liker in cl.comment_likers_chunk_gql(comment.id)]
+                }
+                try:
+                    InstagramUser.objects.create(
+                        username=comment.user.username,
+                        full_name=comment.user.full_name,
+                        profile_pic_url=comment.user.profile_pic_url,
+                        is_verified=comment.user.is_verified
+                    )
+                except Exception as e:
+                    # Handle the case where the user already exists
+                    print(f"User {comment.user.username} already exists in the database.")
+                comments_list.append(comment_data)
+            return Response({"comments": comments_list}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+
+class GetCommentsThreadedChunk(APIView):
+    def post(self, request, *args, **kwargs):
+        # Get the media ID from the request data
+        media_id = request.data.get('media_id')
+        if not media_id:
+            return Response({"error": "Media ID is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Initialize the HikerAPI client
+        cl = initialize_hikerapi_client()
+        try:
+            # Fetch the comments of the media
+            comments = cl.comments_threaded_chunk_gql(media_id)
+            comments_list = []
+            for comment in comments:
+                comment_data = {
+                    "id": comment.id,
+                    "text": comment.text,
+                    "user": comment.user.username,
+                    "created_at": comment.created_at,
+                    "likers": [liker.username for liker in cl.comment_likers_chunk_gql(comment.id)]
+                }
+                try:
+                    InstagramUser.objects.create(
+                        username=comment.user.username,
+                        full_name=comment.user.full_name,
+                        profile_pic_url=comment.user.profile_pic_url,
+                        is_verified=comment.user.is_verified
+                    )
+                except Exception as e:
+                    # Handle the case where the user already exists
+                    print(f"User {comment.user.username} already exists in the database.")
+                comments_list.append(comment_data)
+            return Response({"comments": comments_list}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class FbSearchAccounts(APIView):
+    def post(self, request, *args, **kwargs):
+        query = request.data.get('query')
+        if not query:
+            return Response({"error": "Query is required."}, status=status.HTTP_400_BAD_REQUEST)
+        # Initialize the HikerAPI client
+        cl = initialize_hikerapi_client()
+        try:
+            # Search for accounts
+            accounts = cl.fb_search_accounts(query)
+            accounts_list = []
+            for account in accounts:
+                account_data = {
+                    "username": account.username,
+                    "full_name": account.full_name,
+                    "profile_pic_url": account.profile_pic_url,
+                    "is_verified": account.is_verified
+                }
+                try:
+                    InstagramUser.objects.create(
+                        username=account.username,
+                        full_name=account.full_name,
+                        profile_pic_url=account.profile_pic_url,
+                        is_verified=account.is_verified
+                    )
+                except Exception as e:
+                    # Handle the case where the user already exists
+                    print(f"User {account.username} already exists in the database.")
+                accounts_list.append(account_data)
+            return Response({"accounts": accounts_list}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+class FbSearchPlaces(APIView):
+    def post(self, request, *args, **kwargs):
+        query = request.data.get('query')
+        if not query:
+            return Response({"error": "Query is required."}, status=status.HTTP_400_BAD_REQUEST)
+        # Initialize the HikerAPI client
+        cl = initialize_hikerapi_client()
+        try:
+            # Search for places
+            places = cl.fb_search_places(query)
+            places_list = []
+            for place in places:
+                place_data = {
+                    "name": place.name,
+                    "location": place.location,
+                    "category": place.category,
+                    "latitude": place.latitude,
+                    "longitude": place.longitude
+                }
+                places_list.append(place_data)
+            return Response({"places": places_list}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+
+class FbSearchReels(APIView):
+    def post(self, request, *args, **kwargs):
+        query = request.data.get('query')
+        if not query:
+            return Response({"error": "Query is required."}, status=status.HTTP_400_BAD_REQUEST)
+        # Initialize the HikerAPI client
+        cl = initialize_hikerapi_client()
+        try:
+            # Search for reels
+            reels = cl.fb_search_reels(query)
+            reels_list = []
+            for reel in reels:
+                reel_data = {
+                    "username": reel.username,
+                    "media_id": reel.media_id,
+                    "created_at": reel.created_at,
+                    "is_verified": reel.is_verified
+                }
+                reels_list.append(reel_data)
+            return Response({"reels": reels_list}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+
+class FbSearchHashtags(APIView):
+    def post(self, request, *args, **kwargs):
+        query = request.data.get('query')
+        if not query:
+            return Response({"error": "Query is required."}, status=status.HTTP_400_BAD_REQUEST)
+        # Initialize the HikerAPI client
+        cl = initialize_hikerapi_client()
+        try:
+            # Search for hashtags
+            hashtags = cl.fb_search_hashtags(query)
+            hashtags_list = []
+            for hashtag in hashtags:
+                hashtag_data = {
+                    "name": hashtag.name,
+                    "media_count": hashtag.media_count
+                }
+                hashtags_list.append(hashtag_data)
+            return Response({"hashtags": hashtags_list}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class FbSearchTopsearch(APIView):
+    def post(self, request, *args, **kwargs):
+        query = request.data.get('query')
+        if not query:
+            return Response({"error": "Query is required."}, status=status.HTTP_400_BAD_REQUEST)
+        # Initialize the HikerAPI client
+        cl = initialize_hikerapi_client()
+        try:
+            # Search for top search results
+            top_search_results = cl.fb_search_topsearch(query)
+            top_search_list = []
+            for result in top_search_results:
+                result_data = {
+                    "username": result.username,
+                    "full_name": result.full_name,
+                    "profile_pic_url": result.profile_pic_url,
+                    "is_verified": result.is_verified
+                }
+                try:
+                    InstagramUser.objects.create(
+                        username=result.username,
+                        full_name=result.full_name,
+                        profile_pic_url=result.profile_pic_url,
+                        is_verified=result.is_verified
+                    )
+                except Exception as e:
+                    # Handle the case where the user already exists
+                    print(f"User {result.username} already exists in the database.")
+                top_search_list.append(result_data)
+            return Response({"top_search_results": top_search_list}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+
+class GetHashTagByName(APIView):
+    def post(self, request, *args, **kwargs):
+        # Get the hashtag name from the request data
+        hashtag_name = request.data.get('hashtag_name')
+        if not hashtag_name:
+            return Response({"error": "Hashtag name is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Initialize the HikerAPI client
+        cl = initialize_hikerapi_client()
+        try:
+            # Fetch the hashtag details
+            hashtag = cl.hashtag_by_name_v1(hashtag_name)
+            hashtag_data = {
+                "name": hashtag.name,
+                "media_count": hashtag.media_count,
+                "profile_pic_url": hashtag.profile_pic_url,
+                "is_verified": hashtag.is_verified
+            }
+            # try:
+            #     InstagramUser.objects.create(
+            #         username=hashtag.name,
+            #         full_name=hashtag.name,
+            #         profile_pic_url=hashtag.profile_pic_url,
+            #         is_verified=hashtag.is_verified
+            #     )
+            # except Exception as e:
+            #     # Handle the case where the user already exists
+            #     print(f"User {hashtag.name} already exists in the database.")
+            return Response({"hashtag": hashtag_data}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class GetMediaById(APIView):
+    def post(self, request, *args, **kwargs):
+        # Get the media ID from the request data
+        media_id = request.data.get('media_id')
+        if not media_id:
+            return Response({"error": "Media ID is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Initialize the HikerAPI client
+        cl = initialize_hikerapi_client()
+        try:
+            # Fetch the media details
+            media = cl.media_by_id_v1(media_id)
+            media_data = {
+                "id": media.id,
+                "caption": media.caption,
+                "user": media.user.username,
+                "created_at": media.created_at,
+                "is_verified": media.is_verified
+            }
+            return Response({"media": media_data}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+
+class GetMediaLikers(APIView):
+    def post(self, request, *args, **kwargs):
+        # Get the media ID from the request data
+        media_links = request.data.get('media_links')
+        if not media_links:
+            return Response({"error": "Media Links is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Initialize the HikerAPI client
+        cl = initialize_hikerapi_client()
+        likers_list = []
+        for link in media_links:
+            try:
+                # Fetch the likers of the media
+                media_id = cl.media_pk_from_url_v1(link)
+                likers = cl.media_likers_v2(media_id)
+                for liker in likers['users']:
+                    liker_data = {
+                        "username": liker['username'],
+                        "full_name": liker['full_name'],
+                        "profile_pic_url": liker['profile_pic_url'],
+                        "is_verified": liker['is_verified']
+                    }
+                    try:
+                        InstagramUser.objects.create(
+                            username=liker['username'],
+                            info = cl.user_by_username_v2(liker['username'])
+                        )
+                    except Exception as e:
+                        # Handle the case where the user already exists
+                        print(f"User {liker.username} already exists in the database.")
+                    
+                    try:
+                        account = Account.objects.create(
+                            igname=liker['username'],
+                            relevant_information=cl.user_by_username_v2(liker['username'])
+                        )
+                        OutSourced.objects.create(
+                            results = cl.user_by_username_v2(liker['username']),
+                            account = account
+                        )
+                        logging.info(f"Account {liker['username']} created successfully.")
+                    except Exception as e:
+                        # Handle the case where the user already exists
+                        print(f"User {liker.username} already exists in the database.")
+                    # Add the liker data to the list
+                    likers_list.append(liker_data)
+                
+            except Exception as e:
+                logging.warning(f"error: {str(e)}")
+        return Response({"likers": likers_list}, status=status.HTTP_200_OK)
+    
+
+
+class GetMediaCommenters(APIView):
+    def post(self, request, *args, **kwargs):
+        # Get the media ID from the request data
+        media_links = request.data.get('media_links')
+        if not media_links:
+            return Response({"error": "Media Links is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Initialize the HikerAPI client
+        cl = initialize_hikerapi_client()
+        commenters_list = []
+        for link in media_links:
+            try:
+                # Fetch the likers of the media
+                media_id = cl.media_pk_from_url_v1(link)
+                commenters = cl.media_commenters_v2(media_id)
+                for commenter in commenters['response']['comments']:
+                    commenter_data = {
+                        "username": commenter['user']['username'],
+                        "full_name": commenter['user']['full_name'],
+                        "profile_pic_url": commenter['user']['profile_pic_url'],
+                        "is_verified": commenter['user']['is_verified']
+                    }
+                    try:
+                        InstagramUser.objects.create(
+                            username=commenter['user']['username'],
+                            info = cl.user_by_username_v2(commenter['user']['username'])
+                        )
+                    except Exception as e:
+                        # Handle the case where the user already exists
+                        print(f"User already exists in the database: {e}")
+                    
+                    try:
+                        account = Account.objects.create(
+                            igname=commenter['username'],
+                            relevant_information=cl.user_by_username_v2(commenter['user']['username'])
+                        )
+                        OutSourced.objects.create(
+                            results = cl.user_by_username_v2(commenter['user']['username']),
+                            account = account
+                        )
+                        logging.info(f"Account {commenter['user']['username']} created successfully.")
+                    except Exception as e:
+                        # Handle the case where the user already exists
+                        print(f"User already exists in the database: {e}")
+                    # Add the liker data to the list
+                    commenters_list.append(commenter_data)
+                
+            except Exception as e:
+                logging.warning(f"error: {str(e)}")
+        return Response({"commenters": commenters_list}, status=status.HTTP_200_OK)
+    
+
+
+class GetUserMediaId(APIView):
+    def post(self, request, *args, **kwargs):
+        # Get the media ID from the request data
+        username = request.data.get('username')
+        if not username:
+            return Response({"error": "Username is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Initialize the HikerAPI client
+        cl = initialize_hikerapi_client()
+        media_id = None
+        try:
+            medias = cl.user_medias_v2(user_id=cl.user_by_username_v1(username=username).get("pk"))
+            media_id = medias['response']['items'][0]['id']
+        except Exception as e:
+            print(f"Error fetching media ID: {e}")
+
+        return Response({"media_id": media_id}, status=status.HTTP_200_OK)
 
 class PaginationClass(PageNumberPagination):
     page_size = 20  # Set the number of items per page

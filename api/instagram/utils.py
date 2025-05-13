@@ -1,8 +1,8 @@
 import os
 import json
 import yaml
+import logging
 import pandas as pd
-
 import random
 import requests
 
@@ -18,6 +18,7 @@ from api.outreaches.serializers import PeriodicTaskGetSerializer
 from api.outreaches.serializers import PeriodicTaskPostSerializer
 from api.sales_rep.models import SalesRep
 from rest_framework import status
+from hikerapi import Client, AsyncClient
 from datetime import datetime, timedelta
 
 @schema_context(os.getenv('SCHEMA_NAME'))
@@ -341,3 +342,26 @@ def dag_fields_to_exclude():
             "trigger_url_expected_response",
             "workflow",
         ]
+
+
+
+def initialize_hikerapi_client(is_async=False):
+    
+    if is_async:
+        try:
+            client = AsyncClient(
+                token=os.getenv('HIKER_API_KEY'),
+            )
+            return client
+        except Exception as e:
+            logging.warning("Error initializing Hiker API async client:", e)
+            return None
+    else:
+        try:
+            client = Client(
+                token=os.getenv('HIKER_API_KEY'),
+            )
+            return client
+        except Exception as e:
+            logging.warning("Error initializing Hiker API client:", e)
+            return None
