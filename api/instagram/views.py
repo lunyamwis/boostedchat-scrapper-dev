@@ -808,19 +808,61 @@ class AccountViewSet(viewsets.ModelViewSet):
         won_date = request.data.get('won_date')
         success_story_date = request.data.get('success_story_date')
         lost_date = request.data.get('lost_date')
+        outreach_date = request.data.get('outreach_time')
         
         # Get or create account based on title
         try:
-            account,created = Account.objects.get_or_create(igname=igname,  
-                                                            qualified=True,
-                                                            outreach_success=True,
-                                                            responded_date=responded_date,
-                                                            call_scheduled_date=call_scheduled_date,
-                                                            closing_date=closing_date,
-                                                            won_date=won_date,
-                                                            success_story_date=success_story_date,
-                                                            lost_date=lost_date,
-                                                            full_name=full_name)
+            print("****** creating account ********")
+            account =  Account.objects.filter(igname=igname.strip()).first()
+            
+            if account is None:
+                account,created = Account.objects.get_or_create(igname=igname.strip(),  
+                                                                qualified=True,
+                                                                outreach_success=False,
+                                                                outreach_time=outreach_date,
+                                                                responded_date=responded_date,
+                                                                call_scheduled_date=call_scheduled_date,
+                                                                closing_date=closing_date,
+                                                                won_date=won_date,
+                                                                success_story_date=success_story_date,
+                                                                relevant_information={},
+                                                                lost_date=lost_date,
+                                                                full_name=full_name)
+                OutSourced.objects.create(
+                        results = {},
+                        account = account
+                    )
+            else:
+                account.qualified = True
+                account.outreach_success = False
+                account.outreach_time = outreach_date
+                account.responded_date = responded_date
+                account.call_scheduled_date = call_scheduled_date
+                account.closing_date = closing_date
+                account.won_date = won_date
+                account.success_story_date = success_story_date
+                account.lost_date = lost_date
+                account.full_name = full_name
+                if account.relevant_information is None:
+                    account.relevant_information = {}
+                if OutSourced.objects.filter(account=account).first() is None:
+                    OutSourced.objects.create(
+                        results = {},
+                        account = account
+                    )
+                    
+                    
+                account.save()
+                
+                
+            if outreach_date:
+                account.outreach_success = True
+                account.created_at = outreach_date
+                account.status = StatusCheck.objects.get(name="sent_compliment")
+                account.save()
+                
+                
+          
             serializer = AccountSerializer(account)
             assign_salesrep(account)    
             return Response(serializer.data)
