@@ -2922,7 +2922,8 @@ class DMViewset(viewsets.ModelViewSet):
                     "error": str(error),
                     "success": False,
                     "username": thread.account.igname,
-                    "assigned_to": "Robot"
+                    "assigned_to": "Robot",
+                    "generated_comment": "Come again"
                 },status=500)
 
         elif thread.account.assigned_to == 'Human':
@@ -2930,7 +2931,7 @@ class DMViewset(viewsets.ModelViewSet):
                 "text": query,
                 "success": True,
                 "username": thread.account.igname,
-                "generated_comment": "",
+                "generated_comment": "Come again",
                 "assigned_to": "Human"
             },status=200)
         # else:
