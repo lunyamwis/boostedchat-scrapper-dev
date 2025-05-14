@@ -112,6 +112,11 @@ urlpatterns = [
         name='generate_response',
     ),
     path(
+        'dflow/<str:thread_id>/generate-response/v2/',
+        DMViewset.as_view({'post': 'generate_response_v2'}),
+        name='generate_response_v2',
+    ),
+    path(
         'celery-task-status/<str:task_id>/',
         DMViewset.as_view({'get': 'celery_task_status'}),
         name='celery_task_status',
