@@ -996,22 +996,24 @@ class AccountViewSet(viewsets.ModelViewSet):
 
         while current_week < today:
             next_week = current_week + timedelta(days=7)
+            end_of_week = next_week - timedelta(seconds=1)
 
-            outreach_count = Account.objects.filter(
+            outreach_accounts = Account.objects.filter(
                 created_at__gte=current_week,
-                created_at__lt=next_week,
-                outreach_success=True
-            ).count()
+                created_at__lte=end_of_week,
+                outreach_success=True,
+            )
+            outreach_count = outreach_accounts.count()
             
             print("Outrech count **",outreach_count)
             
             sales_qualified_accounts = Account.objects.filter(
                 created_at__gte=current_week,
-                created_at__lt=next_week,
+                created_at__lte=end_of_week,
                 salesrep__isnull=False,
                 responded_date__isnull=False,
                 #call_scheduled_date__isnull=False,
-                won_date__isnull=True,
+                # won_date__isnull=True,
                 lost_date__isnull=True
             )
             
@@ -1019,7 +1021,7 @@ class AccountViewSet(viewsets.ModelViewSet):
             responded_messages = Message.objects.filter(
                 sent_by='Client',
                 sent_on__gte=current_week,
-                sent_on__lt=next_week
+                sent_on__lte=end_of_week
             ).values_list('thread__account__igname', flat=True).distinct()
 
             responded_count = responded_messages.count()
@@ -1043,6 +1045,7 @@ class AccountViewSet(viewsets.ModelViewSet):
             results.append({
                 "week_start": current_week.strftime("%Y-%m-%d"),
                 "outreach": outreach_count,
+                "outreach_list": list(outreach_accounts.values_list('igname', flat=True)),
                 "responded": responded_count,
                 "responded_ignames": list(responded_messages),
                 "call_scheduled_date": call_scheduled_date,
@@ -1050,16 +1053,18 @@ class AccountViewSet(viewsets.ModelViewSet):
                 "won_date": won_date,
                 "success_story_date": success_story_date,
                 "lost_date": lost_date,
+                "lost_list": [],
                 "responded_date": responded_date,
                 "responded_rate": responded_rate,
                 "call_scheduled_rate": call_scheduled_rate,
                 "closing_rate": closing_rate,
                 "won_rate": won_rate,
+                "won_list": [],
                 "success_story_rate": success_story_rate,
                 "lost_rate": lost_rate,
                 "sq_conversion_rate": sq_conversion_rate,
                 "sales_qualified_count": sales_qualified_accounts.count(),
-                
+                "sales_qualified_accounts": list(sales_qualified_accounts.values_list('igname', flat=True)),
             })
 
             current_week = next_week
