@@ -2903,7 +2903,8 @@ class DMViewset(viewsets.ModelViewSet):
                     "text": query,
                     "success": True,
                     "username": thread.account.igname,
-                    "assigned_to": "Robot"
+                    "assigned_to": "Robot",
+                    "status": 200
                 },status=200)
 
             except Exception as error:
@@ -2923,7 +2924,8 @@ class DMViewset(viewsets.ModelViewSet):
                     "success": False,
                     "username": thread.account.igname,
                     "assigned_to": "Robot",
-                    "generated_comment": "Come again"
+                    "generated_comment": "Come again",
+                    "status":500
                 },status=500)
 
         elif thread.account.assigned_to == 'Human':
@@ -2932,7 +2934,8 @@ class DMViewset(viewsets.ModelViewSet):
                 "success": True,
                 "username": thread.account.igname,
                 "generated_comment": "Come again",
-                "assigned_to": "Human"
+                "assigned_to": "Human",
+                "status": 200
             },status=200)
         # else:
         #         return {
