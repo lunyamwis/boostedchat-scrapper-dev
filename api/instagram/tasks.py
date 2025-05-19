@@ -461,7 +461,7 @@ def send_first_compliment(username, message, repeat=True):
             sent_compliment_status = StatusCheck.objects.get(name="sent_compliment")
             account.status = sent_compliment_status
             account.outreach_success = True
-            account.assigned_to = "Human" # NB: do not forget to handle this from prompt level
+            # account.assigned_to = "Human" # NB: do not forget to handle this from prompt level
             account.save()
             print(f"response============{response}")
             try:
