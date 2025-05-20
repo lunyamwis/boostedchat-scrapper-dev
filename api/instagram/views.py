@@ -575,7 +575,7 @@ class GetUserMediaId(APIView):
         return Response({"media_id": media_id}, status=status.HTTP_200_OK)
 
 class PaginationClass(PageNumberPagination):
-    page_size = 20  # Set the number of items per page
+    page_size = 100  # Set the number of items per page
     page_size_query_param = 'page_size'
     max_page_size = 100
 
@@ -910,6 +910,8 @@ class AccountViewSet(viewsets.ModelViewSet):
         created_at_gte = request.GET.get("created_at_gte")
         created_at_lt = request.GET.get("created_at_lt")
         status_param = request.GET.get('status_param')
+        outreach_success = request.GET.get('outreach_success')
+        list_type = request.GET.get('list_type') 
 
         if search_query:
             queryset = queryset.filter(igname__icontains=search_query.strip())
@@ -921,15 +923,30 @@ class AccountViewSet(viewsets.ModelViewSet):
                 queryset = queryset.filter(status_param="")
             else:
                 queryset = queryset.filter(status_param=status_param.strip())
-
+     
+                
+        if outreach_success:
+            if outreach_success.lower() == "true":
+                queryset = queryset.filter(outreach_success=True)
+        
         # Date parsing
         created_filter = {}
         if created_at_gte:
-            created_filter["created_at__gte"] = make_aware(datetime.strptime(created_at_gte, "%Y-%m-%d"))
+            if list_type:
+                if list_type.lower() == "outreach":
+                    created_filter["created_at__gte"] = make_aware(datetime.strptime(created_at_gte, "%Y-%m-%d"))
+                elif list_type.lower() == "won":
+                    created_filter["won_date__range"] = (make_aware(datetime.strptime(created_at_gte, "%Y-%m-%d")), make_aware(datetime.strptime(created_at_lt, "%Y-%m-%d")) )
+                elif list_type.lower() == "lost":
+                    created_filter["lost_date__range"] = (make_aware(datetime.strptime(created_at_gte, "%Y-%m-%d")), make_aware(datetime.strptime(created_at_lt, "%Y-%m-%d")) )
+            else:
+                created_filter["created_at__gte"] = make_aware(datetime.strptime(created_at_gte, "%Y-%m-%d"))
 
         if created_at_lt:
-            created_filter["created_at__lt"] = make_aware(datetime.strptime(created_at_lt, "%Y-%m-%d")) + timedelta(days=1)
-
+            if list_type is None:
+              created_filter["created_at__lt"] = make_aware(datetime.strptime(created_at_lt, "%Y-%m-%d")) #+ timedelta(days=1)
+        
+            
         if created_filter:
             queryset = queryset.filter(**created_filter)
 
@@ -1044,6 +1061,7 @@ class AccountViewSet(viewsets.ModelViewSet):
 
             results.append({
                 "week_start": current_week.strftime("%Y-%m-%d"),
+                "week_end": next_week.strftime("%Y-%m-%d"),
                 "outreach": outreach_count,
                 "outreach_list": list(outreach_accounts.values_list('igname', flat=True)),
                 "responded": responded_count,
@@ -1068,9 +1086,8 @@ class AccountViewSet(viewsets.ModelViewSet):
             })
 
             current_week = next_week
-            
         return Response({
-            "results": results
+            "results": results[::-1]
         })
 
     
