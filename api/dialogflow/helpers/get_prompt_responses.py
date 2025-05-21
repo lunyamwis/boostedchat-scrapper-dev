@@ -1,6 +1,7 @@
 import re
 import os
 import json
+import logging
 import requests
 from api.dialogflow.helpers.notify_click_up import create_click_up_task, notify_click_up_tech_notifications
 from api.instagram.helpers.llm import query_gpt
@@ -191,7 +192,7 @@ def get_gpt_response(account, message, thread_id=None):
         try:
 
             active_stage_res = prepended_result['active_stage']
-            print('********************',active_stage_res,'****************')
+            logging.warning('active_stage:********************',active_stage_res,'****************')
             account.status_param = active_stage_res
             account.save()
         except Exception as err:
