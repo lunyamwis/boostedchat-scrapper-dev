@@ -470,7 +470,7 @@ def send_first_compliment(username, message, repeat=True):
                 returned_data = response.json()
 
                 try:
-                    thread_obj, _ = Thread.objects.get_or_create(thread_id=returned_data["thread_id"])
+                    thread_obj = Thread.objects.create(thread_id=returned_data["thread_id"])
                     thread_obj.thread_id = returned_data["thread_id"]
                     thread_obj.account = account
                     thread_obj.last_message_content = first_message
