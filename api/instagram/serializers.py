@@ -41,6 +41,8 @@ class AccountSerializer(serializers.ModelSerializer):
             "lost_date",
             "outreach_time",
             "notes",
+            "created_at",
+            "status_param"
             # "thread_id",
         ]
         extra_kwargs = {"id": {"required": False, "allow_null": True},
