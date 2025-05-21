@@ -475,7 +475,7 @@ class GetMediaLikers(APIView):
                     try:
                         InstagramUser.objects.create(
                             username=liker['username'],
-                            info = cl.user_by_username_v2(liker['username'])
+                            info = cl.user_by_username_v1(liker['username'])
                         )
                     except Exception as e:
                         # Handle the case where the user already exists
@@ -484,10 +484,10 @@ class GetMediaLikers(APIView):
                     try:
                         account = Account.objects.create(
                             igname=liker['username'],
-                            relevant_information=cl.user_by_username_v2(liker['username'])
+                            relevant_information=cl.user_by_username_v1(liker['username'])
                         )
                         OutSourced.objects.create(
-                            results = cl.user_by_username_v2(liker['username']),
+                            results = cl.user_by_username_v1(liker['username']),
                             account = account
                         )
                         logging.info(f"Account {liker['username']} created successfully.")
@@ -528,7 +528,7 @@ class GetMediaCommenters(APIView):
                     try:
                         InstagramUser.objects.create(
                             username=commenter['user']['username'],
-                            info = cl.user_by_username_v2(commenter['user']['username'])
+                            info = cl.user_by_username_v1(commenter['user']['username'])
                         )
                     except Exception as e:
                         # Handle the case where the user already exists
@@ -537,10 +537,10 @@ class GetMediaCommenters(APIView):
                     try:
                         account = Account.objects.create(
                             igname=commenter['username'],
-                            relevant_information=cl.user_by_username_v2(commenter['user']['username'])
+                            relevant_information=cl.user_by_username_v1(commenter['user']['username'])
                         )
                         OutSourced.objects.create(
-                            results = cl.user_by_username_v2(commenter['user']['username']),
+                            results = cl.user_by_username_v1(commenter['user']['username']),
                             account = account
                         )
                         logging.info(f"Account {commenter['user']['username']} created successfully.")
@@ -2924,6 +2924,7 @@ class DMViewset(viewsets.ModelViewSet):
                 print(result)
                 return Response({
                     "generated_comment": gpt_resp,
+                    # "generated_comment": "cool stuff!",
                     "text": query,
                     "success": True,
                     "username": thread.account.igname,
