@@ -2923,7 +2923,8 @@ class DMViewset(viewsets.ModelViewSet):
                 )
                 print(result)
                 return Response({
-                    "generated_comment": gpt_resp,
+                    # "generated_comment": gpt_resp,
+                    "generated_comment": "cool stuff!",
                     "text": query,
                     "success": True,
                     "username": thread.account.igname,
