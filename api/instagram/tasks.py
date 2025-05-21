@@ -333,17 +333,22 @@ def send_first_compliment(username, message, repeat=True):
     #     outreachErrorLogger(None, None, err_str, 422, "ERROR", "Time", False) # we can not do anything about the time. Do not reschedule
     
     numTries = 0
-    print(username)
-    thread_obj = None
+    print("Searching for:::>>>>>> ", username)
     account = get_account(username)
-    account.status_param = 'Prequalified'
-    # account.outreach_time = target_time
-    account.save()
+    
+    
 
     if account is None:
         err_str = f"{username} account does not exist"
         outreachErrorLogger(None, None, err_str, 404, "ERROR", "Lead", True) # reshedule_next
         # raise Exception(err_str)
+        
+    print("Found Account:::>>>>>> ", account)
+    thread_obj = None
+    
+    account.status_param = 'Prequalified'
+    # account.outreach_time = target_time
+    account.save()
 
         
     # thread_exists = ig_thread_exists(username)
