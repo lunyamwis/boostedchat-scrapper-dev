@@ -192,7 +192,7 @@ def get_gpt_response(account, message, thread_id=None):
         try:
 
             active_stage_res = prepended_result['active_stage']
-            logging.warning('active_stage:********************',active_stage_res,'****************')
+            print('active_stage:********************',active_stage_res,'****************')
             account.status_param = active_stage_res
             account.save()
         except Exception as err:
