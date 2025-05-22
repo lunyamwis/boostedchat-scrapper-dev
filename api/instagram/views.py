@@ -941,6 +941,12 @@ class AccountViewSet(viewsets.ModelViewSet):
                     created_filter["created_at__gte"] = make_aware(datetime.strptime(created_at_gte, "%Y-%m-%d"))
                 elif list_type.lower() == "won":
                     created_filter["won_date__range"] = (make_aware(datetime.strptime(created_at_gte, "%Y-%m-%d")), make_aware(datetime.strptime(created_at_lt, "%Y-%m-%d")) )
+                elif list_type.lower() == "sales_qualified":
+                    queryset = queryset.filter(
+                        salesrep__isnull=False,
+                        status_param='Sales Qualified',
+                    )
+                    created_filter["responded_date__range"] = (make_aware(datetime.strptime(created_at_gte, "%Y-%m-%d")), make_aware(datetime.strptime(created_at_lt, "%Y-%m-%d")) )
                 elif list_type.lower() == "lost":
                     created_filter["lost_date__range"] = (make_aware(datetime.strptime(created_at_gte, "%Y-%m-%d")), make_aware(datetime.strptime(created_at_lt, "%Y-%m-%d")) )
             else:
@@ -953,6 +959,12 @@ class AccountViewSet(viewsets.ModelViewSet):
             
         if created_filter:
             queryset = queryset.filter(**created_filter)
+        
+        # if list_type.lower() == "sales_qualified":
+        #     queryset = queryset.filter(
+        #         salesrep__isnull=False,
+        #         status_param='Sales Qualified',
+        #     )
 
         # Paginator for main list
         paginator = self.pagination_class()
@@ -1032,10 +1044,11 @@ class AccountViewSet(viewsets.ModelViewSet):
                 created_at__gte=current_week,
                 created_at__lte=end_of_week,
                 salesrep__isnull=False,
-                responded_date__isnull=False,
+                # responded_date__isnull=False,
+                status_param='Sales Qualified',
                 #call_scheduled_date__isnull=False,
                 # won_date__isnull=True,
-                lost_date__isnull=True
+                # lost_date__isnull=True
             )
             
 
