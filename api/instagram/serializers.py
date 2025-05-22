@@ -22,6 +22,7 @@ class AccountSerializer(serializers.ModelSerializer):
     # account_history = serializers.CharField(source="history.latest",read_only=True)
     # print(account_history)
     # thread_id = serializers.SerializerMethodField()
+    outsourced_info = serializers.SerializerMethodField()
     class Meta:
         model = Account
         fields = [
@@ -42,7 +43,8 @@ class AccountSerializer(serializers.ModelSerializer):
             "outreach_time",
             "notes",
             "created_at",
-            "status_param"
+            "status_param",
+            "outsourced_info"
             # "thread_id",
         ]
         extra_kwargs = {"id": {"required": False, "allow_null": True},
@@ -63,6 +65,9 @@ class AccountSerializer(serializers.ModelSerializer):
     #     # return thread.thread_id if thread else None
     #     return getattr(obj, 'thread_id', None) or \
     #         Thread.objects.filter(account=obj).values_list('thread_id', flat=True).first()
+    def get_outsourced_info(self, obj):
+        # The field will only be available if you annotated it
+        return getattr(obj, "outsourced_info", None)
 
 class GetAccountSerializer(serializers.ModelSerializer):
     # status = serializers.CharField(source="account.status.name", read_only=True)

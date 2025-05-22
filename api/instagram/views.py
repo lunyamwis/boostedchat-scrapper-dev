@@ -902,6 +902,10 @@ class AccountViewSet(viewsets.ModelViewSet):
                 .values('sent_by')[:1]
             ),
             latest_message_at=Coalesce('last_message_sent_at', 'last_message_at', Value(datetime.min)),
+            
+            outsourced_info=Subquery(
+                OutSourced.objects.filter(account=OuterRef('pk')).order_by('-created_at').values('results')[:1]
+            ),
             # thread_id=Subquery(Thread.objects.filter(account=OuterRef('pk')).values('thread_id')[:1])
         ).order_by('-created_at')#order_by('-latest_message_at')
 
