@@ -457,6 +457,9 @@ class GetMediaLikers(APIView):
         if not media_links:
             return Response({"error": "Media Links is required."}, status=status.HTTP_400_BAD_REQUEST)
 
+        if isinstance(media_links, str):
+            media_links = ast.literal_eval(media_links)
+
         # Initialize the HikerAPI client
         cl = initialize_hikerapi_client()
         likers_list = []
@@ -509,6 +512,9 @@ class GetMediaCommenters(APIView):
         media_links = request.data.get('media_links')
         if not media_links:
             return Response({"error": "Media Links is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        if isinstance(media_links, str):
+            media_links = ast.literal_eval(media_links)
 
         # Initialize the HikerAPI client
         cl = initialize_hikerapi_client()
