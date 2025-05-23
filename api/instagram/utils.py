@@ -255,12 +255,16 @@ def generate_dag_script(workflow_id):
     #     }
     # else:
     workflow = WorkflowModel.objects.get(id=workflow_id)
+    print(workflow.workflow_type)
+    print(workflow)
     dag_ = DagModel.objects.filter(workflow__id = workflow.id)
     dag = dag_.latest('created_at')
+    print(dag.dag_id)
     operators = [entry for entry in dag.simplehttpoperatormodel_set.filter().values()]
     data_points = []
     for operator in operators:
         try:
+            print(operator['connection_id'])
             operator['http_conn_id'] = HttpOperatorConnectionModel.objects.get(id=operator['connection_id']).connection_id
             endpoint = Endpoint.objects.get(id=operator['endpointurl_id'])
             operator['endpoint'] = endpoint.url

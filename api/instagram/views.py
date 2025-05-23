@@ -3579,9 +3579,11 @@ class WorkflowInline():
                 except Exception as e:
                     messages.error(self.request, f"Failed to update DAG: {str(e)}")
                 print("Updating workflow:", self.object)
+                logging.warning("updating workflow")
                 # Additional logic for updating can go here
             else:
                 print("Creating new workflow:", self.object)
+                logging.warning("creating new workflow")
                 # Additional logic for creation can go here
 
 
@@ -3593,6 +3595,8 @@ class WorkflowInline():
                     formset_save_func(formset)
                 else:
                     formset.save()
+            
+            logging.warning(f"Workflow --> {self.object.id}")
             generate_dag_script.delay(self.object.id)
         return redirect('list_workflows')
 
