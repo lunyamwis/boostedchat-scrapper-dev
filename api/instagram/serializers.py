@@ -11,6 +11,11 @@ from api.helpers.dag_generator import generate_dag
 from django_celery_beat.models import PeriodicTask
 import ast
 
+def to_camel_case(snake_str):
+    if snake_str is None:
+        return None
+    return ' '.join(word.capitalize() for word in snake_str.split())
+
 # from rest_framework.utils.encoders import JSONEncoder
 class OutSourcedSerializer(serializers.ModelSerializer):
     class Meta:
@@ -23,6 +28,7 @@ class AccountSerializer(serializers.ModelSerializer):
     # print(account_history)
     # thread_id = serializers.SerializerMethodField()
     outsourced_info = serializers.SerializerMethodField()
+    statusParam = serializers.SerializerMethodField()  # Capitalized output
     class Meta:
         model = Account
         fields = [
@@ -44,7 +50,8 @@ class AccountSerializer(serializers.ModelSerializer):
             "notes",
             "created_at",
             "status_param",
-            "outsourced_info"
+            "outsourced_info",
+            "statusParam"
             # "thread_id",
         ]
         extra_kwargs = {"id": {"required": False, "allow_null": True},
@@ -68,6 +75,9 @@ class AccountSerializer(serializers.ModelSerializer):
     def get_outsourced_info(self, obj):
         # The field will only be available if you annotated it
         return getattr(obj, "outsourced_info", None)
+    def get_statusParam(self, obj):
+        if obj.status_param:
+            return to_camel_case(obj.status_param)
 
 class GetAccountSerializer(serializers.ModelSerializer):
     # status = serializers.CharField(source="account.status.name", read_only=True)

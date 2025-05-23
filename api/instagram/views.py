@@ -581,9 +581,9 @@ class GetUserMediaId(APIView):
         return Response({"media_id": media_id}, status=status.HTTP_200_OK)
 
 class PaginationClass(PageNumberPagination):
-    page_size = 100  # Set the number of items per page
+    page_size = 200  # Set the number of items per page
     page_size_query_param = 'page_size'
-    max_page_size = 100
+    max_page_size = 200
 
 class OutSourcedViewSet(viewsets.ModelViewSet):
     """
@@ -955,6 +955,9 @@ class AccountViewSet(viewsets.ModelViewSet):
                     created_filter["responded_date__range"] = (make_aware(datetime.strptime(created_at_gte, "%Y-%m-%d")), make_aware(datetime.strptime(created_at_lt, "%Y-%m-%d")) )
                 elif list_type.lower() == "lost":
                     created_filter["lost_date__range"] = (make_aware(datetime.strptime(created_at_gte, "%Y-%m-%d")), make_aware(datetime.strptime(created_at_lt, "%Y-%m-%d")) )
+                else:
+                    print("created_at_gte----- this is what we are looking at ---->",created_at_gte)
+                    created_filter["created_at__gte"] = make_aware(datetime.strptime(created_at_gte, "%Y-%m-%d"))
             else:
                 created_filter["created_at__gte"] = make_aware(datetime.strptime(created_at_gte, "%Y-%m-%d"))
 
