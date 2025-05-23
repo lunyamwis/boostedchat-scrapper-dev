@@ -3561,10 +3561,17 @@ class WorkflowInline():
                     dag_update_data = {
                         "is_paused": False
                     }
-                    resp = requests.patch(f"{airflowcreds.airflow_base_url}/api/v1/dags/{dag.dag_id}", 
+
+                    try:
+                        resp = requests.patch(f"{airflowcreds.airflow_base_url}/api/v1/dags/{dag.dag_id}", 
                                           data=json.dumps(dag_update_data),
                                           auth=HTTPBasicAuth(airflowcreds.username, airflowcreds.password),
-                                          headers=headers)
+                                          headers=headers,timeout=10)
+                    except requests.exceptions.Timeout:
+                        print("Request timed out")
+                    except requests.exceptions.RequestException as e:
+                        print(f"An error occurred: {e}")
+                    
                     if resp.status_code == 200:
                         messages.success(self.request, f"DAG updated successfully {resp.status_code}")
                     else:
