@@ -20,6 +20,7 @@ from api.sales_rep.models import SalesRep
 from rest_framework import status
 from hikerapi import Client, AsyncClient
 from datetime import datetime, timedelta
+from celery import shared_task
 
 @schema_context(os.getenv('SCHEMA_NAME'))
 def assign_salesrep(account):
@@ -240,8 +241,9 @@ def remove_timestamp(dict_):
     return dict_
 
 
+@shared_task()
 @schema_context(os.getenv('SCHEMA_NAME'))
-def generate_dag_script(workflow):
+def generate_dag_script(workflow_id):
     # if "trigger_url" in dag_data:
         
     #     data = {
@@ -252,6 +254,7 @@ def generate_dag_script(workflow):
     #         "trigger_url_expected_response":dag_data.get("trigger_url_expected_response")
     #     }
     # else:
+    workflow = WorkflowModel.objects.get(id=workflow_id)
     dag_ = DagModel.objects.filter(workflow__id = workflow.id)
     dag = dag_.latest('created_at')
     operators = [entry for entry in dag.simplehttpoperatormodel_set.filter().values()]

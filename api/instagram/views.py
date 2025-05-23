@@ -3586,7 +3586,7 @@ class WorkflowInline():
                     formset_save_func(formset)
                 else:
                     formset.save()
-            generate_dag_script(self.object)
+            generate_dag_script.delay(self.object.id)
         return redirect('list_workflows')
 
     def formset_dags_valid(self, formset):
