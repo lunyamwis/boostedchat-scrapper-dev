@@ -487,6 +487,13 @@ class GetMediaLikers(APIView):
                     try:
                         account = Account.objects.create(
                             igname=liker['username'],
+                            # ADD CHECK TO PRVENT BILLING JSONS FROM BEING SAVED
+                            # {
+                            #     "error": "Top up your account at https://hikerapi.com/billing",
+                            #     "state": false,
+                            #     "exc_type": "InsufficientFunds",
+                            #     "media_id": null
+                            # }
                             relevant_information=cl.user_by_username_v1(liker['username'])
                         )
                         OutSourced.objects.create(
@@ -938,6 +945,9 @@ class AccountViewSet(viewsets.ModelViewSet):
         if outreach_success:
             if outreach_success.lower() == "true":
                 queryset = queryset.filter(outreach_success=True)
+                
+            else:
+                print("list_type----- this is what we are looking at ---->",list_type)
         
         # Date parsing
         created_filter = {}
@@ -976,6 +986,144 @@ class AccountViewSet(viewsets.ModelViewSet):
         #     )
 
         # Paginator for main list
+        paginator = self.pagination_class()
+        paginated_qs = paginator.paginate_queryset(queryset, request)
+        serializer = self.get_serializer(paginated_qs, many=True)
+        
+        
+
+        # Filtered sets with date range
+        qualified_accounts = Account.objects.filter(qualified=True, outreach_success=False,**created_filter)
+        
+        
+
+        today_start = make_aware(datetime.combine(now().date(), datetime.min.time()))
+        tomorrow_start = today_start + timedelta(days=1)
+        yesterday_start = today_start - timedelta(days=1)
+        
+
+        
+
+        # yesterday's date range
+        scheduled_accounts = Account.objects.filter(
+            qualified=True,
+            outreach_success=False,
+            created_at__gte=today_start,
+            created_at__lt=tomorrow_start
+        )
+        
+        outreach_success_accounts = Account.objects.filter(
+            outreach_success=True,
+            created_at__gte=yesterday_start,
+            created_at__lt=today_start
+        )
+        
+        total_outreach = outreach_success_accounts.count()
+        total_scheduled = qualified_accounts.count()
+        
+        
+        return Response({
+            "count": paginator.page.paginator.count,
+            "next": paginator.get_next_link(),
+            "previous": paginator.get_previous_link(),
+            "results": serializer.data,
+            # "qualified": [],# AccountSerializer(qualified_accounts, many=True).data,
+            "outreach_success": AccountSerializer(outreach_success_accounts, many=True).data,
+            "scheduled": AccountSerializer(scheduled_accounts, many=True).data,
+            "total_outreach": total_outreach,
+            "total_scheduled": total_scheduled,
+        })
+    
+    @schema_context(os.getenv('SCHEMA_NAME'))
+    @action(detail=False, methods=['get'], url_path="weekly-reporting-details")
+    def weekly_report_details_list(self, request, pk=None): 
+        queryset = Account.objects.filter(salesrep__isnull=False)
+        queryset = queryset.annotate(
+            last_message_at=F('thread__last_message_at'),
+            last_message_sent_at=Subquery(
+                Message.objects.filter(thread=OuterRef('thread'))
+                .order_by('-sent_on')
+                .values('sent_on')[:1]
+            ),
+            last_message_sent_by=Subquery(
+                Message.objects.filter(thread=OuterRef('thread'))
+                .order_by('-sent_on')
+                .values('sent_by')[:1]
+            ),
+            latest_message_at=Coalesce('last_message_sent_at', 'last_message_at', Value(datetime.min)),
+            
+            outsourced_info=Subquery(
+                OutSourced.objects.filter(account=OuterRef('pk')).order_by('-created_at').values('results')[:1]
+            ),
+            # thread_id=Subquery(Thread.objects.filter(account=OuterRef('pk')).values('thread_id')[:1])
+        ).order_by('-created_at')#order_by('-latest_message_at')
+
+        # Filters from request
+        search_query = request.GET.get("q")
+        created_at_gte = request.GET.get("created_at_gte")
+        created_at_lt = request.GET.get("created_at_lt")
+        status_param = request.GET.get('status_param')
+        outreach_success = request.GET.get('outreach_success')
+        list_type = request.GET.get('list_type')
+        
+        if list_type is None:
+             return Response({
+            "count": 0,
+            "next": "",
+            "previous": "",
+            "results": [],
+            # "qualified": [],# AccountSerializer(qualified_accounts, many=True).data,
+            "outreach_success": [],
+            "scheduled": [],
+            "total_outreach": 0,
+            "total_scheduled": 0,
+        })
+
+        if search_query:
+            queryset = queryset.filter(igname__icontains=search_query.strip())
+        
+        # if status_param:
+        #     if status_param.lower() == "null":
+        #         queryset = queryset.filter(status_param__isnull=True)
+        #     elif status_param.lower() == "blank":
+        #         queryset = queryset.filter(status_param="")
+        #     else:
+        #         queryset = queryset.filter(status_param=status_param.strip())
+        created_filter = {}
+        if created_at_gte:
+            created_filter["created_at__gte"] = make_aware(datetime.strptime(created_at_gte, "%Y-%m-%d"))
+           
+        if created_at_lt:
+              created_filter["created_at__lt"] = make_aware(datetime.strptime(created_at_lt, "%Y-%m-%d")) #+ timedelta(days=1)
+                
+        if outreach_success:
+            if outreach_success.lower() == "true":
+                queryset = queryset.filter(outreach_success=True)
+     
+        start_date = make_aware(datetime.strptime(created_at_gte, "%Y-%m-%d"))
+        end_date = make_aware(datetime.strptime(created_at_lt, "%Y-%m-%d") )
+        match list_type.lower():    
+            case "all":
+                queryset = queryset.filter(
+                    Q(created_at__range=(start_date, end_date)) |
+                    Q(won_date__range=(start_date, end_date)) |
+                    Q(lost_date__range=(start_date, end_date)) |
+                    Q(responded_date__range=(start_date, end_date))
+                )
+            case "sales_qualified":
+                queryset = queryset.filter(
+                        status_param='Sales Qualified',
+                        created_at__gte=start_date, created_at__lt=end_date
+                    )
+            case "outreach":
+                queryset = queryset.filter(created_at__gte=start_date, created_at__lt=end_date)
+            case "won":
+                queryset = queryset.filter(won_date__range=(start_date, end_date))
+            case "lost":
+                queryset = queryset.filter(lost_date__range=(start_date, end_date))
+            case _:
+                queryset
+                # Paginator for main list
         paginator = self.pagination_class()
         paginated_qs = paginator.paginate_queryset(queryset, request)
         serializer = self.get_serializer(paginated_qs, many=True)
