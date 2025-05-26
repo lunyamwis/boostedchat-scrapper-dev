@@ -440,6 +440,7 @@ def send_first_compliment(username, message, repeat=True):
 
     print(f"data=============={data}")
     print(f"data=============={json.dumps(data)}")
+    
     def send(numTries = 0):
         numTries += 1
         try:
@@ -552,7 +553,12 @@ def send_first_compliment(username, message, repeat=True):
             # ExceptionHandler(exception.status_code).take_action(data=exception.data)
             print(f"Request failed with status code: {response.status_code}")
             print(f"Response message: {response.text}")
-
+            try: 
+                notify_data = json.dumps(data)
+                username_to = notify_data.get("username_to", "Unknown")
+                notify_click_up_tech_notifications(comment_text=f"message: {response.text} username: {username_to}",notify_all=True)
+            except error:
+                pass
             # sav
             # response = requests.post(f"{os.getenv('API_URL')}/serviceManager/restart-container/",
             #                          headers={'Content-Type': 'application/json'},
