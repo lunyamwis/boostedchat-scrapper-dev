@@ -145,7 +145,9 @@ def send_message(recipient_id, message_text):
 def scrap_facebook_group_members_api(request):
     """Scrap facebook group members"""
     # import pdb;pdb.set_trace()
-    data = json.loads(request.body.decode('utf-8'))
+    data = request.data
+    # data = json.loads(request.body.decode('utf-8'))
+    
     group_url = data.get('group_url')
     cookies_ = data.get('cookies')
     cookies_ = request.POST.get('cookies')
