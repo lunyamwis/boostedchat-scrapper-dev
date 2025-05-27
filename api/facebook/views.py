@@ -150,7 +150,7 @@ def scrap_facebook_group_members_api(request):
     
     group_url = data.get('group_url')
     cookies_ = data.get('cookies')
-    cookies_ = request.POST.get('cookies')
+    # cookies_ = request.POST.get('cookies')
     # cookies_ = json.loads(cookies_)
     # cookies_ = json.loads(cookies_)
     # cookies_ = json.loads(cookies_)
