@@ -549,6 +549,7 @@ def send_first_compliment(username, message, repeat=True):
             #     data = {"igname": salesrep.ig_username},
             #     error_message = response.text
             # )
+            message = ""
             send_first_compliment(get_account(), message) # recurse to the next individual
             # ExceptionHandler(exception.status_code).take_action(data=exception.data)
             print(f"Request failed with status code: {response.status_code}")

@@ -81,11 +81,12 @@ def get_account(usernames=None):
         )
 
         usernames = list(accounts.values_list('igname', flat=True))
+        random.shuffle(usernames)  # Shuffle the usernames to randomize the selection
 
     if not usernames:
         return None  # Base case: no usernames left to check
 
-    # import pdb;pdb.set_trace()  # Debugging line to inspect the state
+
     username = usernames.pop(0)  # Get the first username from the list
 
     # Check if the username is unwanted
