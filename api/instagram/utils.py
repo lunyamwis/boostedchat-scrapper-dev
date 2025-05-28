@@ -7,6 +7,8 @@ import random
 import requests
 
 from django.contrib.contenttypes.models import ContentType
+from django.utils import timezone
+from django.db.models import Q
 from .models import SimpleHttpOperatorModel, WorkflowModel, Endpoint, CustomFieldValue, CustomField, DagModel,HttpOperatorConnectionModel,Account, Message, OutSourced, StatusCheck, Thread, UnwantedAccount
 from django.conf import settings
 
@@ -36,23 +38,100 @@ def assign_salesrep(account):
 
 
 @schema_context(os.getenv('SCHEMA_NAME'))
-def get_account(username):
-    account = None
-    check_unwanted = UnwantedAccount.objects.filter(username__icontains=''.join(username).split('-')[0])
+def get_account(usernames=None):
+    """
+    Recursively iterates through a list of usernames to find a suitable account.
+    If no usernames are provided, it fetches the qualified usernames internally.
+
+    Args:
+        usernames (list, optional): A list of usernames to check. Defaults to None.
+
+    Returns:
+        Account or None: An Account object if found, otherwise None.
+    """
+    yesterday = timezone.now().date() - timezone.timedelta(days=1)
+    tomorrow = timezone.now().date() + timezone.timedelta(days=1)
+    yesterday_start = timezone.make_aware(timezone.datetime.combine(yesterday, timezone.datetime.min.time()))
+    unwanted_usernames = UnwantedAccount.objects.values_list('username', flat=True)
+
+    # Filter accounts that are qualified and created from yesterday onwards, and exclude accounts that are not wanted
+    accounts = Account.objects.filter(
+        Q(qualified=True) & Q(created_at__gte=yesterday_start) & Q(created_at__lte=tomorrow)
+    ).exclude(
+        status__name="sent_compliment"
+    ).exclude(
+        igname__in=unwanted_usernames
+    )
+
+    usernames_list = list(accounts.values_list('igname', flat=True))
+    if usernames is None or usernames not in usernames_list:
+        # Fetch qualified usernames internally
+        yesterday = timezone.now().date() - timezone.timedelta(days=1)
+        tomorrow = timezone.now().date() + timezone.timedelta(days=1)
+        yesterday_start = timezone.make_aware(timezone.datetime.combine(yesterday, timezone.datetime.min.time()))
+        unwanted_usernames = UnwantedAccount.objects.values_list('username', flat=True)
+
+        # Filter accounts that are qualified and created from yesterday onwards, and exclude accounts that are not wanted
+        accounts = Account.objects.filter(
+            Q(qualified=True) & Q(created_at__gte=yesterday_start) & Q(created_at__lte=tomorrow)
+        ).exclude(
+            status__name="sent_compliment"
+        ).exclude(
+            igname__in=unwanted_usernames
+        )
+
+        usernames = list(accounts.values_list('igname', flat=True))
+
+    if not usernames:
+        return None  # Base case: no usernames left to check
+
+    # import pdb;pdb.set_trace()  # Debugging line to inspect the state
+    username = usernames.pop(0)  # Get the first username from the list
+
+    # Check if the username is unwanted
+    check_unwanted = UnwantedAccount.objects.filter(username__icontains=username.split('-')[0])
     if check_unwanted.exists():
-        return 
+        # Skip this username and recurse with the remaining list
+        return get_account(usernames)
+
     try:
-        accounts = Account.objects.filter(igname__icontains=''.join(username).split('-')[0]).exclude(status__name='sent_compliment') 
-        account = accounts.latest('created_at')
-        if account.salesrep_set.exists():
-            account = account
+        accounts = Account.objects.filter(igname__icontains=username.split('-')[0]).exclude(status__name='sent_compliment')
+        if accounts.exists():
+            account = accounts.latest('created_at')
+            if not account.salesrep_set.exists():
+                assign_salesrep(account)
+            return account
         else:
-            assign_salesrep(account)
-            
+            # No account found for this username, recurse with remaining usernames
+            return get_account(usernames)
 
     except Exception as error:
-        print(error)
-    return account
+        print(f"Error processing username {username}: {error}")
+        # On error, recurse with remaining usernames
+        return get_account(usernames)
+
+
+# @schema_context(os.getenv('SCHEMA_NAME'))
+# def get_account(username):
+#     account = None
+#     check_unwanted = UnwantedAccount.objects.filter(username__icontains=''.join(username).split('-')[0])
+#     if check_unwanted.exists():
+#         return 
+#     try:
+#         accounts = Account.objects.filter(igname__icontains=''.join(username).split('-')[0]).exclude(status__name='sent_compliment') 
+#         account = accounts.latest('created_at')
+#         if account.salesrep_set.exists():
+#             account = account
+#         else:
+#             assign_salesrep(account)
+            
+
+#     except Exception as error:
+#         print(error)
+
+#     # if account is None:
+#     #     get_account(username)
+#     return account
 
 @schema_context(os.getenv('SCHEMA_NAME'))
 def get_account_for_salesrep(username):
