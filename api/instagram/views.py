@@ -25,6 +25,7 @@ from rest_framework.pagination import PageNumberPagination
 from rest_framework import status
 from django.conf import settings
 from django.utils import timezone
+from calendar import monthrange
 from django.contrib import messages
 from .tasks import scrap_followers,scrap_info,scrap_users,insert_and_enrich,scrap_mbo,scrap_media,load_info_to_database,scrap_hash_tag
 from api.helpers.dag_generator import generate_dag
@@ -497,7 +498,7 @@ class GetMediaLikers(APIView):
                             relevant_information=cl.user_by_username_v1(liker['username'])
                         )
                         OutSourced.objects.create(
-                            results = cl.user_by_username_v1(liker['username']),
+                            results = {"media_id":media_id,**cl.user_by_username_v1(liker['username'])},
                             account = account
                         )
                         logging.info(f"Account {liker['username']} created successfully.")
@@ -553,7 +554,7 @@ class GetMediaCommenters(APIView):
                             relevant_information=cl.user_by_username_v1(commenter['user']['username'])
                         )
                         OutSourced.objects.create(
-                            results = cl.user_by_username_v1(commenter['user']['username']),
+                            results = {"media_id":media_id,**cl.user_by_username_v1(commenter['user']['username'])},
                             account = account
                         )
                         logging.info(f"Account {commenter['user']['username']} created successfully.")
@@ -591,6 +592,11 @@ class PaginationClass(PageNumberPagination):
     page_size = 200  # Set the number of items per page
     page_size_query_param = 'page_size'
     max_page_size = 200
+    
+class ReportPaginationClass(PageNumberPagination):
+    page_size = 1000  # Set the number of items per page
+    page_size_query_param = 'page_size'
+    max_page_size = 1000
 
 class OutSourcedViewSet(viewsets.ModelViewSet):
     """
@@ -781,6 +787,7 @@ class AccountViewSet(viewsets.ModelViewSet):
     with schema_context(os.getenv('SCHEMA_NAME')):queryset = Account.objects.all()
     serializer_class = AccountSerializer
     pagination_class = PaginationClass
+    report_pagination_class = ReportPaginationClass
 
     def get_serializer_class(self):
         if self.action == "batch_uploads":
@@ -1124,7 +1131,7 @@ class AccountViewSet(viewsets.ModelViewSet):
             case _:
                 queryset
                 # Paginator for main list
-        paginator = self.pagination_class()
+        paginator = self.report_pagination_class()
         paginated_qs = paginator.paginate_queryset(queryset, request)
         serializer = self.get_serializer(paginated_qs, many=True)
         
@@ -1260,6 +1267,100 @@ class AccountViewSet(viewsets.ModelViewSet):
             })
 
             current_week = next_week
+        return Response({
+            "results": results[::-1]
+        })
+
+    @schema_context(os.getenv('SCHEMA_NAME'))
+    @action(detail=False, methods=['get'], url_path="monthly-reporting")
+    def monthly_reporting(self, request):
+        # Get January 1st of the current year with timezone
+        tz = timezone.get_current_timezone()
+        today = timezone.now()
+        year = today.year
+        current_month = 1 
+        results = []
+
+        while current_month <= today.month:
+            # Get first day of the current month
+            start_of_month = datetime(year, current_month, 1, tzinfo=tz)
+
+            # Get last day of the current month
+            last_day = monthrange(year, current_month)[1]
+            end_of_month = datetime(year, current_month, last_day, 23, 59, 59, tzinfo=tz)
+
+            outreach_accounts = Account.objects.filter(
+                created_at__gte=start_of_month,
+                created_at__lte=end_of_month,
+                outreach_success=True,
+            )
+            outreach_count = outreach_accounts.count()
+            
+            print("Outrech count **",outreach_count)
+            
+            sales_qualified_accounts = Account.objects.filter(
+                created_at__gte=start_of_month,
+                created_at__lte=end_of_month,
+                salesrep__isnull=False,
+                # responded_date__isnull=False,
+                status_param='Sales Qualified',
+                #call_scheduled_date__isnull=False,
+                # won_date__isnull=True,
+                # lost_date__isnull=True
+            )
+            
+
+            responded_messages = Message.objects.filter(
+                sent_by='Client',
+                sent_on__gte=start_of_month,
+                sent_on__lte=end_of_month
+            ).values_list('thread__account__igname', flat=True).distinct()
+
+            responded_count = responded_messages.count()
+            responded_rate = round((responded_count / outreach_count) * 100,2) if outreach_count > 0 else 0
+            
+            call_scheduled_date = Account.objects.filter(call_scheduled_date__range=(start_of_month, end_of_month)).count()
+            call_scheduled_rate = round((call_scheduled_date / outreach_count) * 100) if outreach_count > 0 else 0
+            closing_date = Account.objects.filter(closing_date__range=(start_of_month, end_of_month)).count()
+            closing_rate = round((closing_date / outreach_count) * 100,2) if outreach_count > 0 else 0
+            won_date = Account.objects.filter(won_date__range=(start_of_month, end_of_month)).count()
+            won_rate = round((won_date / outreach_count) * 100,2) if outreach_count > 0 else 0
+            success_story_date = Account.objects.filter(success_story_date__range=(start_of_month, end_of_month)).count()
+            success_story_rate = round((success_story_date / outreach_count) * 100,2) if outreach_count > 0 else 0
+            lost_date = Account.objects.filter(lost_date__range=(start_of_month, end_of_month)).count()
+            lost_rate = round((lost_date / outreach_count) * 100,2) if outreach_count > 0 else 0
+            responded_date = Account.objects.filter(responded_date__range=(start_of_month, end_of_month)).count()
+            sq_conversion_rate = round((sales_qualified_accounts.count()/outreach_count) * 100,2) if outreach_count > 0 else 0
+            
+           
+
+            results.append({
+                "week_start": start_of_month.strftime("%Y-%m-%d"),
+                "week_end": end_of_month.strftime("%Y-%m-%d"),
+                "outreach": outreach_count,
+                "outreach_list": list(outreach_accounts.values_list('igname', flat=True)),
+                "responded": responded_count,
+                "responded_ignames": list(responded_messages),
+                "call_scheduled_date": call_scheduled_date,
+                "closing_date": closing_date,
+                "won_date": won_date,
+                "success_story_date": success_story_date,
+                "lost_date": lost_date,
+                "lost_list": [],
+                "responded_date": responded_date,
+                "responded_rate": responded_rate,
+                "call_scheduled_rate": call_scheduled_rate,
+                "closing_rate": closing_rate,
+                "won_rate": won_rate,
+                "won_list": [],
+                "success_story_rate": success_story_rate,
+                "lost_rate": lost_rate,
+                "sq_conversion_rate": sq_conversion_rate,
+                "sales_qualified_count": sales_qualified_accounts.count(),
+                "sales_qualified_accounts": list(sales_qualified_accounts.values_list('igname', flat=True)),
+            })
+
+            current_month += 1
         return Response({
             "results": results[::-1]
         })

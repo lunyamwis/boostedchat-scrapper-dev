@@ -2,6 +2,7 @@ amqp
 asgiref
 asn1crypto
 asttokens
+apify-client
 async-timeout
 attrs
 Automat

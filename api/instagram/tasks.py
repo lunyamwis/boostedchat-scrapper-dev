@@ -549,13 +549,13 @@ def send_first_compliment(username, message, repeat=True):
             #     data = {"igname": salesrep.ig_username},
             #     error_message = response.text
             # )
-            
+            message = ""
+            send_first_compliment(get_account(), message) # recurse to the next individual
             # ExceptionHandler(exception.status_code).take_action(data=exception.data)
             print(f"Request failed with status code: {response.status_code}")
             print(f"Response message: {response.text}")
             try: 
-                notify_data = json.dumps(data)
-                username_to = notify_data.get("username_to", "Unknown")
+                username_to = data.get("username_to", "Unknown")
                 notify_click_up_tech_notifications(comment_text=f"message: {response.text} username: {username_to}",notify_all=True)
             except error:
                 pass
