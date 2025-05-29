@@ -498,7 +498,7 @@ class GetMediaLikers(APIView):
                             relevant_information=cl.user_by_username_v1(liker['username'])
                         )
                         OutSourced.objects.create(
-                            results = cl.user_by_username_v1(liker['username']),
+                            results = {"media_id":media_id,**cl.user_by_username_v1(liker['username'])},
                             account = account
                         )
                         logging.info(f"Account {liker['username']} created successfully.")
@@ -554,7 +554,7 @@ class GetMediaCommenters(APIView):
                             relevant_information=cl.user_by_username_v1(commenter['user']['username'])
                         )
                         OutSourced.objects.create(
-                            results = cl.user_by_username_v1(commenter['user']['username']),
+                            results = {"media_id":media_id,**cl.user_by_username_v1(commenter['user']['username'])},
                             account = account
                         )
                         logging.info(f"Account {commenter['user']['username']} created successfully.")
