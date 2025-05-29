@@ -592,6 +592,11 @@ class PaginationClass(PageNumberPagination):
     page_size = 200  # Set the number of items per page
     page_size_query_param = 'page_size'
     max_page_size = 200
+    
+class ReportPaginationClass(PageNumberPagination):
+    page_size = 1000  # Set the number of items per page
+    page_size_query_param = 'page_size'
+    max_page_size = 1000
 
 class OutSourcedViewSet(viewsets.ModelViewSet):
     """
@@ -782,6 +787,7 @@ class AccountViewSet(viewsets.ModelViewSet):
     with schema_context(os.getenv('SCHEMA_NAME')):queryset = Account.objects.all()
     serializer_class = AccountSerializer
     pagination_class = PaginationClass
+    report_pagination_class = ReportPaginationClass
 
     def get_serializer_class(self):
         if self.action == "batch_uploads":
@@ -1125,7 +1131,7 @@ class AccountViewSet(viewsets.ModelViewSet):
             case _:
                 queryset
                 # Paginator for main list
-        paginator = self.pagination_class()
+        paginator = self.report_pagination_class()
         paginated_qs = paginator.paginate_queryset(queryset, request)
         serializer = self.get_serializer(paginated_qs, many=True)
         
