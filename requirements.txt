@@ -30,6 +30,10 @@ anyio==4.6.2.post1
     #   openai
     #   starlette
     #   watchfiles
+apify-client==1.10.0
+    # via -r requirements.in
+apify-shared==1.4.1
+    # via apify-client
 appdirs==1.4.4
     # via crewai
 argon2-cffi==23.1.0
@@ -261,7 +265,7 @@ distlib==0.3.9
     #   virtualenv
 distro==1.9.0
     # via openai
-dj-rest-auth==7.0.0 
+dj-rest-auth==7.0.0
     # via -r requirements.in
 django==5.1.3
     # via
@@ -297,7 +301,7 @@ django-snowflake==5.1
     # via -r requirements.in
 django-softdelete==0.11.4
     # via -r requirements.in
-django-tenants==3.7.0 
+django-tenants==3.7.0
     # via -r requirements.in
 django-timezone-field==7.0
     # via
@@ -318,7 +322,7 @@ docstring-parser==0.16
     # via
     #   google-cloud-aiplatform
     #   instructor
-docx2txt==0.8 
+docx2txt==0.8
     # via crewai-tools
 dulwich==0.21.7
     # via poetry
@@ -465,7 +469,6 @@ grpcio-tools==1.68.0
     # via qdrant-client
 gunicorn==23.0.0
     # via -r requirements.in
-hikerapi==1.6.6
 h11==0.14.0
     # via
     #   -r requirements.in
@@ -474,6 +477,8 @@ h11==0.14.0
     #   wsproto
 h2==4.1.0
     # via httpx
+hikerapi==1.6.6
+    # via -r requirements.in
 hpack==4.0.0
     # via h2
 httpcore==1.0.7
@@ -487,7 +492,9 @@ httptools==0.6.4
     # via uvicorn
 httpx[http2]==0.27.2
     # via
+    #   apify-client
     #   cohere
+    #   hikerapi
     #   jupyterlab
     #   langsmith
     #   openai
@@ -703,7 +710,7 @@ langsmith==0.1.144
     #   langchain-core
 litellm==1.52.12
     # via crewai
-lunyamwi==1.0.15 
+lunyamwi==1.0.15
     # via -r requirements.in
 lxml==5.3.0
     # via
@@ -741,7 +748,9 @@ mmh3==5.0.1
 monotonic==1.6
     # via posthog
 more-itertools==10.5.0
-    # via jaraco-classes
+    # via
+    #   apify-client
+    #   jaraco-classes
 mpmath==1.3.0
     # via sympy
 msgpack==1.1.0
