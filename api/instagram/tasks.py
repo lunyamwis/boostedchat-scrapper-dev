@@ -1264,8 +1264,6 @@ def load_info_to_database_v2():
 @shared_task()
 def qualify_and_reschedule():
     with schema_context(os.environ.get("SCHEMA_NAME")):
-        # Your code that requires the tenant schema context goes here
-        
         barber_keywords = [
         "hair",
         "appointment",
