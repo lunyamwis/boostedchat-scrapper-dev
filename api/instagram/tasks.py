@@ -39,7 +39,7 @@ from api.dialogflow.helpers.get_prompt_responses import get_gpt_response
 
 from .helpers.format_username import format_full_name
 from api.outreaches.utils import process_reschedule_single_task, ig_thread_exists, not_in_interval ## move
-from .utils import get_account, tasks_by_sales_rep
+from .utils import get_account, tasks_by_sales_rep,assign_salesrep
 from .constants import STYLISTS_WORDS
 from api.outreaches.models import OutreachErrorLog
 # from tabulate import tabulate # for print_logs
@@ -897,6 +897,11 @@ def prequalify_task():
     if accounts.exists():
         
         for account in accounts:
+            if account.salesrep_set.exists():
+                pass
+            else:
+                logging.warning(f"Account {account.igname} has no sales rep assigned, reassigning account")
+                assign_salesrep(account)
             try:
                 payload = {
                     "department":"Prequalifying",
