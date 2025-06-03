@@ -1063,7 +1063,7 @@ class AccountViewSet(viewsets.ModelViewSet):
                 OutSourced.objects.filter(account=OuterRef('pk')).order_by('-created_at').values('results')[:1]
             ),
             # thread_id=Subquery(Thread.objects.filter(account=OuterRef('pk')).values('thread_id')[:1])
-        ).order_by('-created_at')#order_by('-latest_message_at')
+        ).order_by('id','-created_at')#order_by('-latest_message_at')
 
         # Filters from request
         search_query = request.GET.get("q")
@@ -1114,20 +1114,20 @@ class AccountViewSet(viewsets.ModelViewSet):
                 queryset = queryset.filter(
                     Q(created_at__range=(start_date, end_date)) |
                     Q(won_date__range=(start_date, end_date)) |
-                    Q(lost_date__range=(start_date, end_date)) |
-                    Q(responded_date__range=(start_date, end_date))
-                )
+                    Q(lost_date__range=(start_date, end_date))
+                    # Q(responded_date__range=(start_date, end_date))
+                ).distinct('id')
             case "sales_qualified":
                 queryset = queryset.filter(
                         status_param='Sales Qualified',
                         created_at__gte=start_date, created_at__lt=end_date
                     )
             case "outreach":
-                queryset = queryset.filter(created_at__gte=start_date, created_at__lt=end_date)
+                queryset = queryset.filter(created_at__gte=start_date, created_at__lt=end_date).distinct('id')
             case "won":
-                queryset = queryset.filter(won_date__range=(start_date, end_date))
+                queryset = queryset.filter(won_date__range=(start_date, end_date)).distinct('id')
             case "lost":
-                queryset = queryset.filter(lost_date__range=(start_date, end_date))
+                queryset = queryset.filter(lost_date__range=(start_date, end_date)).distinct('id')
             case _:
                 queryset
                 # Paginator for main list
@@ -1199,7 +1199,7 @@ class AccountViewSet(viewsets.ModelViewSet):
                 created_at__gte=current_week,
                 created_at__lte=end_of_week,
                 outreach_success=True,
-            )
+            ).distinct()
             outreach_count = outreach_accounts.count()
             
             print("Outrech count **",outreach_count)
@@ -1213,7 +1213,7 @@ class AccountViewSet(viewsets.ModelViewSet):
                 #call_scheduled_date__isnull=False,
                 # won_date__isnull=True,
                 # lost_date__isnull=True
-            )
+            ).distinct()
             
 
             responded_messages = Message.objects.filter(
@@ -1293,7 +1293,7 @@ class AccountViewSet(viewsets.ModelViewSet):
                 created_at__gte=start_of_month,
                 created_at__lte=end_of_month,
                 outreach_success=True,
-            )
+            ).distinct()
             outreach_count = outreach_accounts.count()
             
             print("Outrech count **",outreach_count)
@@ -1307,7 +1307,7 @@ class AccountViewSet(viewsets.ModelViewSet):
                 #call_scheduled_date__isnull=False,
                 # won_date__isnull=True,
                 # lost_date__isnull=True
-            )
+            ).distinct()
             
 
             responded_messages = Message.objects.filter(
