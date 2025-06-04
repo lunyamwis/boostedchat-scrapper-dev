@@ -1116,11 +1116,13 @@ class AccountViewSet(viewsets.ModelViewSet):
                     Q(won_date__range=(start_date, end_date)) |
                     Q(lost_date__range=(start_date, end_date))
                     # Q(responded_date__range=(start_date, end_date))
+                    # Q(sales_qualified_date__range=(start_date, end_date))
                 ).distinct('id')
             case "sales_qualified":
                 queryset = queryset.filter(
                         status_param='Sales Qualified',
                         created_at__gte=start_date, created_at__lt=end_date
+                        # sales_qualified_date__gte=start_date, sales_qualified_date__lt=end_date
                     )
             case "outreach":
                 queryset = queryset.filter(created_at__gte=start_date, created_at__lt=end_date).distinct('id')
