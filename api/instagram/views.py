@@ -1121,8 +1121,8 @@ class AccountViewSet(viewsets.ModelViewSet):
             case "sales_qualified":
                 queryset = queryset.filter(
                         status_param='Sales Qualified',
-                        created_at__gte=start_date, created_at__lt=end_date
-                        # sales_qualified_date__gte=start_date, sales_qualified_date__lt=end_date
+                        # created_at__gte=start_date, created_at__lt=end_date,
+                        sales_qualified_date__gte=start_date, sales_qualified_date__lt=end_date
                     )
             case "outreach":
                 queryset = queryset.filter(created_at__gte=start_date, created_at__lt=end_date).distinct('id')
@@ -1206,9 +1206,13 @@ class AccountViewSet(viewsets.ModelViewSet):
             
             print("Outrech count **",outreach_count)
             
+            
+            # thinking about putting instead of created_at sales_qualified_date__gte=start_date, sales_qualified_date__lt=end_date 
             sales_qualified_accounts = Account.objects.filter(
-                created_at__gte=current_week,
-                created_at__lte=end_of_week,
+                # created_at__gte=current_week,
+                # created_at__lte=end_of_week,
+                sales_qualified_date__gte=current_week,
+                sales_qualified_date__lte=end_of_week,
                 salesrep__isnull=False,
                 # responded_date__isnull=False,
                 status_param='Sales Qualified',
@@ -1301,8 +1305,10 @@ class AccountViewSet(viewsets.ModelViewSet):
             print("Outrech count **",outreach_count)
             
             sales_qualified_accounts = Account.objects.filter(
-                created_at__gte=start_of_month,
-                created_at__lte=end_of_month,
+                # created_at__gte=start_of_month,
+                # created_at__lte=end_of_month,
+                sales_qualified_date__gte=start_of_month,
+                sales_qualified_date__lte=end_of_month,
                 salesrep__isnull=False,
                 # responded_date__isnull=False,
                 status_param='Sales Qualified',
