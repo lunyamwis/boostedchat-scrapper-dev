@@ -1125,7 +1125,8 @@ class AccountViewSet(viewsets.ModelViewSet):
                         sales_qualified_date__gte=start_date, sales_qualified_date__lt=end_date
                     )
             case "outreach":
-                queryset = queryset.filter(created_at__gte=start_date, created_at__lt=end_date).distinct('id')
+                # queryset = queryset.filter(created_at__gte=start_date, created_at__lt=end_date).distinct('id')
+                queryset = queryset.filter(outreach_time__gte=start_date,outreach_time__lt=end_date).distinct('id')
             case "won":
                 queryset = queryset.filter(won_date__range=(start_date, end_date)).distinct('id')
             case "lost":
@@ -1198,8 +1199,10 @@ class AccountViewSet(viewsets.ModelViewSet):
             end_of_week = next_week - timedelta(seconds=1)
 
             outreach_accounts = Account.objects.filter(
-                created_at__gte=current_week,
-                created_at__lte=end_of_week,
+                # created_at__gte=current_week,
+                # created_at__lte=end_of_week,
+                outreach_time__gte=current_week,
+                outreach_time__lte=end_of_week,
                 outreach_success=True,
             ).distinct()
             outreach_count = outreach_accounts.count()
@@ -1296,8 +1299,10 @@ class AccountViewSet(viewsets.ModelViewSet):
             end_of_month = datetime(year, current_month, last_day, 23, 59, 59, tzinfo=tz)
 
             outreach_accounts = Account.objects.filter(
-                created_at__gte=start_of_month,
-                created_at__lte=end_of_month,
+                # created_at__gte=start_of_month,
+                # created_at__lte=end_of_month,
+                outreach_time__gte=start_of_month,
+                outreach_time__lte=end_of_month,
                 outreach_success=True,
             ).distinct()
             outreach_count = outreach_accounts.count()
