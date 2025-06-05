@@ -1382,6 +1382,7 @@ class AccountViewSet(viewsets.ModelViewSet):
         
         try:
             # reset status
+            UnwantedAccount.objects.filter(username=account.igname).delete()
             account.status = None
             account.status_param = 'Prequalified'
             account.assigned_to = 'Robot'
