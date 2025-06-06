@@ -1112,11 +1112,11 @@ class AccountViewSet(viewsets.ModelViewSet):
         match list_type.lower():    
             case "all":
                 queryset = queryset.filter(
-                    Q(created_at__range=(start_date, end_date)) |
+                    Q(outreach_time__range=(start_date, end_date)) |
                     Q(won_date__range=(start_date, end_date)) |
-                    Q(lost_date__range=(start_date, end_date))
+                    Q(lost_date__range=(start_date, end_date)) |
                     # Q(responded_date__range=(start_date, end_date))
-                    # Q(sales_qualified_date__range=(start_date, end_date))
+                    Q(sales_qualified_date__range=(start_date, end_date))
                 ).distinct('id')
             case "sales_qualified":
                 queryset = queryset.filter(
