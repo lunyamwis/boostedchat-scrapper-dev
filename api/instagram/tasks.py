@@ -1355,7 +1355,7 @@ def qualify_and_reschedule():
 
 
         # Split to run for x days automatically
-        number_outreach_per_day = 40
+        number_outreach_per_day = 50
         total_outreach_days = round(filtered_accounts.count()/number_outreach_per_day)
         day_schedule_accounts = [{"day": 0}]
         day_to_schedule = 0
