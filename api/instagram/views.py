@@ -2987,11 +2987,11 @@ class DMViewset(viewsets.ModelViewSet):
                                     time_slot = timezone.now()+timezone.timedelta(hours=i/random_number)
                                     if self.is_time_slot_within_window(time_slot):
                                         send_first_compliment.apply_async(args=[[account.igname],thread.last_message_content], eta=time_slot,task_id=f"compliment_{account.id}_{time_slot.timestamp()}")
-                                        try:
-                                            account.outreach_time = time_slot
-                                            account.save()
-                                        except Exception as error:
-                                            logging.warning(f"Failed to save outreach time - {error}")
+                                        # try:
+                                        #     account.outreach_time = time_slot
+                                        #     account.save()
+                                        # except Exception as error:
+                                        #     logging.warning(f"Failed to save outreach time - {error}")
                                     # run_scheduler.delay(target_time=time_slot,username=account.igname,message=thread.last_message_content)
                                         
                                         
@@ -3011,11 +3011,11 @@ class DMViewset(viewsets.ModelViewSet):
                             if self.is_time_slot_within_window(time_slot):
                                 send_first_compliment.apply_async(args=[[account.igname],""], eta=time_slot,task_id=f"compliment_{account.id}_{time_slot.timestamp()}")
 
-                                try:
-                                    account.outreach_time = time_slot
-                                    account.save()
-                                except Exception as error:
-                                    logging.warning(f"Failed to save outreach time - {error}")
+                                # try:
+                                #     account.outreach_time = time_slot
+                                #     account.save()
+                                # except Exception as error:
+                                #     logging.warning(f"Failed to save outreach time - {error}")
 
                             # send_first_compliment.delay(username=account.igname,message="")
                             # send_first_compliment.delay(username=account.igname,message=thread.last_message_content)

@@ -551,7 +551,8 @@ def send_first_compliment(username, message, repeat=True):
             #     error_message = response.text
             # )
             message = ""
-            send_first_compliment(get_account(), message) # recurse to the next individual
+            send_first_compliment(get_account(), message) # recurse to the next individual TODO: place a check to determine if the
+            #user exist
             # ExceptionHandler(exception.status_code).take_action(data=exception.data)
             print(f"Request failed with status code: {response.status_code}")
             print(f"Response message: {response.text}")
