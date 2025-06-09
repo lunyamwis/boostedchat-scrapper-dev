@@ -1341,10 +1341,10 @@ def qualify_and_reschedule():
         for keyword in barber_keywords:
             query |= Q(igname__icontains=keyword)
 
-        yesterday = timezone.now() - timezone.timedelta(days=7) # filter on a weekly basis
-
+        yesterday = timezone.now() - timezone.timedelta(days=10) # filter on a weekly basis
+        unwanted_usernames = UnwantedAccount.objects.values_list('username', flat=True)
         # Filter accounts using the query
-        filtered_accounts = Account.objects.filter(query).filter(created_at__gte=yesterday).exclude(status__name="sent_compliment")
+        filtered_accounts = Account.objects.filter(query).filter(created_at__gte=yesterday).exclude(status__name="sent_compliment").exclude(igname__in=unwanted_usernames)
 
         for account in filtered_accounts:
             account.qualified = True
