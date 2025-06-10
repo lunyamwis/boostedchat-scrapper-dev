@@ -1247,7 +1247,6 @@ class AccountViewSet(viewsets.ModelViewSet):
             responded_date = Account.objects.filter(responded_date__range=(current_week, next_week)).count()
             sq_conversion_rate = round((sales_qualified_accounts.count()/outreach_count) * 100,2) if outreach_count > 0 else 0
             
-           
 
             results.append({
                 "week_start": current_week.strftime("%Y-%m-%d"),
@@ -2731,6 +2730,66 @@ class DMViewset(viewsets.ModelViewSet):
                     "success": True
                 }
             )
+
+
+        
+
+    @schema_context(os.getenv('SCHEMA_NAME'))
+    @action(detail=True, methods=["post"], url_path="sync-message")
+    def sync_message(self, request, pk=None):
+        thread_id = request.data.get("threadId")
+        messages = request.data.get('messages')
+        
+        account = Account.objects.filter(thread__thread_id=thread_id)
+
+        if account.exists():
+            account = account.latest('created_at')
+        # TODO: take over conversations
+        # else:
+        #     account = Account.objects.create(igname='client')
+        #     OutSourced.objects.create(results={"username": "client"}, account=account)
+        try:
+
+
+            thread_obj = Thread.objects.create(thread_id=thread_id)
+            thread_obj.thread_id = thread_id
+            thread_obj.account = account
+            thread_obj.last_message_content = ""
+            thread_obj.unread_message_count = 0
+            thread_obj.last_message_at = datetime.now() # use UTC
+            thread_obj.save()
+            for message in  messages:
+                
+                message = Message()
+                message.content = message.get("content")
+                message.sent_by = "Robot"
+                message.sent_on = datetime.fromtimestamp(int(message.get['timestamp'])/1000000) if message.get("timestamp") else datetime.now()
+                message.thread = thread_obj
+                message.save()
+                print("message created then saved")
+        except Exception as error:
+            print(error)
+            try:
+                thread_obj = Thread.objects.filter(thread_id=thread_id).latest('created_at')
+                thread_obj.thread_id = thread_id
+                thread_obj.account = account
+                thread_obj.last_message_content = ""
+                thread_obj.unread_message_count = 0
+                thread_obj.last_message_at = datetime.now() # use UTC
+                thread_obj.save()
+                for message in  messages:
+                    message = Message()
+                    message.content = message.get("content")
+                    message.sent_by = "Robot"
+                    message.sent_on = datetime.now()
+                    message.thread = thread_obj
+                    message.save()
+                    print("message is saved")
+            except Exception as error:
+                print(error)
+                print("message not saved")
+
+        return Response({"success": True}, status=status.HTTP_201_CREATED)
     
     @schema_context(os.getenv('SCHEMA_NAME'))
     @action(detail=False, methods=["post"], url_path="sync-messages")
@@ -2783,7 +2842,7 @@ class DMViewset(viewsets.ModelViewSet):
                 thread.thread_id = thread_id
                 thread.account = account
                 thread.save()
-                print("Thread CREATED A NEW THREAD!")
+                print("CREATED A NEW THREAD!")
             else:
                 return Response({"error": "LEAD DOES NOT EXIST"}, status=status.HTTP_404_NOT_FOUND)
 
