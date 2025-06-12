@@ -2744,6 +2744,9 @@ class DMViewset(viewsets.ModelViewSet):
 
         if account.exists():
             account = account.latest('created_at')
+            account.assigned_to = 'Human' # NB: this is a temporary fix
+            account.save()
+
         # TODO: take over conversations
         # else:
         #     account = Account.objects.create(igname='client')
@@ -2817,8 +2820,8 @@ class DMViewset(viewsets.ModelViewSet):
             # check if account exists
             if accounts.exists():
                 account = accounts.latest('created_at')
-                # account.assigned_to = 'Human' # NB: this is a temporary fix
-                # account.save()
+                account.assigned_to = 'Human' # NB: this is a temporary fix
+                account.save()
                 print("ACCOUNT EXISTS!")
             # else: # if not create one
             #     account = Account()
