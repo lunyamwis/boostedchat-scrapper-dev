@@ -5,11 +5,13 @@ from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-from django.db.models.signals import post_save
+from django.db.models.signals import post_save,pre_save
 from django.dispatch import receiver
-
+from django.utils import timezone
 from api.scout.models import Scout
 import pytz
+from django.core.exceptions import ValidationError
+
 
 # Create your models here.
 class Score(BaseModel):
@@ -463,3 +465,130 @@ class AccountsClosed(BaseModel):
 
     def __str__(self) -> str:
         return self.data if self.data else self.id
+    
+class ExperimentStatus(BaseModel):
+    name = models.CharField(null=False, blank=False,max_length=255, default='daft')
+    description =  models.TextField(blank=True)
+    
+    def save(self, *args, **kwargs):
+        if self.name:
+            self.name = self.name.lower()
+        super().save(*args, **kwargs)
+
+    def __str__(self) -> str:
+        return self.name
+
+    def get_id(self):
+        return self.id
+
+class ExperimentAssignee(BaseModel):
+    name = models.CharField(null=False, blank=False,max_length=255, default='daft')
+    description =  models.TextField(blank=True)
+    
+    def save(self, *args, **kwargs):
+        if self.name:
+            self.name = self.name.lower()
+        super().save(*args, **kwargs)
+
+    def __str__(self) -> str:
+        return self.name
+
+    def get_id(self):
+        return self.id
+
+class Experiment(BaseModel):
+    name = models.CharField(max_length=255)
+    description = models.TextField(blank=True) # e.g Hypothesis
+    hypothesis = models.TextField(blank=True)
+    primary_metric = models.CharField(max_length=255)
+    version = models.CharField(max_length=100, unique=True, blank=False, null=False)
+    status = models.ForeignKey(ExperimentStatus, on_delete=models.CASCADE, null=False, blank=False)
+    start_date = models.DateTimeField(null=True, blank=True)  # When the experiment starts
+    end_date = models.DateTimeField(null=True, blank=True)  # When the experiment
+    actual_result= models.FloatField(null=True, blank=True)  # The actual result of the experiment
+    expected_result = models.FloatField(null=True, blank=True)  # The expected result of
+    assignees = models.ManyToManyField('ExperimentAssignee', related_name='experiments', blank=True)
+    experiment_type = models.CharField(max_length=255, null=False, blank=False, default='auto')
+    # Add a status that will be draft, active/running, archived, completed 
+    def __str__(self):
+        return self.version
+    # Relationships to fixed models
+    # engagement_script = models.ForeignKey(EngagementScript, on_delete=models.SET_NULL, null=True, blank=True)
+    # prequalifying_criteria = models.ForeignKey(PrequalifyingCriteria, on_delete=models.SET_NULL, null=True, blank=True)
+    
+
+@receiver(pre_save, sender=Experiment)
+def set_version_pre_save(sender, instance, **kwargs):
+    if not instance.version:
+        date_str = timezone.now().strftime("%m-%d-%Y@%H:%M:%S")
+        instance.version = f"EXP-{date_str}"
+        
+    if not instance.status:
+        instance.status = StatusCheck.objects.get(name="draft")
+
+
+
+    
+class ExperimentFieldDefinition(BaseModel):
+    """_summary_
+
+    Args:
+        BaseModel (_type_): _description_
+
+    Raises:
+        ValidationError: _description_
+    is_input:
+        Determines if this is an experiment input field
+    is_result_field:
+        Determines if this is an experiment result field
+    is_metric:
+        Determines if this field will be use for measurement
+        
+    The definition fields are those that are is_input == False and
+    is_result_field == False
+    Example input for config:
+        {
+            "name": "Impact",
+            "field_type": "dropdown", # e.g dropdown, boolean, text, number, date etc
+            "options": ["A","B","C"] #Required for dropdowns, radios etc
+        }
+            
+    """
+    experiment = models.ForeignKey(Experiment, on_delete=models.CASCADE, related_name='field_definitions')
+    config = models.JSONField(blank=False, null=False, ) # Frontend-defined form field metadata
+    is_experiment_input = models.BooleanField(default=False)  # Used for experiment inputs e.g. account used like "barbersince98"
+    is_metric_field = models.BooleanField(default=False)  # e.g. "Primary Metric"
+    is_result_field = models.BooleanField(default=False)  # this marks it as a field for result entry
+    value = models.JSONField(blank=True, null=True, )
+    
+class ExperimentFieldValue(BaseModel):
+    # Example input for value
+    # {"experiment_field_definition": ID, "value": "High"}
+    experiment = models.ForeignKey(Experiment, on_delete=models.CASCADE, related_name='field_values')
+    field_definition = models.ForeignKey(ExperimentFieldDefinition, on_delete=models.CASCADE, related_name='field_values')
+    value = models.JSONField()
+ 
+class ExperimentInput(BaseModel):
+    # Example input for value
+    # {"experiment_field_definition": ID, "value": "High"}
+    experiment = models.ForeignKey(Experiment, on_delete=models.CASCADE, related_name='inputs')
+    field = models.ForeignKey(ExperimentFieldDefinition, on_delete=models.CASCADE, related_name='inputs')
+    value = models.TextField(blank=True)
+
+    class Meta:
+        unique_together = ('experiment', 'field')
+
+    def __str__(self):
+        return f"{self.field.label}: {self.value}"  
+
+class ExperimentResult(BaseModel):
+    # Example input for value
+    # {"experiment_field_definition": ID, "value": "High"}
+    experiment = models.ForeignKey(Experiment, on_delete=models.CASCADE, related_name='results')
+    field_definition = models.ForeignKey(ExperimentFieldDefinition, on_delete=models.CASCADE)
+    value = models.JSONField(blank=True, null=True)
+    
+# class ExperimentResultFieldValue(models.Model):
+#     result = models.ForeignKey(ExperimentResult, on_delete=models.CASCADE, related_name='result_values')
+#     field_definition = models.ForeignKey(ExperimentFieldDefinition, on_delete=models.CASCADE)
+#     value = models.JSONField(blank=True, null=True)

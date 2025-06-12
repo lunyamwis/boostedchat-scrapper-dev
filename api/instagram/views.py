@@ -37,15 +37,39 @@ from boostedchatScrapper.spiders.helpers.instagram_helper import fetch_pending_i
 from django.db.models import Q
 from django.utils.timezone import make_aware, now
 
-from .models import InstagramUser
+from .models import ExperimentAssignee, InstagramUser
 from django_tenants.utils import schema_context
 
 from rest_framework import viewsets
 from boostedchatScrapper.models import ScrappedData
 from instagrapi import Client
+import copy
 
 
-from .models import Score, QualificationAlgorithm, Scheduler, AirflowCreds, InstagramUser, LeadSource,DagModel,SimpleHttpOperatorModel,HttpOperatorConnectionModel, WorkflowModel, Endpoint,CustomField,CustomFieldValue,Media,Scout,Account, Comment, HashTag, Photo, Reel, Story, Thread, Video, Message, OutSourced,OutreachTime,AccountsClosed,Like,Comment,UnwantedAccount,StatusCheck
+from .models import (
+    Score,
+    QualificationAlgorithm,
+    Scheduler, AirflowCreds,
+    InstagramUser,
+    LeadSource,
+    DagModel,
+    SimpleHttpOperatorModel,
+    HttpOperatorConnectionModel,
+    WorkflowModel,
+    Endpoint,
+    CustomField,
+    CustomFieldValue,
+    Media,
+    Scout,
+    Account,
+    Comment,
+    HashTag,
+    Photo, Reel, Story, Thread, Video, Message,
+    OutSourced,OutreachTime,AccountsClosed,Like,
+    Comment,UnwantedAccount,StatusCheck, Experiment,
+    ExperimentFieldDefinition, ExperimentStatus,
+    ExperimentFieldValue
+    )
 
 from django.shortcuts import render, redirect, get_object_or_404
 from .forms import WorkflowModelForm
@@ -67,6 +91,7 @@ from boostedchatScrapper.spiders.helpers.instagram_login_helper import login_use
 
 # views.py
 from .serializers import (
+    ExperimentAssigneeSerializer,
     ScoreSerializer, 
     InstagramLeadSerializer,  
     QualificationAlgorithmSerializer, 
@@ -98,6 +123,10 @@ from .serializers import (
     ScheduleOutreachSerializer,
     LikeSerializer,
     CommentSerializer,
+    ExperimentSerializer,
+    ExperimentFieldDefinitionSerializer,
+    ExperimentStatusSerializer,
+    ExperimentFieldValueSerializer
 )
 
 from urllib.parse import urlparse
@@ -2477,10 +2506,6 @@ class DMViewset(viewsets.ModelViewSet):
         start_date_parsed = parse_datetime(start_date ) if start_date else None
         end_date_parsed = parse_datetime(end_date) if end_date else None
         
-       
-        print("8888888888888888888")
-        print(start_date)
-        print(start_date_parsed)
         queryset = Thread.objects.select_related('account').filter(account__salesrep__isnull=False).annotate(last_message_at_ordering=Coalesce('last_message_at', Value(datetime.min))).order_by(F('last_message_at_ordering').desc())
         message_data = []
         messages = None
@@ -3536,6 +3561,250 @@ class DMViewset(viewsets.ModelViewSet):
         return Response({"message":"webhook received"})
         
 
+class ExperimentViewSet(viewsets.ModelViewSet):
+    with schema_context(os.getenv('SCHEMA_NAME')):
+        queryset = Experiment.objects.all()
+        pagination_class = PaginationClass
+        serializer_class = ExperimentSerializer
+        report_pagination_class = ReportPaginationClass
+        
+    @schema_context(os.getenv('SCHEMA_NAME'))
+    @action(detail=True, methods=["get"], url_path="experiment_fields")
+    def get_field_definitions(self, request, pk=None):
+        experiment_id = pk
+        arr = []
+        
+        for exp_def in ExperimentFieldDefinition.objects.filter(experiment_id=experiment_id):
+            serialized = ExperimentFieldDefinitionSerializer(exp_def)
+            arr.append(serialized.data)
+        return Response(arr)
+    
+    @schema_context(os.getenv('SCHEMA_NAME'))
+    def create(self, request, *args, **kwargs):
+        return super().create(request, *args, **kwargs)
+    
+    @schema_context(os.getenv('SCHEMA_NAME'))
+    def perform_create(self, serializer):
+        return super().perform_create(serializer)
+
+    @schema_context(os.getenv('SCHEMA_NAME'))
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop('partial', False)
+        try:
+            
+            print("Updating Experiment with data:")
+            print(request.data)
+            instance = self.get_object()
+            serializer = self.get_serializer(instance, data=request.data, partial=partial)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except Exception as error:
+            return Response({"error": str(error)}, status=status.HTTP_400_BAD_REQUEST)
+        
+    @schema_context(os.getenv('SCHEMA_NAME'))
+    @action(detail=True, methods=['post'])
+    def duplicate(self, request, pk=None):
+        try:
+            original_experiment = self.get_object()
+            new_name = f"{original_experiment.name}"
+            count = Experiment.objects.filter(name=new_name).count()
+            if count > 0:
+                copy_number = count + 1
+                new_name = f"{original_experiment.name} (Copy {copy_number})"
+            
+            new_experiment = copy.copy(original_experiment)
+            new_experiment.pk = None  # Clear PK to create new object
+            new_experiment.name = new_name
+            new_experiment.version = f"EXP-{timezone.now().strftime('%m-%d-%Y@%H:%M:%S')}"
+            new_experiment.save()
+            # Map old definition IDs to new ones
+            def_map = {}
+
+            # Duplicate field definitions
+            for field_def in original_experiment.field_definitions.all():
+                new_def = copy.copy(field_def)
+                new_def.pk = None
+                new_def.experiment = new_experiment
+                new_def.save()
+                def_map[field_def.id] = new_def
+
+            # Duplicate field values
+            for value in original_experiment.field_values.all():
+                if value.field_definition_id in def_map:
+                    new_value = ExperimentFieldValue(
+                        experiment=new_experiment,
+                        field_definition=def_map[value.field_definition_id],
+                        value=value.value,
+                    )
+                    new_value.save()
+            serializer = self.get_serializer(new_experiment)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+        except Experiment.DoesNotExist:
+            return Response({"error": "Original experiment not found."}, status=status.HTTP_404_NOT_FOUND)
+
+
+
+class ExperimentStatusViewSet(viewsets.ModelViewSet):
+    with schema_context(os.getenv('SCHEMA_NAME')):
+        queryset = ExperimentStatus.objects.all()
+        serializer_class = ExperimentStatusSerializer
+        pagination_class = PaginationClass
+
+
+    @schema_context(os.getenv('SCHEMA_NAME'))
+    def create(self, request, *args, **kwargs):
+        return super().create(request, *args, **kwargs)
+    
+    @schema_context(os.getenv('SCHEMA_NAME'))
+    def perform_create(self, serializer):
+        return super().perform_create(serializer)
+    
+    @schema_context(os.getenv('SCHEMA_NAME'))
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop('partial', False)
+        try:
+            instance = self.get_object()
+            serializer = self.get_serializer(instance, data=request.data, partial=partial)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except Exception as error:
+            return Response({"error": str(error)}, status=status.HTTP_400_BAD_REQUEST)
+
+    
+    @schema_context(os.getenv('SCHEMA_NAME'))
+    def list(self, request, pk=None):
+        queryset = ExperimentStatus.objects.all()
+        paginator = self.pagination_class()
+        paginated_qs = paginator.paginate_queryset(queryset, request)
+        serializer = self.get_serializer(paginated_qs, many=True)
+        return Response({
+            "count": paginator.page.paginator.count,
+            "next": paginator.get_next_link(),
+            "previous": paginator.get_previous_link(),
+            "results": serializer.data,
+        })
+    
+class ExperimentAssigneeViewSet(viewsets.ModelViewSet):
+    with schema_context(os.getenv('SCHEMA_NAME')):
+        queryset = ExperimentAssignee.objects.all()
+        serializer_class = ExperimentAssigneeSerializer
+        pagination_class = PaginationClass
+
+
+    @schema_context(os.getenv('SCHEMA_NAME'))
+    def create(self, request, *args, **kwargs):
+        return super().create(request, *args, **kwargs)
+    
+    @schema_context(os.getenv('SCHEMA_NAME'))
+    def perform_create(self, serializer):
+        return super().perform_create(serializer)
+    
+    @schema_context(os.getenv('SCHEMA_NAME'))
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop('partial', False)
+        try:
+            instance = self.get_object()
+            serializer = self.get_serializer(instance, data=request.data, partial=partial)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except Exception as error:
+            return Response({"error": str(error)}, status=status.HTTP_400_BAD_REQUEST)
+
+    
+    @schema_context(os.getenv('SCHEMA_NAME'))
+    def list(self, request, pk=None):
+        queryset = ExperimentAssignee.objects.all()
+        paginator = self.pagination_class()
+        paginated_qs = paginator.paginate_queryset(queryset, request)
+        serializer = self.get_serializer(paginated_qs, many=True)
+        return Response({
+            "count": paginator.page.paginator.count,
+            "next": paginator.get_next_link(),
+            "previous": paginator.get_previous_link(),
+            "results": serializer.data,
+        })
+     
+    
+class ExperimentFieldDefinitionViewSet(viewsets.ModelViewSet):
+    with schema_context(os.getenv('SCHEMA_NAME')):
+        queryset = ExperimentFieldDefinition.objects.all()
+        serializer_class = ExperimentFieldDefinitionSerializer
+    
+
+    @schema_context(os.getenv('SCHEMA_NAME'))
+    def create(self, request, *args, **kwargs):
+        print("Creating ExperimentFieldValue with data:")
+        print(request.data)
+        # i need to create a field value here
+        serializer = ExperimentFieldDefinitionSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        experiment_id = serializer.data['experiment']
+        field_definition_id = serializer.data['id']
+        experiment = Experiment.objects.get(id=experiment_id)
+        field_definition = ExperimentFieldDefinition.objects.get(id=field_definition_id)
+        ExperimentFieldValue.objects.create(experiment=experiment, 
+                                            field_definition=field_definition,
+                                            value=request.data['field_value'])
+        return Response(
+                serializer.data,
+                status=status.HTTP_201_CREATED
+            )
+    
+    @schema_context(os.getenv('SCHEMA_NAME'))
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop('partial', False)
+        try:
+            instance = self.get_object()
+            serializer = self.get_serializer(instance, data=request.data, partial=partial)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            # get wont wokr here. we need to find not get
+            field_value = ExperimentFieldValue.objects.filter(field_definition=instance).first()
+            #if it does not exist, create it 
+            if field_value:
+                try:
+                    field_value.value = request.data.get('field_value')
+                    field_value.save()
+                except Exception as error:
+                    print("Error updating field value:")
+                    print(error)
+            else:
+                field_value = ExperimentFieldValue.objects.create(
+                    experiment=instance.experiment,
+                    field_definition=instance,
+                    value=request.data.get('field_value')
+                )
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except Exception as error:
+            return Response({"error": str(error)}, status=status.HTTP_400_BAD_REQUEST)
+
+    
+    @schema_context(os.getenv('SCHEMA_NAME'))
+    def perform_create(self, serializer):
+        return super().perform_create(serializer)
+    
+class ExperimentFieldValueViewSet(viewsets.ModelViewSet):
+    with schema_context(os.getenv('SCHEMA_NAME')):
+        queryset = ExperimentFieldValue.objects.all()
+        serializer_class = ExperimentFieldValueSerializer
+    
+
+# class ExperimentFieldDefinitionViewSet(viewsets.ModelViewSet):
+#     serializer_class = ExperimentFieldDefinitionSerializer
+
+#     def get_queryset(self):
+#         experiment_id = self.kwargs['experiment_pk']
+#         return ExperimentFieldDefinition.objects.filter(experiment_id=experiment_id)
+
+#     def perform_create(self, serializer):
+#         experiment_id = self.kwargs['experiment_pk']
+#         serializer.save(experiment_id=experiment_id)
 class Reschedule(APIView):
     def post(self, request, *args, **kwargs):
         reschedule.delay()
