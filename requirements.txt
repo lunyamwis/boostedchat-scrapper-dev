@@ -15,6 +15,8 @@ aiohttp==3.11.6
     #   litellm
 aiosignal==1.3.1
     # via aiohttp
+alabaster==1.0.0
+    # via sphinx
 alembic==1.14.0
     # via embedchain
 amqp==5.3.1
@@ -83,7 +85,9 @@ automat==24.8.1
     #   -r requirements.in
     #   twisted
 babel==2.16.0
-    # via jupyterlab-server
+    # via
+    #   jupyterlab-server
+    #   sphinx
 backoff==2.2.1
     # via
     #   -r requirements.in
@@ -322,6 +326,10 @@ docstring-parser==0.16
     # via
     #   google-cloud-aiplatform
     #   instructor
+docutils==0.21.2
+    # via
+    #   sphinx
+    #   sphinx-rtd-theme
 docx2txt==0.8
     # via crewai-tools
 dulwich==0.21.7
@@ -527,6 +535,8 @@ idna==3.10
     #   tldextract
     #   trio
     #   yarl
+imagesize==1.4.1
+    # via sphinx
 importlib-metadata==8.5.0
     # via
     #   keyring
@@ -589,6 +599,7 @@ jinja2==3.1.4
     #   litellm
     #   nbconvert
     #   pyvis
+    #   sphinx
 jiter==0.4.2
     # via
     #   instructor
@@ -908,6 +919,7 @@ packaging==24.2
     #   pytest
     #   scrapy
     #   snowflake-connector-python
+    #   sphinx
     #   webdriver-manager
 pandas==2.2.3
     # via
@@ -1080,6 +1092,7 @@ pygments==2.18.0
     #   jupyter-console
     #   nbconvert
     #   rich
+    #   sphinx
 pyjwt==2.10.0
     # via
     #   -r requirements.in
@@ -1229,6 +1242,7 @@ requests==2.32.3
     #   requests-oauthlib
     #   requests-toolbelt
     #   snowflake-connector-python
+    #   sphinx
     #   tiktoken
     #   tldextract
     #   wandb
@@ -1320,6 +1334,8 @@ sniffio==1.3.1
     #   httpx
     #   openai
     #   trio
+snowballstemmer==3.0.1
+    # via sphinx
 snowflake-connector-python==3.12.3
     # via
     #   -r requirements.in
@@ -1333,6 +1349,27 @@ soupsieve==2.6
     # via
     #   -r requirements.in
     #   beautifulsoup4
+sphinx==8.1.3
+    # via
+    #   -r requirements.in
+    #   sphinx-rtd-theme
+    #   sphinxcontrib-jquery
+sphinx-rtd-theme==3.0.2
+    # via -r requirements.in
+sphinxcontrib-applehelp==2.0.0
+    # via sphinx
+sphinxcontrib-devhelp==2.0.0
+    # via sphinx
+sphinxcontrib-htmlhelp==2.1.0
+    # via sphinx
+sphinxcontrib-jquery==4.1
+    # via sphinx-rtd-theme
+sphinxcontrib-jsmath==1.0.1
+    # via sphinx
+sphinxcontrib-qthelp==2.0.0
+    # via sphinx
+sphinxcontrib-serializinghtml==2.0.0
+    # via sphinx
 sqlalchemy==2.0.29
     # via
     #   -r requirements.in
@@ -1390,6 +1427,7 @@ tomli==2.1.0
     #   jupyterlab
     #   poetry
     #   pytest
+    #   sphinx
 tomlkit==0.13.2
     # via
     #   -r requirements.in

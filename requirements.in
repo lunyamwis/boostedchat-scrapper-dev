@@ -132,6 +132,8 @@ rsa
 Scrapy
 selenium
 sentry-sdk
+sphinx
+sphinx-rtd-theme
 service-identity
 six
 sniffio
