@@ -1112,18 +1112,21 @@ class AccountViewSet(viewsets.ModelViewSet):
         match list_type.lower():    
             case "all":
                 queryset = queryset.filter(
-                    Q(created_at__range=(start_date, end_date)) |
+                    Q(outreach_time__range=(start_date, end_date)) |
                     Q(won_date__range=(start_date, end_date)) |
-                    Q(lost_date__range=(start_date, end_date))
+                    Q(lost_date__range=(start_date, end_date)) |
                     # Q(responded_date__range=(start_date, end_date))
+                    Q(sales_qualified_date__range=(start_date, end_date))
                 ).distinct('id')
             case "sales_qualified":
                 queryset = queryset.filter(
                         status_param='Sales Qualified',
-                        created_at__gte=start_date, created_at__lt=end_date
+                        # created_at__gte=start_date, created_at__lt=end_date,
+                        sales_qualified_date__gte=start_date, sales_qualified_date__lt=end_date
                     )
             case "outreach":
-                queryset = queryset.filter(created_at__gte=start_date, created_at__lt=end_date).distinct('id')
+                # queryset = queryset.filter(created_at__gte=start_date, created_at__lt=end_date).distinct('id')
+                queryset = queryset.filter(outreach_time__gte=start_date,outreach_time__lt=end_date).distinct('id')
             case "won":
                 queryset = queryset.filter(won_date__range=(start_date, end_date)).distinct('id')
             case "lost":
@@ -1196,17 +1199,23 @@ class AccountViewSet(viewsets.ModelViewSet):
             end_of_week = next_week - timedelta(seconds=1)
 
             outreach_accounts = Account.objects.filter(
-                created_at__gte=current_week,
-                created_at__lte=end_of_week,
+                # created_at__gte=current_week,
+                # created_at__lte=end_of_week,
+                outreach_time__gte=current_week,
+                outreach_time__lte=end_of_week,
                 outreach_success=True,
             ).distinct()
             outreach_count = outreach_accounts.count()
             
             print("Outrech count **",outreach_count)
             
+            
+            # thinking about putting instead of created_at sales_qualified_date__gte=start_date, sales_qualified_date__lt=end_date 
             sales_qualified_accounts = Account.objects.filter(
-                created_at__gte=current_week,
-                created_at__lte=end_of_week,
+                # created_at__gte=current_week,
+                # created_at__lte=end_of_week,
+                sales_qualified_date__gte=current_week,
+                sales_qualified_date__lte=end_of_week,
                 salesrep__isnull=False,
                 # responded_date__isnull=False,
                 status_param='Sales Qualified',
@@ -1238,7 +1247,6 @@ class AccountViewSet(viewsets.ModelViewSet):
             responded_date = Account.objects.filter(responded_date__range=(current_week, next_week)).count()
             sq_conversion_rate = round((sales_qualified_accounts.count()/outreach_count) * 100,2) if outreach_count > 0 else 0
             
-           
 
             results.append({
                 "week_start": current_week.strftime("%Y-%m-%d"),
@@ -1290,8 +1298,10 @@ class AccountViewSet(viewsets.ModelViewSet):
             end_of_month = datetime(year, current_month, last_day, 23, 59, 59, tzinfo=tz)
 
             outreach_accounts = Account.objects.filter(
-                created_at__gte=start_of_month,
-                created_at__lte=end_of_month,
+                # created_at__gte=start_of_month,
+                # created_at__lte=end_of_month,
+                outreach_time__gte=start_of_month,
+                outreach_time__lte=end_of_month,
                 outreach_success=True,
             ).distinct()
             outreach_count = outreach_accounts.count()
@@ -1299,8 +1309,10 @@ class AccountViewSet(viewsets.ModelViewSet):
             print("Outrech count **",outreach_count)
             
             sales_qualified_accounts = Account.objects.filter(
-                created_at__gte=start_of_month,
-                created_at__lte=end_of_month,
+                # created_at__gte=start_of_month,
+                # created_at__lte=end_of_month,
+                sales_qualified_date__gte=start_of_month,
+                sales_qualified_date__lte=end_of_month,
                 salesrep__isnull=False,
                 # responded_date__isnull=False,
                 status_param='Sales Qualified',
@@ -1374,6 +1386,7 @@ class AccountViewSet(viewsets.ModelViewSet):
         
         try:
             # reset status
+            UnwantedAccount.objects.filter(username=account.igname).delete()
             account.status = None
             account.status_param = 'Prequalified'
             account.assigned_to = 'Robot'
@@ -2717,6 +2730,69 @@ class DMViewset(viewsets.ModelViewSet):
                     "success": True
                 }
             )
+
+
+        
+
+    @schema_context(os.getenv('SCHEMA_NAME'))
+    @action(detail=True, methods=["post"], url_path="sync-message")
+    def sync_message(self, request, pk=None):
+        thread_id = request.data.get("threadId")
+        messages = request.data.get('messages')
+        
+        account = Account.objects.filter(thread__thread_id=thread_id)
+
+        if account.exists():
+            account = account.latest('created_at')
+            account.assigned_to = 'Human' # NB: this is a temporary fix
+            account.save()
+
+        # TODO: take over conversations
+        # else:
+        #     account = Account.objects.create(igname='client')
+        #     OutSourced.objects.create(results={"username": "client"}, account=account)
+        try:
+
+
+            thread_obj = Thread.objects.create(thread_id=thread_id)
+            thread_obj.thread_id = thread_id
+            thread_obj.account = account
+            thread_obj.last_message_content = ""
+            thread_obj.unread_message_count = 0
+            thread_obj.last_message_at = datetime.now() # use UTC
+            thread_obj.save()
+            for message in  messages:
+                
+                message = Message()
+                message.content = message.get("content")
+                message.sent_by = "Robot"
+                message.sent_on = datetime.fromtimestamp(int(message.get['timestamp'])/1000000) if message.get("timestamp") else datetime.now()
+                message.thread = thread_obj
+                message.save()
+                print("message created then saved")
+        except Exception as error:
+            print(error)
+            try:
+                thread_obj = Thread.objects.filter(thread_id=thread_id).latest('created_at')
+                thread_obj.thread_id = thread_id
+                thread_obj.account = account
+                thread_obj.last_message_content = ""
+                thread_obj.unread_message_count = 0
+                thread_obj.last_message_at = datetime.now() # use UTC
+                thread_obj.save()
+                for message in  messages:
+                    message = Message()
+                    message.content = message.get("content")
+                    message.sent_by = "Robot"
+                    message.sent_on = datetime.now()
+                    message.thread = thread_obj
+                    message.save()
+                    print("message is saved")
+            except Exception as error:
+                print(error)
+                print("message not saved")
+
+        return Response({"success": True}, status=status.HTTP_201_CREATED)
     
     @schema_context(os.getenv('SCHEMA_NAME'))
     @action(detail=False, methods=["post"], url_path="sync-messages")
@@ -2744,8 +2820,8 @@ class DMViewset(viewsets.ModelViewSet):
             # check if account exists
             if accounts.exists():
                 account = accounts.latest('created_at')
-                # account.assigned_to = 'Human' # NB: this is a temporary fix
-                # account.save()
+                account.assigned_to = 'Human' # NB: this is a temporary fix
+                account.save()
                 print("ACCOUNT EXISTS!")
             # else: # if not create one
             #     account = Account()
@@ -2769,7 +2845,7 @@ class DMViewset(viewsets.ModelViewSet):
                 thread.thread_id = thread_id
                 thread.account = account
                 thread.save()
-                print("Thread CREATED A NEW THREAD!")
+                print("CREATED A NEW THREAD!")
             else:
                 return Response({"error": "LEAD DOES NOT EXIST"}, status=status.HTTP_404_NOT_FOUND)
 
@@ -2973,11 +3049,11 @@ class DMViewset(viewsets.ModelViewSet):
                                     time_slot = timezone.now()+timezone.timedelta(hours=i/random_number)
                                     if self.is_time_slot_within_window(time_slot):
                                         send_first_compliment.apply_async(args=[[account.igname],thread.last_message_content], eta=time_slot,task_id=f"compliment_{account.id}_{time_slot.timestamp()}")
-                                        try:
-                                            account.outreach_time = time_slot
-                                            account.save()
-                                        except Exception as error:
-                                            logging.warning(f"Failed to save outreach time - {error}")
+                                        # try:
+                                        #     account.outreach_time = time_slot
+                                        #     account.save()
+                                        # except Exception as error:
+                                        #     logging.warning(f"Failed to save outreach time - {error}")
                                     # run_scheduler.delay(target_time=time_slot,username=account.igname,message=thread.last_message_content)
                                         
                                         
@@ -2997,11 +3073,11 @@ class DMViewset(viewsets.ModelViewSet):
                             if self.is_time_slot_within_window(time_slot):
                                 send_first_compliment.apply_async(args=[[account.igname],""], eta=time_slot,task_id=f"compliment_{account.id}_{time_slot.timestamp()}")
 
-                                try:
-                                    account.outreach_time = time_slot
-                                    account.save()
-                                except Exception as error:
-                                    logging.warning(f"Failed to save outreach time - {error}")
+                                # try:
+                                #     account.outreach_time = time_slot
+                                #     account.save()
+                                # except Exception as error:
+                                #     logging.warning(f"Failed to save outreach time - {error}")
 
                             # send_first_compliment.delay(username=account.igname,message="")
                             # send_first_compliment.delay(username=account.igname,message=thread.last_message_content)

@@ -467,6 +467,7 @@ def send_first_compliment(username, message, repeat=True):
             sent_compliment_status = StatusCheck.objects.get(name="sent_compliment")
             account.status = sent_compliment_status
             account.outreach_success = True
+            account.outreach_time = timezone.now()
             # account.assigned_to = "Human" # NB: do not forget to handle this from prompt level
             account.save()
             print(f"response============{response}")
@@ -550,7 +551,8 @@ def send_first_compliment(username, message, repeat=True):
             #     error_message = response.text
             # )
             message = ""
-            send_first_compliment(get_account(), message) # recurse to the next individual
+            send_first_compliment(get_account(), message) # recurse to the next individual TODO: place a check to determine if the
+            #user exist
             # ExceptionHandler(exception.status_code).take_action(data=exception.data)
             print(f"Request failed with status code: {response.status_code}")
             print(f"Response message: {response.text}")
@@ -1339,10 +1341,10 @@ def qualify_and_reschedule():
         for keyword in barber_keywords:
             query |= Q(igname__icontains=keyword)
 
-        yesterday = timezone.now() - timezone.timedelta(days=7) # filter on a weekly basis
-
+        yesterday = timezone.now() - timezone.timedelta(days=30) # filter on a weekly basis
+        unwanted_usernames = UnwantedAccount.objects.values_list('username', flat=True)
         # Filter accounts using the query
-        filtered_accounts = Account.objects.filter(query).filter(created_at__gte=yesterday).exclude(status__name="sent_compliment")
+        filtered_accounts = Account.objects.filter(query).filter(created_at__gte=yesterday).exclude(status__name="sent_compliment").exclude(igname__in=unwanted_usernames)
 
         for account in filtered_accounts:
             account.qualified = True
@@ -1353,7 +1355,7 @@ def qualify_and_reschedule():
 
 
         # Split to run for x days automatically
-        number_outreach_per_day = 40
+        number_outreach_per_day = 50
         total_outreach_days = round(filtered_accounts.count()/number_outreach_per_day)
         day_schedule_accounts = [{"day": 0}]
         day_to_schedule = 0

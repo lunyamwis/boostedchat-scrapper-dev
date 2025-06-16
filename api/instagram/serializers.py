@@ -51,6 +51,7 @@ class AccountSerializer(serializers.ModelSerializer):
             "created_at",
             "status_param",
             "outsourced_info",
+            "sales_qualified_date",
             "statusParam"
             # "thread_id",
         ]
@@ -64,7 +65,8 @@ class AccountSerializer(serializers.ModelSerializer):
                         "closing_date": {"required": False, "allow_null": True},
                         "won_date": {"required": False, "allow_null": True},
                         "success_story_date": {"required": False, "allow_null": True},
-                        "lost_date": {"required": False, "allow_null": True}
+                        "lost_date": {"required": False, "allow_null": True},
+                        "sales_qualified_date": {"required": False, "allow_null": True}
                         }
     # def get_thread_id(self, obj):
     #     # Get the first thread related to the account

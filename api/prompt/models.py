@@ -160,6 +160,8 @@ class Department(BaseModel):
     def __str__(self):
         return f"{self.name} - {self.version}"
     
+
+    
 class Query(BaseModel):
     name = models.CharField(max_length=255)
     query = models.TextField()
