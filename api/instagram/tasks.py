@@ -866,75 +866,155 @@ def reschedule():
             # Save the updated schedule
             sched.save()
 
-
 @shared_task()
 @schema_context(os.getenv("SCHEMA_NAME"))
 def prequalify_task():
+    # import logging
+    # from django.utils import timezone
+    # from django.db.models import Q
 
-    # yesterday = timezone.now().date() - timezone.timedelta(days=1)
-    # yesterday_start = timezone.make_aware(timezone.datetime.combine(yesterday, timezone.datetime.min.time()))
-    # unwanted_usernames = UnwantedAccount.objects.values_list('username', flat=True)
-
-    # # Filter accounts that are qualified and created from yesterday onwards, and exclude accounts that are not wanted
-    # accounts = Account.objects.filter(
-    #     Q(qualified=False) & Q(created_at__gte=yesterday_start)
-    # ).exclude(
-    #     status__name="sent_compliment"
-    # ).exclude(
-    #     igname__in=unwanted_usernames
-    # )
-    yesterday = timezone.now().date() - timezone.timedelta(days=1)
-    tomorrow = timezone.now().date() + timezone.timedelta(days=1)
-    yesterday_start = timezone.make_aware(timezone.datetime.combine(yesterday, timezone.datetime.min.time()))
     unwanted_usernames = UnwantedAccount.objects.values_list('username', flat=True)
+    days_back = 1
+    qualified_dormant_count = 0
 
-    # Filter accounts that are qualified and created from yesterday onwards, and exclude accounts that are not wanted
-    accounts = Account.objects.filter(
-        Q(qualified=True) & Q(created_at__gte=yesterday_start) & Q(created_at__lte=tomorrow)
-    ).exclude(
-        status__name="sent_compliment"
-    ).exclude(
-        igname__in=unwanted_usernames
-    )
-    if accounts.exists():
-        
+    while qualified_dormant_count < 25:
+        start_date = timezone.now().date() - timezone.timedelta(days=1)
+        end_date = timezone.now().date() + timezone.timedelta(days=days_back)
+        start_datetime = timezone.make_aware(
+            timezone.datetime.combine(start_date, timezone.datetime.min.time())
+        )
+
+        accounts = Account.objects.filter(
+            Q(qualified=True) & Q(created_at__gte=start_datetime) & Q(created_at__lte=end_date)
+        ).exclude(
+            status__name="sent_compliment"
+        ).exclude(
+            igname__in=unwanted_usernames
+        )
+
         for account in accounts:
-            if account.salesrep_set.exists():
-                pass
-            else:
-                logging.warning(f"Account {account.igname} has no sales rep assigned, reassigning account")
-                assign_salesrep(account)
-            try:
-                payload = {
-                    "department":"Prequalifying",
-                    "agent_name":"Qualifying Agent",
-                    "agent_task":"QD_QualifyingA_CalculatePersonaInfluencerAuditQualifyingScoreT",
-                    "converstations":"",
-                    "Scraped":{
-                        "message":"",
-                        "sales_rep":account.salesrep_set.filter(available=True).latest('created_at').ig_username,   
-                        "influencer_ig_name":account.salesrep_set.filter(available=True).latest('created_at').ig_username,   
-                        "outsourced_info":account.outsourced_set.latest('created_at').results,
-                        "relevant_information":account.relevant_information
+            if not account.dormant_profile_created:
+                if not account.salesrep_set.exists():
+                    logging.warning(f"Account {account.igname} has no sales rep assigned, reassigning account")
+                    assign_salesrep(account)
+                try:
+                    payload = {
+                        "department": "Prequalifying",
+                        "agent_name": "Qualifying Agent",
+                        "agent_task": "QD_QualifyingA_CalculatePersonaInfluencerAuditQualifyingScoreT",
+                        "converstations": "",
+                        "Scraped": {
+                            "message": "",
+                            "sales_rep": account.salesrep_set.filter(available=True).latest('created_at').ig_username,
+                            "influencer_ig_name": account.salesrep_set.filter(available=True).latest('created_at').ig_username,
+                            "outsourced_info": account.outsourced_set.latest('created_at').results,
+                            "relevant_information": account.relevant_information
+                        }
                     }
-                }
-                
-                setup_agent_workflow(payload=payload)
-                if account.qualified:
-                    account.dormant_profile_created = True
-                account.save()
-            except Exception as error:
-                logging.warning(error)
-        
-        try:
-            subject = 'Hello Team'
+                    setup_agent_workflow(payload=payload)
+                    if account.qualified:
+                        account.dormant_profile_created = True
+                    account.save()
+                except Exception as error:
+                    logging.warning(error)
+
+        qualified_dormant_count = Account.objects.filter(
+            qualified=True, dormant_profile_created=True
+        ).exclude(
+            status__name="sent_compliment"
+        ).exclude(
+            igname__in=unwanted_usernames
+        ).count()
+
+        days_back += 1  # Expand the date range if needed
+
+    try:
+        if qualified_dormant_count >= 25:
             message = f'Finished prequalifying accounts for today {timezone.now()}'
-            from_email = 'lutherlunyamwi@gmail.com'
-            recipient_list = ['lutherlunyamwi@gmail.com','tomek@boostedchat.com']
-            send_mail(subject, message, from_email, recipient_list)
-            notify_click_up_tech_notifications(comment_text=message,notify_all=True)
-        except Exception as error:
-            print(error)
+        else:
+            message = (
+                f'Finished prequalifying but did not reach the target 25. '
+                f'Only {qualified_dormant_count} accounts were processed as of {timezone.now()}'
+            )
+        subject = 'Hello Team'
+        from_email = 'lutherlunyamwi@gmail.com'
+        recipient_list = ['lutherlunyamwi@gmail.com', 'tomek@boostedchat.com']
+        send_mail(subject, message, from_email, recipient_list)
+        notify_click_up_tech_notifications(comment_text=message, notify_all=True)
+    except Exception as error:
+        print(error)
+
+
+
+# @shared_task()
+# @schema_context(os.getenv("SCHEMA_NAME"))
+# def prequalify_task():
+
+#     # yesterday = timezone.now().date() - timezone.timedelta(days=1)
+#     # yesterday_start = timezone.make_aware(timezone.datetime.combine(yesterday, timezone.datetime.min.time()))
+#     # unwanted_usernames = UnwantedAccount.objects.values_list('username', flat=True)
+
+#     # # Filter accounts that are qualified and created from yesterday onwards, and exclude accounts that are not wanted
+#     # accounts = Account.objects.filter(
+#     #     Q(qualified=False) & Q(created_at__gte=yesterday_start)
+#     # ).exclude(
+#     #     status__name="sent_compliment"
+#     # ).exclude(
+#     #     igname__in=unwanted_usernames
+#     # )
+#     yesterday = timezone.now().date() - timezone.timedelta(days=1)
+#     tomorrow = timezone.now().date() + timezone.timedelta(days=1)
+#     yesterday_start = timezone.make_aware(timezone.datetime.combine(yesterday, timezone.datetime.min.time()))
+#     unwanted_usernames = UnwantedAccount.objects.values_list('username', flat=True)
+
+#     # Filter accounts that are qualified and created from yesterday onwards, and exclude accounts that are not wanted
+#     accounts = Account.objects.filter(
+#         Q(qualified=True) & Q(created_at__gte=yesterday_start) & Q(created_at__lte=tomorrow)
+#     ).exclude(
+#         status__name="sent_compliment"
+#     ).exclude(
+#         igname__in=unwanted_usernames
+#     )
+#     if accounts.exists():
+#     # TODO: either recurse or use a while loop to iteratively pick the
+#     # next set of accounts until the prequalified accounts reach 25.  
+#         for account in accounts:
+#             if account.salesrep_set.exists():
+#                 pass
+#             else:
+#                 logging.warning(f"Account {account.igname} has no sales rep assigned, reassigning account")
+#                 assign_salesrep(account)
+#             try:
+#                 payload = {
+#                     "department":"Prequalifying",
+#                     "agent_name":"Qualifying Agent",
+#                     "agent_task":"QD_QualifyingA_CalculatePersonaInfluencerAuditQualifyingScoreT",
+#                     "converstations":"",
+#                     "Scraped":{
+#                         "message":"",
+#                         "sales_rep":account.salesrep_set.filter(available=True).latest('created_at').ig_username,   
+#                         "influencer_ig_name":account.salesrep_set.filter(available=True).latest('created_at').ig_username,   
+#                         "outsourced_info":account.outsourced_set.latest('created_at').results,
+#                         "relevant_information":account.relevant_information
+#                     }
+#                 }
+                
+#                 setup_agent_workflow(payload=payload)
+#                 if account.qualified:
+#                     account.dormant_profile_created = True
+#                 account.save()
+#             except Exception as error:
+#                 logging.warning(error)
+        
+#         try:
+#             subject = 'Hello Team'
+#             message = f'Finished prequalifying accounts for today {timezone.now()}'
+#             from_email = 'lutherlunyamwi@gmail.com'
+#             recipient_list = ['lutherlunyamwi@gmail.com','tomek@boostedchat.com']
+#             send_mail(subject, message, from_email, recipient_list)
+#             notify_click_up_tech_notifications(comment_text=message,notify_all=True)
+#         except Exception as error:
+#             print(error)
             
             
 @shared_task()
