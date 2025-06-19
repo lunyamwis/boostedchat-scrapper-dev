@@ -892,8 +892,8 @@ class PrequalifyingWorkflow(Flow):
         "igname": username,
         "is_manually_triggered":True,
         "relevant_information": output if output else {},
-        #  "qualified": prequalified_flag,
-        "qualified": True
+        "qualified": prequalified_flag
+        # "qualified": True
       }
       response = requests.patch(
         f"{os.getenv('API_URL')}/instagram/account/{account_id}/",
@@ -940,7 +940,7 @@ class PrequalifyingWorkflow(Flow):
 
       conditions = [desired_location, desired_category, desired_visibility, desired_activity, desired_provider, desired_size]
       print(conditions)
-      if all(conditions):
+      if all(conditions): # if all conditions are met
          self.state["prequalified_result"] = {
             "prequalified":True,
             "desired_location":desired_location, 
