@@ -945,7 +945,7 @@ class PrequalifyingWorkflow(Flow):
             "prequalified":True,
             "desired_location":desired_location, 
             "desired_category": desired_category, 
-            "desired_visibility":desired_visibility, 
+            "desired_visibility":not self.inputs['outsourced_info']['is_private'], 
             "desired_activity": desired_activity, 
             "desired_provider": desired_provider, 
             "desired_size": desired_size
@@ -955,7 +955,7 @@ class PrequalifyingWorkflow(Flow):
             "prequalified":False,
             "desired_location":desired_location, 
             "desired_category": desired_category, 
-            "desired_visibility":desired_visibility, 
+            "desired_visibility":not self.inputs['outsourced_info']['is_private'], 
             "desired_activity": desired_activity, 
             "desired_provider": desired_provider, 
             "desired_size": desired_size
