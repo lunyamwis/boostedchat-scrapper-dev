@@ -13,3 +13,4 @@ STYLISTS_WORDS = [
     "breakage", "dryness", "oiliness", "thinning",
     "hair loss", "dandruff", "scalp problems"
 ]
+MODEL="huggingface/mistralai/Mistral-7B-Instruct-v0.3"
