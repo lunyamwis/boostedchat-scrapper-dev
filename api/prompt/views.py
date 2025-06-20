@@ -887,7 +887,7 @@ class PrequalifyingWorkflow(Flow):
     #            logging.error(err)
     #            prequalified_flag = False
       conditions = [self.state["desired_location"],self.state["desired_category"],self.state["desired_visibility"],self.state["desired_activity"],self.state["desired_provider"],self.state["desired_size"]]    # import pdb;pdb.set_trace()
-      print("prequalified_flag------------------------------>",prequalified_flag)
+      logging.warning(f"prequalified_flag------------------------------>{conditions}")
       if all(conditions):
           prequalified_flag = True
 
