@@ -871,23 +871,26 @@ class PrequalifyingWorkflow(Flow):
       }
       response = requests.post(f"{os.getenv('API_URL')}/instagram/account/get-id/",data=get_id_account_data)
       account_id = response.json()['id']
+      
       prequalified_flag = False
-      try:
-         prequalified_flag = output['prequalified']['prequalified']
-      except Exception as e:
-         logging.warning(e)
-         try:
-            prequalified_flag = output['prequalified'] if isinstance(output['prequalified'],bool) else output['prequalified']['desired_category']
-         except Exception as err:
-            logging.warning(err)
-            try:
-               prequalified_flag = False
-            except Exception as err:
-               logging.error(err)
-               prequalified_flag = False
+    #   try:
+    #      prequalified_flag = output['prequalified']['prequalified']
+    #   except Exception as e:
+    #      logging.warning(e)
+    #      try:
+    #         prequalified_flag = output['prequalified'] if isinstance(output['prequalified'],bool) else output['prequalified']['desired_category']
+    #      except Exception as err:
+    #         logging.warning(err)
+    #         try:
+    #            prequalified_flag = False
+    #         except Exception as err:
+    #            logging.error(err)
+    #            prequalified_flag = False
+      conditions = [self.state["desired_location"],self.state["desired_category"],self.state["desired_visibility"],self.state["desired_activity"],self.state["desired_provider"],self.state["desired_size"]]    # import pdb;pdb.set_trace()
+      print("prequalified_flag------------------------------>",prequalified_flag)
+      if all(conditions):
+          prequalified_flag = True
 
-      # import pdb;pdb.set_trace()
-      # print(prequalified_flag)
       account_dict = {
         "igname": username,
         "is_manually_triggered":True,
