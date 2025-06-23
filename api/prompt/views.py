@@ -9,6 +9,7 @@ from datetime import datetime
 from django_tenants.utils import schema_context
 
 from django.shortcuts import redirect, get_object_or_404
+from api.instagram.models import Account
 from .serializers import CreatePromptSerializer, CreateRoleSerializer, PromptSerializer, RoleSerializer,RunDataSerializer
 from .factory import PromptFactory
 from .models import Prompt, Role, ChatHistory
@@ -867,6 +868,7 @@ class PrequalifyingWorkflow(Flow):
       filtered_tasks = [task for task in self.tasks if task.agent.goal == filter_value]
       return filtered_tasks
    
+   @schema_context(os.getenv('SCHEMA_NAME'))
    def patch_account_request(self, output, username):
       username = self.inputs["outsourced_info"]["username"]
       
@@ -900,11 +902,22 @@ class PrequalifyingWorkflow(Flow):
          "relevant_information": output if output else {},
          "qualified": prequalified_flag,
       }
+
       response = requests.patch(
          f"{os.getenv('API_URL')}/instagram/account/{account_id}/",
          headers=self.headers,
          data=json.dumps(account_dict)
       )
+      # let us try our new patch below
+      try:
+        account_ = Account.objects.get(id=account_id)
+        account_.is_manually_triggered = True
+        account_.relevant_information = output if output else {}
+        account_.qualified = prequalified_flag
+        account_.save()    
+      except Exception as err:
+        logging.error(err)
+        print(f"Error saving account information to the database --{err}")
       print(response.json())
       return response
 
