@@ -943,7 +943,7 @@ class PrequalifyingWorkflow(Flow):
 
       conditions = [desired_location, desired_category, desired_visibility, desired_activity, desired_provider, desired_size]
       print(conditions)
-      if all(conditions): # if all conditions are met
+      if any(conditions): # if all conditions are met
          self.state["prequalified_result"] = {
             "prequalified":True,
             "desired_location":desired_location, 
