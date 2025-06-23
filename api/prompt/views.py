@@ -986,51 +986,51 @@ class PrequalifyingWorkflow(Flow):
 
    @listen(and_(prequalifying_flag_assessor))
    def prequalifying_output_extractor(self):
-      print("---- Logger ----")
-      agents = self.get_agents(inspect.currentframe().f_code.co_name)
-      first_agent = next(iter(agents))
-      tasks = self.get_tasks(first_agent.goal)
-      crew = Crew(agents=agents, tasks=tasks, verbose=True, memory=True)
-      # self.inputs['outsourced_info'].update({"lead_score":self.state.get("score_result",{}), "preqaulified":self.state.get("prequalified_result",{})})
-      biography = self.inputs['outsourced_info']['biography']
-      external_url = self.inputs['outsourced_info']['external_url']
-      city_name = self.inputs['outsourced_info']['city_name']
-      full_name = self.inputs['outsourced_info']['full_name']
-      public_email = self.inputs['outsourced_info']['public_email']
-      public_phone_number = self.inputs['outsourced_info']['public_phone_number'],
-      contact_phone_number = self.inputs['outsourced_info']['contact_phone_number']
-      self.inputs['outsourced_info'] = {"username":self.inputs['outsourced_info']['username'],"bio":self.inputs['outsourced_info']['biography']}
-      # self.inputs['outsourced_info'].update({"preqaulified":self.state.get("prequalified_result",{})})
-      # self.inputs['outsourced_info'] = {"preqaulified":self.state.get("prequalified_result",{})}
-      result = crew.kickoff(inputs=self.inputs)
-      # import pdb;pdb.set_trace()
-      # crew_result = result.json_dict
-      self.state["output"] = result.json_dict
+        print("---- Logger ----")
+        agents = self.get_agents(inspect.currentframe().f_code.co_name)
+        first_agent = next(iter(agents))
+        tasks = self.get_tasks(first_agent.goal)
+        crew = Crew(agents=agents, tasks=tasks, verbose=True, memory=True)
+        # self.inputs['outsourced_info'].update({"lead_score":self.state.get("score_result",{}), "preqaulified":self.state.get("prequalified_result",{})})
+        biography = self.inputs['outsourced_info']['biography']
+        external_url = self.inputs['outsourced_info']['external_url']
+        city_name = self.inputs['outsourced_info']['city_name']
+        full_name = self.inputs['outsourced_info']['full_name']
+        public_email = self.inputs['outsourced_info']['public_email']
+        public_phone_number = self.inputs['outsourced_info']['public_phone_number'],
+        contact_phone_number = self.inputs['outsourced_info']['contact_phone_number']
+        self.inputs['outsourced_info'] = {"username":self.inputs['outsourced_info']['username'],"bio":self.inputs['outsourced_info']['biography']}
+        # self.inputs['outsourced_info'].update({"preqaulified":self.state.get("prequalified_result",{})})
+        # self.inputs['outsourced_info'] = {"preqaulified":self.state.get("prequalified_result",{})}
+        result = crew.kickoff(inputs=self.inputs)
+        # import pdb;pdb.set_trace()
+        # crew_result = result.json_dict
+        self.state["output"] = result.json_dict
 
-      # import pdb;pdb.set_trace()
-      # print(self.state["output"])
-      if self.state["prequalified_result"]["prequalified"]:
-         # print(self.state["output"])
-         self.patch_account_request(
-            {
-               "prequalified":self.state["prequalified_result"]["prequalified"],
-               "name":self.state["output"]["name"],
-               "full_name":full_name if full_name else "",
-               "bio": biography if biography else "",
-               "external_url": external_url if external_url else "",
-               "strengths": result.json_dict.get("strengths",""),
-               "area": city_name if city_name else "",
-               "contact_details": {
-                  "public_email": public_email if public_email else "",
-                  "public_phone_number": public_phone_number if public_phone_number else "",
-                  "contact_phone_number": contact_phone_number if contact_phone_number else ""
-               }
+        # import pdb;pdb.set_trace()
+        # print(self.state["output"])
+        # if self.state["prequalified_result"]["prequalified"]: #I have removed that check so that it patches the output regardless of the prequalified result
+        # print(self.state["output"])
+        self.patch_account_request(
+        {
+            "prequalified":self.state["prequalified_result"]["prequalified"],
+            "name":self.state["output"]["name"],
+            "full_name":full_name if full_name else "",
+            "bio": biography if biography else "",
+            "external_url": external_url if external_url else "",
+            "strengths": result.json_dict.get("strengths",""),
+            "area": city_name if city_name else "",
+            "contact_details": {
+                "public_email": public_email if public_email else "",
+                "public_phone_number": public_phone_number if public_phone_number else "",
+                "contact_phone_number": contact_phone_number if contact_phone_number else ""
+            }
 
-            }, self.inputs["outsourced_info"]["username"])
+        }, self.inputs["outsourced_info"]["username"])
       
 
-      # patch the output to the database
-      print(3)
+        # patch the output to the database
+        print(3)
 
       
 class SetupAgent(APIView):
