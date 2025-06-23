@@ -511,7 +511,7 @@ class GetMediaLikers(APIView):
                         logging.info(f"Account {liker['username']} created successfully.")
                     except Exception as e:
                         # Handle the case where the user already exists
-                        print(f"User {liker.username} already exists in the database.")
+                        print(f"account error --> {e}")
                     # Add the liker data to the list
                     likers_list.append(liker_data)
                 
@@ -553,7 +553,7 @@ class GetMediaCommenters(APIView):
                         )
                     except Exception as e:
                         # Handle the case where the user already exists
-                        print(f"User already exists in the database: {e}")
+                        print(f"Instagram user error: {e}")
                     
                     try:
                         account = Account.objects.create(
