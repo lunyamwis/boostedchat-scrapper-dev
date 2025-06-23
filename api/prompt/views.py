@@ -999,7 +999,7 @@ class PrequalifyingWorkflow(Flow):
          self.patch_account_request(
             {
                "prequalified":self.state["prequalified_result"]["prequalified"],
-               "name":self.state["output"]["name"],
+               "name":full_name if full_name else "",
                "full_name":full_name if full_name else "",
                "bio": biography if biography else "",
                "external_url": external_url if external_url else "",
