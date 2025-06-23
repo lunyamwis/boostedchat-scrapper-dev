@@ -472,7 +472,7 @@ class GetMediaLikers(APIView):
                 # Fetch the likers of the media
                 influencer = random.choice(influencers_list)
                 logging.warning(f"influencer chosen ---->{influencer}")
-                latest_influencer_media = cl.user_medias(user_id=cl.user_by_username_v1(username=influencer.get("pk")))[0]
+                latest_influencer_media = cl.user_medias(user_id=cl.user_by_username_v1(username=influencer).get("pk"))[0]
                 # media_id = cl.media_pk_from_url_v1(link)
                 likers = cl.media_likers_v2(latest_influencer_media.get("pk"))
                 for liker in likers['users']:
