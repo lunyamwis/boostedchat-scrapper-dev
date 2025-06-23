@@ -909,8 +909,10 @@ class PrequalifyingWorkflow(Flow):
          data=json.dumps(account_dict)
       )
       # let us try our new patch below
+
       try:
         account_ = Account.objects.get(id=account_id)
+        logging.warning(f"account-->{account_.igname}")
         account_.is_manually_triggered = True
         account_.relevant_information = output if output else {}
         account_.qualified = prequalified_flag
@@ -918,7 +920,7 @@ class PrequalifyingWorkflow(Flow):
       except Exception as err:
         logging.error(err)
         print(f"Error saving account information to the database --{err}")
-      print(response.json())
+      logging.warning(f"running-->{response.json()}")
       return response
 
    @start()
