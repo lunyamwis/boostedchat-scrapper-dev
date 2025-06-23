@@ -466,13 +466,13 @@ class GetMediaLikers(APIView):
         likers_list = []
         influencers_list = ["vicblends","jrlusa","sly.huncho","robtheoriginal","barbersince98"]
         for link in media_links:
-            if len(media_links) > 2:
+            if len(media_links) > 1:
                 break
             try:
                 # Fetch the likers of the media
                 influencer = random.choice(influencers_list)
                 logging.warning(f"influencer chosen ---->{influencer}")
-                latest_influencer_media = cl.user_medias(user_id=cl.user_by_username_v1(username=influencer).get("pk"))[0]
+                latest_influencer_media = cl.user_medias(user_id=cl.user_by_username_v1(username=influencer).get("pk"),count=1)[0]
                 # media_id = cl.media_pk_from_url_v1(link)
                 likers = cl.media_likers_v2(latest_influencer_media.get("pk"))
                 for liker in likers['users']:
@@ -503,7 +503,7 @@ class GetMediaLikers(APIView):
                             # }
                             relevant_information=cl.user_by_username_v1(liker['username'])
                         )
-                        user_media = cl.user_medias(user_id=cl.user_by_username_v1(username=liker['username']).get("pk"))[0]
+                        user_media = cl.user_medias(user_id=cl.user_by_username_v1(username=liker['username']).get("pk"),count=1)[0]
                         OutSourced.objects.create(
                             results = {"media_id":user_media.get("id"),**cl.user_by_username_v1(liker['username'])},
                             account = account
