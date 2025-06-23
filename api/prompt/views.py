@@ -987,6 +987,35 @@ class PrequalifyingWorkflow(Flow):
       # print(crew_result)
       print(self.state)
       print(1)
+      biography = self.inputs['outsourced_info']['biography']
+      external_url = self.inputs['outsourced_info']['external_url']
+      city_name = self.inputs['outsourced_info']['city_name']
+      full_name = self.inputs['outsourced_info']['full_name']
+      public_email = self.inputs['outsourced_info']['public_email']
+      public_phone_number = self.inputs['outsourced_info']['public_phone_number'],
+      contact_phone_number = self.inputs['outsourced_info']['contact_phone_number']
+      if self.state["prequalified_result"]["prequalified"]:
+         # print(self.state["output"])
+         self.patch_account_request(
+            {
+               "prequalified":self.state["prequalified_result"]["prequalified"],
+               "name":self.state["output"]["name"],
+               "full_name":full_name if full_name else "",
+               "bio": biography if biography else "",
+               "external_url": external_url if external_url else "",
+               "strengths": result.json_dict.get("strengths",""),
+               "area": result.json_dict.get("area") if result.json_dict.get("area") else city_name,
+               "contact_details": {
+                  "public_email": public_email if public_email else "",
+                  "public_phone_number": public_phone_number if public_phone_number else "",
+                  "contact_phone_number": contact_phone_number if contact_phone_number else ""
+               }
+
+            }, self.inputs["outsourced_info"]["username"])
+      
+
+      # patch the output to the database
+      print(3)
       
    # @listen(prequalifying_flag_assessor)
    # def lead_score_calculator(self):
