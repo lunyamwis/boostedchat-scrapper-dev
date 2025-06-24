@@ -185,7 +185,8 @@ class PrequalifyingWorkflow(Flow):
 
       conditions = [desired_location, desired_category, desired_visibility, desired_activity, desired_provider, desired_size]
       print(conditions)
-      if any(conditions):
+      true_count_of_conditions = sum(conditions)
+      if true_count_of_conditions >= 3 and desired_location:
          self.state["prequalified_result"] = {
             "prequalified":True,
             "desired_location":desired_location, 
@@ -402,8 +403,8 @@ def prequalifying_automatically():
                      
       # print(tasks)
       for i,payload in enumerate(qualifying_payloads):
-         if i == 2:
-            break 
+        #  if i == 2:
+            # break 
          flow = PrequalifyingWorkflow(agents = agents,tasks = tasks,inputs = payload.get(department.baton.start_key))
          asyncio.run(flow.kickoff())
       
