@@ -256,59 +256,59 @@ class PrequalifyingWorkflow(Flow):
 
    @listen(and_(prequalifying_flag_assessor))
    def prequalifying_output_extractor(self):
-      print("---- Logger ----")
-      agents = self.get_agents(inspect.currentframe().f_code.co_name)
-      first_agent = next(iter(agents))
-      tasks = self.get_tasks(first_agent.goal)
-      crew = Crew(agents=agents, tasks=tasks, verbose=True, memory=True)
-      # outsourced_info_.update({"lead_score":self.state.get("score_result",{}), "preqaulified":self.state.get("prequalified_result",{})})
-      # import pdb;pdb.set_trace()
-      outsourced_info_ = None
-      if isinstance(self.inputs['outsourced_info'], str):
-         # If the input is a string, we need to parse it as a dictionary
-         outsourced_info_ = ast.literal_eval(self.inputs['outsourced_info'])
-      else:
-         outsourced_info_ = self.inputs['outsourced_info']
-      biography = outsourced_info_['biography']
+        print("---- Logger ----")
+        agents = self.get_agents(inspect.currentframe().f_code.co_name)
+        first_agent = next(iter(agents))
+        tasks = self.get_tasks(first_agent.goal)
+        crew = Crew(agents=agents, tasks=tasks, verbose=True, memory=True)
+        # outsourced_info_.update({"lead_score":self.state.get("score_result",{}), "preqaulified":self.state.get("prequalified_result",{})})
+        # import pdb;pdb.set_trace()
+        outsourced_info_ = None
+        if isinstance(self.inputs['outsourced_info'], str):
+            # If the input is a string, we need to parse it as a dictionary
+            outsourced_info_ = ast.literal_eval(self.inputs['outsourced_info'])
+        else:
+            outsourced_info_ = self.inputs['outsourced_info']
+        biography = outsourced_info_['biography']
 
-      external_url = outsourced_info_['external_url']
-      city_name = outsourced_info_['city_name']
-      full_name = outsourced_info_['full_name']
-      public_email = outsourced_info_['public_email']
-      public_phone_number = outsourced_info_['public_phone_number'],
-      contact_phone_number = outsourced_info_['contact_phone_number']
-      outsourced_info_ = {"username":outsourced_info_['username'],"bio":outsourced_info_['biography']}
-      # outsourced_info_.update({"preqaulified":self.state.get("prequalified_result",{})})
-      # outsourced_info_ = {"preqaulified":self.state.get("prequalified_result",{})}
-      result = crew.kickoff(inputs=self.inputs)
-      # import pdb;pdb.set_trace()
-      # crew_result = result.json_dict
-      self.state["output"] = result.json_dict
+        external_url = outsourced_info_['external_url']
+        city_name = outsourced_info_['city_name']
+        full_name = outsourced_info_['full_name']
+        public_email = outsourced_info_['public_email']
+        public_phone_number = outsourced_info_['public_phone_number'],
+        contact_phone_number = outsourced_info_['contact_phone_number']
+        outsourced_info_ = {"username":outsourced_info_['username'],"bio":outsourced_info_['biography']}
+        # outsourced_info_.update({"preqaulified":self.state.get("prequalified_result",{})})
+        # outsourced_info_ = {"preqaulified":self.state.get("prequalified_result",{})}
+        result = crew.kickoff(inputs=self.inputs)
+        # import pdb;pdb.set_trace()
+        # crew_result = result.json_dict
+        self.state["output"] = result.json_dict
 
       # import pdb;pdb.set_trace()
       # print(self.state["output"])
-      if self.state["prequalified_result"]["prequalified"]:
+    #   if self.state["prequalified_result"]["prequalified"]:
          # print(self.state["output"])
-         self.patch_account_request(
-            {
-               "prequalified":self.state["prequalified_result"]["prequalified"],
-               "name":self.state["output"]["name"],
-               "full_name":full_name if full_name else "",
-               "bio": biography if biography else "",
-               "external_url": external_url if external_url else "",
-               "strengths": result.json_dict.get("strengths",""),
-               "area": result.json_dict.get("area") if result.json_dict.get("area") else city_name,
-               "contact_details": {
-                  "public_email": public_email if public_email else "",
-                  "public_phone_number": public_phone_number if public_phone_number else "",
-                  "contact_phone_number": contact_phone_number if contact_phone_number else ""
-               }
+        self.patch_account_request(
+        {
+            "prequalified":self.state["prequalified_result"]["prequalified"],
+            "name":self.state["output"]["name"],
+            "full_name":full_name if full_name else "",
+            "bio": biography if biography else "",
+            "external_url": external_url if external_url else "",
+            "strengths": result.json_dict.get("strengths",""),
+            "area": result.json_dict.get("area") if result.json_dict.get("area") else city_name,
+            "contact_details": {
+                "public_email": public_email if public_email else "",
+                "public_phone_number": public_phone_number if public_phone_number else "",
+                "contact_phone_number": contact_phone_number if contact_phone_number else ""
+            }
 
-            }, self.inputs["outsourced_info"]["username"] if isinstance(self.inputs["outsourced_info"], dict) else ast.literal_eval(self.inputs["outsourced_info"])['username'])
-      
+        }, self.inputs["outsourced_info"]["username"] if isinstance(self.inputs["outsourced_info"], dict) else ast.literal_eval(self.inputs["outsourced_info"])['username'])
 
-      # patch the output to the database
-      print(3)
+
+        # patch the output to the database
+        print(3)
 
 
 def prequalifying_automatically():
