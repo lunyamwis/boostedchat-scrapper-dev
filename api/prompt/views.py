@@ -56,7 +56,7 @@ from crewai_tools import BaseTool
 #from crewai_tools import tool
 from crewai import Agent, Task, Crew, Process
 from django.core.mail import send_mail
-from api.instagram.tasks import send_logs
+# from api.instagram.tasks import send_logs
 from .models import Agent as AgentModel,Task as TaskModel,Tool, Department
 import os
 from typing import List,Optional
