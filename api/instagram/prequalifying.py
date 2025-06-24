@@ -186,7 +186,7 @@ class PrequalifyingWorkflow(Flow):
       conditions = [desired_location, desired_category, desired_visibility, desired_activity, desired_provider, desired_size]
       print(conditions)
       true_count_of_conditions = sum(conditions)
-      if true_count_of_conditions >= 3 and desired_location:
+      if true_count_of_conditions >= 3 and desired_location and desired_provider:
          self.state["prequalified_result"] = {
             "prequalified":True,
             "desired_location":desired_location, 
