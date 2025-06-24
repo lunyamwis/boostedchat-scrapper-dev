@@ -41,7 +41,7 @@ from .helpers.format_username import format_full_name
 from api.outreaches.utils import process_reschedule_single_task, ig_thread_exists, not_in_interval ## move
 from .utils import get_account, tasks_by_sales_rep,assign_salesrep
 from .constants import STYLISTS_WORDS
-from .prequalifying import prequalifying_automatically
+from api.instagram.prequalifying import prequalifying_automatically
 from api.outreaches.models import OutreachErrorLog
 # from tabulate import tabulate # for print_logs
 from urllib.parse import urlparse
