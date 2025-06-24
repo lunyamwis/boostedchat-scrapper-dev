@@ -41,6 +41,7 @@ from .helpers.format_username import format_full_name
 from api.outreaches.utils import process_reschedule_single_task, ig_thread_exists, not_in_interval ## move
 from .utils import get_account, tasks_by_sales_rep,assign_salesrep
 from .constants import STYLISTS_WORDS
+from .prequalifying import prequalifying_automatically
 from api.outreaches.models import OutreachErrorLog
 # from tabulate import tabulate # for print_logs
 from urllib.parse import urlparse
@@ -869,81 +870,7 @@ def reschedule():
 @shared_task()
 @schema_context(os.getenv("SCHEMA_NAME"))
 def prequalify_task():
-    # import logging
-    # from django.utils import timezone
-    # from django.db.models import Q
-
-    unwanted_usernames = UnwantedAccount.objects.values_list('username', flat=True)
-    days_back = 1
-    qualified_dormant_count = 0
-
-    while qualified_dormant_count < 25:
-        start_date = timezone.now().date() - timezone.timedelta(days=1)
-        end_date = timezone.now().date() + timezone.timedelta(days=days_back)
-        start_datetime = timezone.make_aware(
-            timezone.datetime.combine(start_date, timezone.datetime.min.time())
-        )
-
-        accounts = Account.objects.filter(
-            Q(qualified=True) & Q(created_at__gte=start_datetime) & Q(created_at__lte=end_date)
-        ).exclude(
-            status__name="sent_compliment"
-        ).exclude(
-            igname__in=unwanted_usernames
-        )
-
-        for account in accounts:
-            if not account.dormant_profile_created:
-                if not account.salesrep_set.exists():
-                    logging.warning(f"Account {account.igname} has no sales rep assigned, reassigning account")
-                    assign_salesrep(account)
-                try:
-                    payload = {
-                        "department": "Prequalifying",
-                        "agent_name": "Qualifying Agent",
-                        "agent_task": "QD_QualifyingA_CalculatePersonaInfluencerAuditQualifyingScoreT",
-                        "converstations": "",
-                        "Scraped": {
-                            "message": "",
-                            "sales_rep": account.salesrep_set.filter(available=True).latest('created_at').ig_username,
-                            "influencer_ig_name": account.salesrep_set.filter(available=True).latest('created_at').ig_username,
-                            "outsourced_info": account.outsourced_set.latest('created_at').results,
-                            "relevant_information": account.relevant_information
-                        }
-                    }
-                    setup_agent_workflow(payload=payload)
-                    if account.qualified:
-                        account.dormant_profile_created = True
-                    account.save()
-                except Exception as error:
-                    logging.warning(error)
-
-        qualified_dormant_count = Account.objects.filter(
-            qualified=True, dormant_profile_created=True
-        ).exclude(
-            status__name="sent_compliment"
-        ).exclude(
-            igname__in=unwanted_usernames
-        ).count()
-
-        days_back += 1  # Expand the date range if needed
-
-    try:
-        if qualified_dormant_count >= 25:
-            message = f'Finished prequalifying accounts for today {timezone.now()}'
-        else:
-            message = (
-                f'Finished prequalifying but did not reach the target 25. '
-                f'Only {qualified_dormant_count} accounts were processed as of {timezone.now()}'
-            )
-        subject = 'Hello Team'
-        from_email = 'lutherlunyamwi@gmail.com'
-        recipient_list = ['lutherlunyamwi@gmail.com', 'tomek@boostedchat.com']
-        send_mail(subject, message, from_email, recipient_list)
-        notify_click_up_tech_notifications(comment_text=message, notify_all=True)
-    except Exception as error:
-        print(error)
-
+    prequalifying_automatically()
 
 
 # @shared_task()
