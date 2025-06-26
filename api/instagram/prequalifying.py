@@ -409,7 +409,7 @@ def prequalifying_automatically():
             flow = PrequalifyingWorkflow(agents = agents,tasks = tasks,inputs = payload.get(department.baton.start_key))
             asyncio.run(flow.kickoff())
          except Exception as e:
-            print(f"Error processing payload {i}-for user {payload['Scraped']['outsourced_info']['username']}: {e}")
+            print(f"Error processing payload {i}-for user {payload}: {e}")
             continue
       
       try:
