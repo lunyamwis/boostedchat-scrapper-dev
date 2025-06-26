@@ -1,6 +1,7 @@
 from celery import shared_task
 import pandas as pd
 import os
+import ast
 import requests
 import json
 import random
@@ -39,7 +40,7 @@ from api.dialogflow.helpers.get_prompt_responses import get_gpt_response
 
 from .helpers.format_username import format_full_name
 from api.outreaches.utils import process_reschedule_single_task, ig_thread_exists, not_in_interval ## move
-from .utils import get_account, tasks_by_sales_rep,assign_salesrep
+from .utils import get_account, tasks_by_sales_rep,assign_salesrep,initialize_hikerapi_client
 from .constants import STYLISTS_WORDS
 from api.instagram.prequalifying import prequalifying_automatically
 from api.outreaches.models import OutreachErrorLog
@@ -1405,3 +1406,69 @@ def qualify_and_reschedule():
 
         day_schedule_accounts
 
+
+@shared_task()
+@schema_context(os.getenv("SCHEMA_NAME"))
+def get_media_likers(media_links=None):
+    if not media_links:
+        logging.warning("error: Media Links is required.")
+
+    if isinstance(media_links, str):
+        media_links = ast.literal_eval(media_links)
+
+    # Initialize the HikerAPI client
+    cl = initialize_hikerapi_client()
+    likers_list = []
+    influencers_list = ["vicblends","jrlusa","sly.huncho","robtheoriginal","barbersince98"]
+    for link in media_links:
+        if len(media_links) > 1:
+            break
+        try:
+            # Fetch the likers of the media
+            influencer = random.choice(influencers_list)
+            logging.warning(f"influencer chosen ---->{influencer}")
+            latest_influencer_media = cl.user_medias(user_id=cl.user_by_username_v1(username=influencer).get("pk"),count=1)[0]
+            # media_id = cl.media_pk_from_url_v1(link)
+            likers = cl.media_likers_v2(latest_influencer_media.get("pk"))
+            for liker in likers['users']:
+                liker_data = {
+                    "username": liker['username'],
+                    "full_name": liker['full_name'],
+                    "profile_pic_url": liker['profile_pic_url'],
+                    "is_verified": liker['is_verified']
+                }
+                try:
+                    InstagramUser.objects.create(
+                        username=liker['username'],
+                        info = cl.user_by_username_v1(liker['username'])
+                    )
+                except Exception as e:
+                    # Handle the case where the user already exists
+                    print(f"User {liker.username} already exists in the database.")
+                
+                try:
+                    account = Account.objects.create(
+                        igname=liker['username'],
+                        # ADD CHECK TO PRVENT BILLING JSONS FROM BEING SAVED
+                        # {
+                        #     "error": "Top up your account at https://hikerapi.com/billing",
+                        #     "state": false,
+                        #     "exc_type": "InsufficientFunds",
+                        #     "media_id": null
+                        # }
+                        relevant_information=cl.user_by_username_v1(liker['username'])
+                    )
+                    user_media = cl.user_medias(user_id=cl.user_by_username_v1(username=liker['username']).get("pk"),count=1)[0]
+                    OutSourced.objects.create(
+                        results = {"media_id":user_media.get("id"),**cl.user_by_username_v1(liker['username'])},
+                        account = account
+                    )
+                    logging.info(f"Account {liker['username']} created successfully.")
+                except Exception as e:
+                    # Handle the case where the user already exists
+                    print(f"account error --> {e}")
+                # Add the liker data to the list
+                likers_list.append(liker_data)
+            
+        except Exception as e:
+            logging.warning(f"error: {str(e)}")

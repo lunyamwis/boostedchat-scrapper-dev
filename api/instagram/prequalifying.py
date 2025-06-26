@@ -405,8 +405,12 @@ def prequalifying_automatically():
       for i,payload in enumerate(qualifying_payloads):
         #  if i == 2:
             # break 
-         flow = PrequalifyingWorkflow(agents = agents,tasks = tasks,inputs = payload.get(department.baton.start_key))
-         asyncio.run(flow.kickoff())
+         try:
+            flow = PrequalifyingWorkflow(agents = agents,tasks = tasks,inputs = payload.get(department.baton.start_key))
+            asyncio.run(flow.kickoff())
+         except Exception as e:
+            print(f"Error processing payload {i}-for user {payload['Scraped']['outsourced_info']['username']}: {e}")
+            continue
       
       try:
          qualified_dormant_count = 26
