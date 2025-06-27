@@ -1127,7 +1127,7 @@ class AccountViewSet(viewsets.ModelViewSet):
                 ).distinct('id')
             case "sales_qualified":
                 queryset = queryset.filter(
-                        status_param='Sales Qualified',
+                        Q(status_param='Sales Qualified') | Q(status_param='Won'),
                         # created_at__gte=start_date, created_at__lt=end_date,
                         sales_qualified_date__gte=start_date, sales_qualified_date__lt=end_date
                     )
