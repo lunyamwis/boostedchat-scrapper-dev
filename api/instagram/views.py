@@ -3017,7 +3017,7 @@ class DMViewset(viewsets.ModelViewSet):
     def get_qualified_threads_and_respond(self, request, *args, **kwargs):
         
         # Get the start of yesterday's date
-        yesterday = timezone.now().date() - timezone.timedelta(days=0)
+        yesterday = timezone.now().date() - timezone.timedelta(days=1)
         tomorrow = timezone.now().date() + timezone.timedelta(days=1)
         yesterday_start = timezone.make_aware(timezone.datetime.combine(yesterday, timezone.datetime.min.time()))
         unwanted_usernames = UnwantedAccount.objects.values_list('username', flat=True)
