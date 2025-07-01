@@ -271,7 +271,7 @@ def like_and_comment(media_id, media_comment, salesrep, account):
     like_comment = False
     datasets = []
     dataset = {
-        "mediaIds": media_id,
+        "mediaId": media_id,
         "username_from": salesrep.ig_username
     }
     datasets.append(dataset)
