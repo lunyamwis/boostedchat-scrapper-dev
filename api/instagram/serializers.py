@@ -88,7 +88,7 @@ class AccountSerializer(serializers.ModelSerializer):
         return getattr(obj, "outsourced_info", None)
     def get_statusParam(self, obj):
         if obj.status_param:
-            return to_camel_case(obj.status_param)
+            return obj.status_param.title()
 
 class GetAccountSerializer(serializers.ModelSerializer):
     # status = serializers.CharField(source="account.status.name", read_only=True)
@@ -133,6 +133,11 @@ class GetSingleAccountSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
+        try:
+            camelized_status_param = data['status_param'].title()
+            data['status_param'] = camelized_status_param
+        except Exception as error:
+            pass
         try:
             status_ = StatusCheck.objects.get(id=data['status'])
             data['status'] = status_.name
