@@ -1,6 +1,7 @@
 from celery import shared_task
 import pandas as pd
 import os
+import ast
 import requests
 import json
 import random
@@ -39,8 +40,9 @@ from api.dialogflow.helpers.get_prompt_responses import get_gpt_response
 
 from .helpers.format_username import format_full_name
 from api.outreaches.utils import process_reschedule_single_task, ig_thread_exists, not_in_interval ## move
-from .utils import get_account, tasks_by_sales_rep,assign_salesrep
+from .utils import get_account, tasks_by_sales_rep,assign_salesrep,initialize_hikerapi_client
 from .constants import STYLISTS_WORDS
+from api.instagram.prequalifying import prequalifying_automatically
 from api.outreaches.models import OutreachErrorLog
 # from tabulate import tabulate # for print_logs
 from urllib.parse import urlparse
@@ -269,7 +271,7 @@ def like_and_comment(media_id, media_comment, salesrep, account):
     like_comment = False
     datasets = []
     dataset = {
-        "mediaIds": media_id,
+        "mediaId": media_id,
         "username_from": salesrep.ig_username
     }
     datasets.append(dataset)
@@ -283,14 +285,15 @@ def like_and_comment(media_id, media_comment, salesrep, account):
             "username_from": salesrep.ig_username
         }
         datasets.append(dataset)
-        response =  requests.post(settings.MQTT_BASE_URL + "/comment", data=json.dumps(datasets))
-        if response.status_code == 200:
-            like_comment = True
+        print(f"************* {account.igname} media has been liked ****************" )
+        # response =  requests.post(settings.MQTT_BASE_URL + "/comment", data=json.dumps(datasets))
+        # if response.status_code == 200:
+        #     like_comment = True
             
 
-            print(f"************* {account.igname} media has been liked and commented ****************" )
-        else:
-            outreachErrorLogger(account, salesrep, response.text, response.status_code, "WARNING", "Commenting", False) # reshedule_next
+        #     print(f"************* {account.igname} media has been liked and commented ****************" )
+        # else:
+        #     outreachErrorLogger(account, salesrep, response.text, response.status_code, "WARNING", "Commenting", False) # reshedule_next
         
     else:
         outreachErrorLogger(account, salesrep, response.text, response.status_code, "WARNING", "Liking", False) # reshedule_next
@@ -431,11 +434,11 @@ def send_first_compliment(username, message, repeat=True):
     
 
     # like and comment
-    # is_like_and_comment = like_and_comment(media_id=media_id, media_comment=results.get("media_comment", ""),
-    #                  salesrep=salesrep, account=account)
-    # if is_like_and_comment:
-    #     time.sleep(60) # we break for 1 minute then send message
-    #     print("successfully liked and commented")
+    is_like_and_comment = like_and_comment(media_id=media_id, media_comment=results.get("media_comment", ""),
+                     salesrep=salesrep, account=account)
+    if is_like_and_comment:
+        time.sleep(60) # we break for 1 minute then send message
+        print("successfully liked and commented")
     
 
     print(f"data=============={data}")
@@ -866,75 +869,81 @@ def reschedule():
             # Save the updated schedule
             sched.save()
 
-
 @shared_task()
 @schema_context(os.getenv("SCHEMA_NAME"))
 def prequalify_task():
+    prequalifying_automatically()
 
-    # yesterday = timezone.now().date() - timezone.timedelta(days=1)
-    # yesterday_start = timezone.make_aware(timezone.datetime.combine(yesterday, timezone.datetime.min.time()))
-    # unwanted_usernames = UnwantedAccount.objects.values_list('username', flat=True)
 
-    # # Filter accounts that are qualified and created from yesterday onwards, and exclude accounts that are not wanted
-    # accounts = Account.objects.filter(
-    #     Q(qualified=False) & Q(created_at__gte=yesterday_start)
-    # ).exclude(
-    #     status__name="sent_compliment"
-    # ).exclude(
-    #     igname__in=unwanted_usernames
-    # )
-    yesterday = timezone.now().date() - timezone.timedelta(days=1)
-    tomorrow = timezone.now().date() + timezone.timedelta(days=1)
-    yesterday_start = timezone.make_aware(timezone.datetime.combine(yesterday, timezone.datetime.min.time()))
-    unwanted_usernames = UnwantedAccount.objects.values_list('username', flat=True)
+# @shared_task()
+# @schema_context(os.getenv("SCHEMA_NAME"))
+# def prequalify_task():
 
-    # Filter accounts that are qualified and created from yesterday onwards, and exclude accounts that are not wanted
-    accounts = Account.objects.filter(
-        Q(qualified=True) & Q(created_at__gte=yesterday_start) & Q(created_at__lte=tomorrow)
-    ).exclude(
-        status__name="sent_compliment"
-    ).exclude(
-        igname__in=unwanted_usernames
-    )
-    if accounts.exists():
-        
-        for account in accounts:
-            if account.salesrep_set.exists():
-                pass
-            else:
-                logging.warning(f"Account {account.igname} has no sales rep assigned, reassigning account")
-                assign_salesrep(account)
-            try:
-                payload = {
-                    "department":"Prequalifying",
-                    "agent_name":"Qualifying Agent",
-                    "agent_task":"QD_QualifyingA_CalculatePersonaInfluencerAuditQualifyingScoreT",
-                    "converstations":"",
-                    "Scraped":{
-                        "message":"",
-                        "sales_rep":account.salesrep_set.filter(available=True).latest('created_at').ig_username,   
-                        "influencer_ig_name":account.salesrep_set.filter(available=True).latest('created_at').ig_username,   
-                        "outsourced_info":account.outsourced_set.latest('created_at').results,
-                        "relevant_information":account.relevant_information
-                    }
-                }
+#     # yesterday = timezone.now().date() - timezone.timedelta(days=1)
+#     # yesterday_start = timezone.make_aware(timezone.datetime.combine(yesterday, timezone.datetime.min.time()))
+#     # unwanted_usernames = UnwantedAccount.objects.values_list('username', flat=True)
+
+#     # # Filter accounts that are qualified and created from yesterday onwards, and exclude accounts that are not wanted
+#     # accounts = Account.objects.filter(
+#     #     Q(qualified=False) & Q(created_at__gte=yesterday_start)
+#     # ).exclude(
+#     #     status__name="sent_compliment"
+#     # ).exclude(
+#     #     igname__in=unwanted_usernames
+#     # )
+#     yesterday = timezone.now().date() - timezone.timedelta(days=1)
+#     tomorrow = timezone.now().date() + timezone.timedelta(days=1)
+#     yesterday_start = timezone.make_aware(timezone.datetime.combine(yesterday, timezone.datetime.min.time()))
+#     unwanted_usernames = UnwantedAccount.objects.values_list('username', flat=True)
+
+#     # Filter accounts that are qualified and created from yesterday onwards, and exclude accounts that are not wanted
+#     accounts = Account.objects.filter(
+#         Q(qualified=True) & Q(created_at__gte=yesterday_start) & Q(created_at__lte=tomorrow)
+#     ).exclude(
+#         status__name="sent_compliment"
+#     ).exclude(
+#         igname__in=unwanted_usernames
+#     )
+#     if accounts.exists():
+#     # TODO: either recurse or use a while loop to iteratively pick the
+#     # next set of accounts until the prequalified accounts reach 25.  
+#         for account in accounts:
+#             if account.salesrep_set.exists():
+#                 pass
+#             else:
+#                 logging.warning(f"Account {account.igname} has no sales rep assigned, reassigning account")
+#                 assign_salesrep(account)
+#             try:
+#                 payload = {
+#                     "department":"Prequalifying",
+#                     "agent_name":"Qualifying Agent",
+#                     "agent_task":"QD_QualifyingA_CalculatePersonaInfluencerAuditQualifyingScoreT",
+#                     "converstations":"",
+#                     "Scraped":{
+#                         "message":"",
+#                         "sales_rep":account.salesrep_set.filter(available=True).latest('created_at').ig_username,   
+#                         "influencer_ig_name":account.salesrep_set.filter(available=True).latest('created_at').ig_username,   
+#                         "outsourced_info":account.outsourced_set.latest('created_at').results,
+#                         "relevant_information":account.relevant_information
+#                     }
+#                 }
                 
-                setup_agent_workflow(payload=payload)
-                if account.qualified:
-                    account.dormant_profile_created = True
-                account.save()
-            except Exception as error:
-                logging.warning(error)
+#                 setup_agent_workflow(payload=payload)
+#                 if account.qualified:
+#                     account.dormant_profile_created = True
+#                 account.save()
+#             except Exception as error:
+#                 logging.warning(error)
         
-        try:
-            subject = 'Hello Team'
-            message = f'Finished prequalifying accounts for today {timezone.now()}'
-            from_email = 'lutherlunyamwi@gmail.com'
-            recipient_list = ['lutherlunyamwi@gmail.com','tomek@boostedchat.com']
-            send_mail(subject, message, from_email, recipient_list)
-            notify_click_up_tech_notifications(comment_text=message,notify_all=True)
-        except Exception as error:
-            print(error)
+#         try:
+#             subject = 'Hello Team'
+#             message = f'Finished prequalifying accounts for today {timezone.now()}'
+#             from_email = 'lutherlunyamwi@gmail.com'
+#             recipient_list = ['lutherlunyamwi@gmail.com','tomek@boostedchat.com']
+#             send_mail(subject, message, from_email, recipient_list)
+#             notify_click_up_tech_notifications(comment_text=message,notify_all=True)
+#         except Exception as error:
+#             print(error)
             
             
 @shared_task()
@@ -1398,3 +1407,69 @@ def qualify_and_reschedule():
 
         day_schedule_accounts
 
+
+@shared_task()
+@schema_context(os.getenv("SCHEMA_NAME"))
+def get_media_likers(media_links=None):
+    if not media_links:
+        logging.warning("error: Media Links is required.")
+
+    if isinstance(media_links, str):
+        media_links = ast.literal_eval(media_links)
+
+    # Initialize the HikerAPI client
+    cl = initialize_hikerapi_client()
+    likers_list = []
+    influencers_list = ["vicblends","jrlusa","sly.huncho","robtheoriginal","barbersince98"]
+    for link in media_links:
+        if len(media_links) > 1:
+            break
+        try:
+            # Fetch the likers of the media
+            influencer = random.choice(influencers_list)
+            logging.warning(f"influencer chosen ---->{influencer}")
+            latest_influencer_media = cl.user_medias(user_id=cl.user_by_username_v1(username=influencer).get("pk"),count=1)[0]
+            # media_id = cl.media_pk_from_url_v1(link)
+            likers = cl.media_likers_v2(latest_influencer_media.get("pk"))
+            for liker in likers['users']:
+                liker_data = {
+                    "username": liker['username'],
+                    "full_name": liker['full_name'],
+                    "profile_pic_url": liker['profile_pic_url'],
+                    "is_verified": liker['is_verified']
+                }
+                try:
+                    InstagramUser.objects.create(
+                        username=liker['username'],
+                        info = cl.user_by_username_v1(liker['username'])
+                    )
+                except Exception as e:
+                    # Handle the case where the user already exists
+                    print(f"User {liker.username} already exists in the database.")
+                
+                try:
+                    account = Account.objects.create(
+                        igname=liker['username'],
+                        # ADD CHECK TO PRVENT BILLING JSONS FROM BEING SAVED
+                        # {
+                        #     "error": "Top up your account at https://hikerapi.com/billing",
+                        #     "state": false,
+                        #     "exc_type": "InsufficientFunds",
+                        #     "media_id": null
+                        # }
+                        relevant_information=cl.user_by_username_v1(liker['username'])
+                    )
+                    user_media = cl.user_medias(user_id=cl.user_by_username_v1(username=liker['username']).get("pk"),count=1)[0]
+                    OutSourced.objects.create(
+                        results = {"media_id":user_media.get("id"),**cl.user_by_username_v1(liker['username'])},
+                        account = account
+                    )
+                    logging.info(f"Account {liker['username']} created successfully.")
+                except Exception as e:
+                    # Handle the case where the user already exists
+                    print(f"account error --> {e}")
+                # Add the liker data to the list
+                likers_list.append(liker_data)
+            
+        except Exception as e:
+            logging.warning(f"error: {str(e)}")

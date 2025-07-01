@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import InstagramUser,LeadSource,QualificationAlgorithm,Scheduler,Score,Account, Message, OutSourced, Photo, StatusCheck, Thread, Video,OutreachTime,AccountsClosed, UnwantedAccount, Comment, Like
+from .models import ExperimentAssignee, ExperimentStatus, InstagramUser,LeadSource,QualificationAlgorithm,Scheduler,Score,Account, Message, OutSourced, Photo, StatusCheck, Thread, Video,OutreachTime,AccountsClosed, UnwantedAccount, Comment, Like
 
 # Register your models here.
 # Register your models here.
@@ -383,4 +383,18 @@ class InstagramUserAdmin(admin.ModelAdmin):
     def get_form(self, request, obj=None, **kwargs):
         self.exclude = ("id",)
         form = super(InstagramUserAdmin, self).get_form(request, obj, **kwargs)
+        return form
+
+@admin.register(ExperimentAssignee)
+class ExperimentAssigneeAdmin(admin.ModelAdmin):
+    def get_form(self, request, obj=None, **kwargs):
+        self.exclude = ("id",)
+        form = super(ExperimentAssigneeAdmin, self).get_form(request, obj, **kwargs)
+        return form
+    
+@admin.register(ExperimentStatus)
+class ExperimentStatusAdmin(admin.ModelAdmin):
+    def get_form(self, request, obj=None, **kwargs):
+        self.exclude = ("id",)
+        form = super(ExperimentStatusAdmin, self).get_form(request, obj, **kwargs)
         return form

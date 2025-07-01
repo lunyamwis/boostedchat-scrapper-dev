@@ -9,6 +9,7 @@ from datetime import datetime
 from django_tenants.utils import schema_context
 
 from django.shortcuts import redirect, get_object_or_404
+from api.instagram.models import Account
 from .serializers import CreatePromptSerializer, CreateRoleSerializer, PromptSerializer, RoleSerializer,RunDataSerializer
 from .factory import PromptFactory
 from .models import Prompt, Role, ChatHistory
@@ -55,7 +56,7 @@ from crewai_tools import BaseTool
 #from crewai_tools import tool
 from crewai import Agent, Task, Crew, Process
 from django.core.mail import send_mail
-from api.instagram.tasks import send_logs
+# from api.instagram.tasks import send_logs
 from .models import Agent as AgentModel,Task as TaskModel,Tool, Department
 import os
 from typing import List,Optional
@@ -727,24 +728,6 @@ class GeneratedTextOutput(BaseModel):
     confirmed_problems: Optional[str] = ""
     human_takeover: Optional[bool] = False
 
-class PrequalifyingOutput(BaseModel):
-   prequalified: Optional[bool] = None
-   name: Optional[str] = None
-   media_details: Optional[List[str]] = None 
-   strengths: Optional[Union[str, List[str]]] = None
-   biography: Optional[str] = None
-   area: Optional[str] = None
-   contact_details: Optional[Union[dict, str]] = None
-   external_url: Optional[str] = None
-   desired_provider: Optional[bool] = None
-   desired_size: Optional[bool] = None
-   desired_location: Optional[bool] = None
-   desired_category: Optional[bool] = None
-   desired_visibility: Optional[bool] = None
-   desired_activity: Optional[bool] = None
-   lead_score: Optional[Union[int,str]] = None
-
-
 
 def remove_duplicate_content_keys(json_string: str) -> dict:
     """
@@ -785,6 +768,23 @@ def clean_json_output(raw_output: str) -> dict:
         print(f"Error decoding or cleaning JSON: {e}")
         return {}
 
+class PrequalifyingOutput(BaseModel):
+   prequalified: Optional[bool] = None
+   name: Optional[str] = None
+   media_details: Optional[List[str]] = None 
+   strengths: Optional[Union[str, List[str]]] = None
+   biography: Optional[str] = None
+   area: Optional[str] = None
+   contact_details: Optional[Union[dict, str]] = None
+   external_url: Optional[str] = None
+   desired_provider: Optional[bool] = None
+   desired_size: Optional[bool] = None
+   desired_location: Optional[bool] = None
+   desired_category: Optional[bool] = None
+   desired_visibility: Optional[bool] = None
+   desired_activity: Optional[bool] = None
+   lead_score: Optional[Union[int,str]] = None
+
 OUTPUT_MODELS = {
     "GeneratedTextOutput": GeneratedTextOutput,
     "PrequalifiedTextOutput": PrequalifyingOutput
@@ -796,8 +796,13 @@ class WandbLoggingHandler(logging.Handler):
         wandb.log({"langchain_log": log_entry})
 
 
+
+
+
+department = "Qualifying Department"
 null = None
 false, true = False, True
+
 class PrequalifyingWorkflow(Flow):
    
    
@@ -863,6 +868,7 @@ class PrequalifyingWorkflow(Flow):
       filtered_tasks = [task for task in self.tasks if task.agent.goal == filter_value]
       return filtered_tasks
    
+   @schema_context(os.getenv('SCHEMA_NAME'))
    def patch_account_request(self, output, username):
       username = self.inputs["outsourced_info"]["username"]
       
@@ -870,6 +876,8 @@ class PrequalifyingWorkflow(Flow):
          "username": username
       }
       response = requests.post(f"{os.getenv('API_URL')}/instagram/account/get-id/",data=get_id_account_data)
+      # import pdb;pdb.set_trace()
+      print(response.json())
       account_id = response.json()['id']
       prequalified_flag = False
       try:
@@ -889,18 +897,30 @@ class PrequalifyingWorkflow(Flow):
       # import pdb;pdb.set_trace()
       # print(prequalified_flag)
       account_dict = {
-        "igname": username,
-        "is_manually_triggered":True,
-        "relevant_information": output if output else {},
-        #  "qualified": prequalified_flag,
-        "qualified": True
+         "igname": username,
+         "is_manually_triggered":True,
+         "relevant_information": output if output else {},
+         "qualified": prequalified_flag,
       }
+
       response = requests.patch(
-        f"{os.getenv('API_URL')}/instagram/account/{account_id}/",
-        headers=self.headers,
-        data=json.dumps(account_dict)
+         f"{os.getenv('API_URL')}/instagram/account/{account_id}/",
+         headers=self.headers,
+         data=json.dumps(account_dict)
       )
-      print(response.json())
+      # let us try our new patch below
+
+      try:
+        account_ = Account.objects.get(id=account_id)
+        logging.warning(f"account-->{account_.igname}")
+        account_.is_manually_triggered = True
+        account_.relevant_information = output if output else {}
+        account_.qualified = prequalified_flag
+        account_.save()    
+      except Exception as err:
+        logging.error(err)
+        print(f"Error saving account information to the database --{err}")
+      logging.warning(f"running-->{response.json()}")
       return response
 
    @start()
@@ -940,7 +960,7 @@ class PrequalifyingWorkflow(Flow):
 
       conditions = [desired_location, desired_category, desired_visibility, desired_activity, desired_provider, desired_size]
       print(conditions)
-      if all(conditions):
+      if any(conditions):
          self.state["prequalified_result"] = {
             "prequalified":True,
             "desired_location":desired_location, 
@@ -967,6 +987,35 @@ class PrequalifyingWorkflow(Flow):
       # print(crew_result)
       print(self.state)
       print(1)
+      biography = self.inputs['outsourced_info']['biography']
+      external_url = self.inputs['outsourced_info']['external_url']
+      city_name = self.inputs['outsourced_info']['city_name']
+      full_name = self.inputs['outsourced_info']['full_name']
+      public_email = self.inputs['outsourced_info']['public_email']
+      public_phone_number = self.inputs['outsourced_info']['public_phone_number'],
+      contact_phone_number = self.inputs['outsourced_info']['contact_phone_number']
+      if self.state["prequalified_result"]["prequalified"]:
+         # print(self.state["output"])
+         self.patch_account_request(
+            {
+               "prequalified":self.state["prequalified_result"]["prequalified"],
+               "name":full_name if full_name else "",
+               "full_name":full_name if full_name else "",
+               "bio": biography if biography else "",
+               "external_url": external_url if external_url else "",
+               "strengths": result.json_dict.get("strengths",""),
+               "area": result.json_dict.get("area") if result.json_dict.get("area") else city_name,
+               "contact_details": {
+                  "public_email": public_email if public_email else "",
+                  "public_phone_number": public_phone_number if public_phone_number else "",
+                  "contact_phone_number": contact_phone_number if contact_phone_number else ""
+               }
+
+            }, self.inputs["outsourced_info"]["username"])
+      
+
+      # patch the output to the database
+      print(3)
       
    # @listen(prequalifying_flag_assessor)
    # def lead_score_calculator(self):
@@ -1016,7 +1065,7 @@ class PrequalifyingWorkflow(Flow):
                "bio": biography if biography else "",
                "external_url": external_url if external_url else "",
                "strengths": result.json_dict.get("strengths",""),
-               "area": city_name if city_name else "",
+               "area": result.json_dict.get("area") if result.json_dict.get("area") else city_name,
                "contact_details": {
                   "public_email": public_email if public_email else "",
                   "public_phone_number": public_phone_number if public_phone_number else "",
@@ -1028,6 +1077,7 @@ class PrequalifyingWorkflow(Flow):
 
       # patch the output to the database
       print(3)
+
 
       
 class SetupAgent(APIView):

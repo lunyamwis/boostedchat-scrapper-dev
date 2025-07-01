@@ -5,7 +5,7 @@ from pathlib import Path
 from django.core.files import File
 
 from api.authentication.models import User
-from api.instagram.models import Account, OutSourced, StatusCheck
+from api.instagram.models import Account, OutSourced, StatusCheck, ExperimentStatus
 from api.sales_rep.models import SalesRep
 
 
@@ -53,6 +53,13 @@ def init_status_check():
     activation.stage = 4
     activation.name = "activation"
     activation.save()
+    
+def init_experiment_status():
+    # stage 1
+    set_draft = ExperimentStatus()
+    set_draft.name = 'draft'
+    set_draft.description = "draft"
+    set_draft.save()
 
 
 def init_db():

@@ -7,6 +7,7 @@ from django.urls import path,include
 from .views import (
     AccountViewSet,
     CommentViewSet,
+    ExperimentAssigneeViewSet,
     LikeViewSet,
     DMViewset,
     HashTagViewSet,
@@ -19,7 +20,11 @@ from .views import (
     Reschedule,
     GetMediaLikers,
     GetMediaCommenters,
-    GetUserMediaId
+    GetUserMediaId,
+    ExperimentViewSet,
+    ExperimentFieldDefinitionViewSet,
+    ExperimentStatusViewSet,
+    ExperimentFieldValueViewSet
 )
 
 router = DefaultRouter()
@@ -42,6 +47,12 @@ router.register(r'lead_sources', views.LeadSourceViewSet)
 router.register(r'simplehttpoperator',views.SimpleHttpOperatorViewSet)
 router.register(r'workflows',views.WorkflowViewSet)
 router.register(r'media',views.MediaViewSet)
+router.register(r'experiments', ExperimentViewSet, basename='experiment')
+router.register(r'experiment_assignees', ExperimentAssigneeViewSet, basename='experiment_assignee')
+router.register(r'experiment_status', ExperimentStatusViewSet, basename='experiment_status')
+router.register(r'experiment_fields', ExperimentFieldDefinitionViewSet, basename='experiment_field_definition')
+router.register(r'experiment_field_values', ExperimentFieldValueViewSet, basename='experiment_field_value')
+
 
 urlpatterns = [
     path('', include(router.urls)),
@@ -215,5 +226,10 @@ urlpatterns = [
         'getusermediaid/',
         GetUserMediaId.as_view(),
     ),
+    path(
+        'experiments/<str:pk>/experiment_fields/',
+        ExperimentViewSet.as_view({'get': 'get_field_definitions'}),
+        name='get_field_definitions',
+    )
 ]
 

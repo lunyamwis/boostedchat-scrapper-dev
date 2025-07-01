@@ -4,9 +4,18 @@ import json
 import yaml
 from datetime import timedelta
 from rest_framework import serializers
-from .models import Score, InstagramUser, QualificationAlgorithm, Scheduler, LeadSource,SimpleHttpOperatorModel,WorkflowModel,DagModel,Media,CustomField, CustomFieldValue, Endpoint, HttpOperatorConnectionModel, WorkflowModel,Account, Like, OutSourced, Comment, HashTag, Photo, Reel, Story, Thread, Video, Message, StatusCheck, OutSourced
+from .models import ExperimentAssignee, Score, InstagramUser, QualificationAlgorithm, Scheduler, LeadSource,SimpleHttpOperatorModel,WorkflowModel,DagModel,Media,CustomField, CustomFieldValue, Endpoint, HttpOperatorConnectionModel, WorkflowModel,Account, Like, OutSourced, Comment, HashTag, Photo, Reel, Story, Thread, Video, Message, StatusCheck, OutSourced
+from .models import (
+        Experiment, 
+        ExperimentStatus, 
+        ExperimentFieldDefinition,
+        ExperimentFieldValue,
+        ExperimentResult,
+        ExperimentInput
+    )
 from django.conf import settings
 from django.db import IntegrityError
+from django_tenants.utils import schema_context
 from api.helpers.dag_generator import generate_dag
 from django_celery_beat.models import PeriodicTask
 import ast
@@ -428,3 +437,165 @@ class WorkflowModelSerializer(serializers.ModelSerializer):
 
 
     
+class ExperimentStatusSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ExperimentStatus
+        fields = ['id', 'name', 'description']
+        extra_kwargs = {"id": {"required": False, "allow_null": True}}
+        
+class ExperimentAssigneeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ExperimentAssignee
+        fields = ['id', 'name', 'description']
+        extra_kwargs = {"id": {"required": False, "allow_null": True}}
+
+class ExperimentSerializer(serializers.ModelSerializer):
+    with schema_context(os.getenv('SCHEMA_NAME')):
+        status = ExperimentStatusSerializer(read_only=True)
+        status_id = serializers.PrimaryKeyRelatedField(
+            queryset=ExperimentStatus.objects.all(), write_only=True, source='status'
+        )
+        field_definitions = serializers.SerializerMethodField()
+        inputs = serializers.SerializerMethodField()
+        experiment_results = serializers.SerializerMethodField()
+        assignees = serializers.PrimaryKeyRelatedField(
+            many=True,
+            queryset=ExperimentAssignee.objects.all()
+        )
+        assignees_detail = ExperimentAssigneeSerializer(source='assignees', many=True, read_only=True)
+
+    class Meta:
+        model = Experiment
+        fields = [
+            'id', 
+            'name', 
+            'description', 
+            'primary_metric', 
+            'version',  
+            'status_id', 
+            'status',
+            'start_date',
+            'end_date',
+            'actual_result',
+            'expected_result',
+            'hypothesis',
+            'field_definitions',
+            'inputs',
+            'experiment_results',
+            'assignees',
+            'assignees_detail',
+            'experiment_type'
+        ]
+        extra_kwargs = {"id": {"required": False, "allow_null": True},
+                        "version": {"required": False, "allow_null": True},
+                        "expected_result": {"required": False, "allow_null": True},
+                        "actual_result": {"required": False, "allow_null": True},
+                        "assigned_to": {"required": False, "allow_null": True},
+                        "hypothesis": {"required": False, "allow_null": True},
+                        "start_date": {"required": False, "allow_null": True},
+                        "end_date": {"required": False, "allow_null": True},
+                        "primary_metric": {"required": False, "allow_null": True},
+                        "experiment_type": {"required": False, "allow_null": True}
+                        }
+    
+    @schema_context(os.getenv('SCHEMA_NAME'))
+    def get_field_definitions(self, obj):
+        serializer = ExperimentFieldDefinitionSerializer(
+            obj.field_definitions.all(),
+            many=True,
+            context={'experiment_id': obj.id}
+        )
+        return serializer.data
+
+    @schema_context(os.getenv('SCHEMA_NAME'))
+    def get_inputs(self, obj):
+        serializer = ExperimentInputSerializer(
+            obj.inputs.select_related('field').all(),
+            many=True
+        )
+        return serializer.data
+    
+    @schema_context(os.getenv('SCHEMA_NAME'))
+    def get_experiment_results(self, obj):
+        results_qs = ExperimentResult.objects.filter(experiment=obj)
+        return ExperimentResultSerializer(results_qs, many=True).data
+        
+
+class ExperimentFieldDefinitionSerializer(serializers.ModelSerializer):
+    
+    field_value = serializers.SerializerMethodField()
+    class Meta:
+        model = ExperimentFieldDefinition
+        fields = ['id', 'experiment', 'config', 'is_experiment_input', 'is_metric_field', 'is_result_field', 'value', 'field_value']
+        extra_kwargs = {"id": {"required": False, "allow_null": True}}
+
+    def validate(self, data):
+        if data.get('is_experiment_input') == True and  data.get('is_result_field') == True:
+            raise serializers.ValidationError(
+                "Either one of 'is_experiment_input' or 'is_result_field' can be True."
+            )
+        return data
+    
+    @schema_context(os.getenv('SCHEMA_NAME'))
+    def get_field_value(self, obj):
+        serializer = ExperimentFieldValueSerializer(
+            obj.field_values.filter(field_definition_id=obj.id).first(),
+        )
+        print(serializer.data)
+        return serializer.data.get('value')
+    
+
+class ExperimentFieldValueSerializer(serializers.ModelSerializer):
+    with schema_context(os.getenv('SCHEMA_NAME')):
+        field_definition_id = serializers.PrimaryKeyRelatedField(
+            queryset=ExperimentFieldDefinition.objects.all(),
+            source='field_definition',
+            write_only=True
+        )
+        field_definition = serializers.SerializerMethodField(read_only=True)
+
+    class Meta:
+        model = ExperimentFieldValue
+        fields = ['id', 'experiment', 'field_definition_id', 'field_definition', 'value']
+        read_only_fields = ['id', 'experiment', 'field_definition']
+
+    
+    @schema_context(os.getenv('SCHEMA_NAME'))
+    def get_field_definition(self, obj):
+        return {
+            "id": obj.field_definition.id,
+            "config": obj.field_definition.config,
+            "is_experiment_input": obj.field_definition.is_experiment_input,
+            "is_result_field": obj.field_definition.is_result_field,
+            "is_metric_field": obj.field_definition.is_metric_field,
+        }
+
+    @schema_context(os.getenv('SCHEMA_NAME'))
+    def create(self, validated_data):
+        experiment = self.context['experiment']
+        return ExperimentFieldValue.objects.create(experiment=experiment, **validated_data)
+    
+# class ExperimentFieldValueSerializer(serializers.ModelSerializer):
+#     with schema_context(os.getenv('SCHEMA_NAME')):
+#         field_definition = ExperimentFieldDefinition()
+
+#     class Meta:
+#         model = ExperimentFieldValue
+#         fields = ['field_definition', 'value']
+        
+class ExperimentResultSerializer(serializers.ModelSerializer):
+    with schema_context(os.getenv('SCHEMA_NAME')):
+        field_definition = ExperimentFieldDefinition()
+
+    class Meta:
+        model = ExperimentResult
+        fields = ['field_definition', 'value']
+
+
+class ExperimentInputSerializer(serializers.ModelSerializer):
+    with schema_context(os.getenv('SCHEMA_NAME')):
+        field = ExperimentFieldDefinition()
+
+    class Meta:
+        model = ExperimentInput
+        fields = ['field', 'value']
