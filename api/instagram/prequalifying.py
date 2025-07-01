@@ -402,6 +402,7 @@ def prequalifying_automatically():
                      ))
                      
       # print(tasks)
+      # I need to get it to work continually with a threshold of x
       for i,payload in enumerate(qualifying_payloads):
         #  if i == 2:
             # break 
@@ -413,6 +414,7 @@ def prequalifying_automatically():
             continue
       
       try:
+
          qualified_dormant_count = 26
          if qualified_dormant_count >= 25:
             message = f'Finished prequalifying accounts for today {timezone.now()}'
