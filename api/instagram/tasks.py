@@ -427,11 +427,11 @@ def send_first_compliment(username, message, repeat=True):
     print(f"results================{results}")
     print(f"results================MMM")
     print(f"results================{message}")
-    # first_message = None
-    # try:
-    first_message = get_gpt_response(account,message)
-    # except Exception as err:
-        # logging.warning(f"error: {err}")
+    first_message = None
+    try:
+        first_message = get_gpt_response(account,message)
+    except Exception as err:
+        logging.warning(f"error: {err}")
 
     media_id = results.get("media_id", "")
     data = {"username_from":salesrep.ig_username,"message": first_message, "username_to": account.igname, "mediaId": media_id}
