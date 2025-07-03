@@ -275,7 +275,7 @@ def like_and_comment(media_id, media_comment, salesrep, account):
         "username_from": salesrep.ig_username
     }
     datasets.append(dataset)
-    response =  requests.post(settings.MQTT_BASE_URL + "/like", data=json.dumps(datasets))
+    response =  requests.post(settings.MQTT_BASE_URL + "/like", data=json.dumps(dataset),headers={"Content-Type": "application/json"})
     datasets = []
     if response.status_code == 200:
         time.sleep(105) # we break for 1 minute 45 seconds and then comment
@@ -427,7 +427,11 @@ def send_first_compliment(username, message, repeat=True):
     print(f"results================{results}")
     print(f"results================MMM")
     print(f"results================{message}")
-    first_message = get_gpt_response(account,message)
+    first_message = None
+    try:
+        first_message = get_gpt_response(account,message)
+    except Exception as err:
+        logging.warning(f"error: {err}")
 
     media_id = results.get("media_id", "")
     data = {"username_from":salesrep.ig_username,"message": first_message, "username_to": account.igname, "mediaId": media_id}
