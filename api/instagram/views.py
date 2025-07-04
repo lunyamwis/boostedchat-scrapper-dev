@@ -3569,6 +3569,52 @@ class ExperimentViewSet(viewsets.ModelViewSet):
         report_pagination_class = ReportPaginationClass
         
     @schema_context(os.getenv('SCHEMA_NAME'))
+    def list(self, request, pk=None): 
+        queryset = Experiment.objects.all()
+        # Filters from request
+        
+        search_query = request.GET.get("name")
+        start_at_gte = request.GET.get("start_gte")
+        end_at_lt = request.GET.get("end_lt")
+        primary_metric = request.GET.get('primary_metric')
+        experiment_type = request.GET.get('experiment_type')
+        experiment_status = request.GET.get('experiment_status')
+        
+        if search_query:
+            queryset = queryset.filter(name__icontains=search_query)
+        
+        if start_at_gte:
+            formated_start_date = make_aware(datetime.strptime(start_at_gte, "%Y-%m-%d"))
+            queryset = queryset.filter(start_date__gte=formated_start_date)
+        
+        if end_at_lt:
+            formated_end_date = make_aware(datetime.strptime(end_at_lt, "%Y-%m-%d"))
+            queryset = queryset.filter(end_date__lt=formated_end_date)
+        
+        if primary_metric:
+            queryset = queryset.filter(primary_metric=primary_metric)
+        
+        if experiment_type:
+            queryset = queryset.filter(experiment_type=experiment_type)
+
+        if experiment_status:
+            try:
+                # Try match by ID
+                queryset = queryset.filter(status__id=experiment_status)
+            except:
+                # Fallback: match by status name (case insensitive)
+                queryset = queryset.filter(status__name__iexact=experiment_status)
+                
+        
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+        
+    @schema_context(os.getenv('SCHEMA_NAME'))
     @action(detail=True, methods=["get"], url_path="experiment_fields")
     def get_field_definitions(self, request, pk=None):
         experiment_id = pk
