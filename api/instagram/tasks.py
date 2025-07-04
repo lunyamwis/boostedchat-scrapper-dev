@@ -1357,7 +1357,9 @@ def qualify_and_reschedule():
         yesterday = timezone.now() - timezone.timedelta(days=30) # filter on a weekly basis
         unwanted_usernames = UnwantedAccount.objects.values_list('username', flat=True)
         # Filter accounts using the query
-        filtered_accounts = Account.objects.filter(query).filter(created_at__gte=yesterday).exclude(status__name="sent_compliment").exclude(igname__in=unwanted_usernames)
+        filtered_accounts = Account.objects.filter(query).filter(created_at__gte=yesterday).exclude(status__name="sent_compliment").exclude(igname__in=unwanted_usernames).exclude(
+            dormant_profile_created=True
+        )
 
         for account in filtered_accounts:
             account.qualified = True
