@@ -326,7 +326,7 @@ def prequalifying_automatically():
    null = None
    false, true = False, True
 
-   threshold = 25
+   threshold = 26
    with schema_context(os.getenv("SCHEMA_NAME")):
       start_date = timezone.now().date() - timezone.timedelta(days=0)
       end_date = timezone.now().date() + timezone.timedelta(days=1)
@@ -454,7 +454,7 @@ def prequalifying_automatically():
                   message = f'Finished prequalifying accounts for today {timezone.now()}'
                else:
                   message = (
-                        f'Finished prequalifying but did not reach the target 25. '
+                        f'Finished prequalifying current batch but did not reach the threshold target of 25, therefore we are proceeding to the next batch.'
                         f'Only {prequalified_accounts.count()} accounts were processed as of {timezone.now()}'
                   )
                subject = 'Hello Team'
