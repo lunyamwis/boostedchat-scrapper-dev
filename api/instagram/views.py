@@ -3054,7 +3054,7 @@ class DMViewset(viewsets.ModelViewSet):
             status__name="sent_compliment"
         ).exclude(
             igname__in=unwanted_usernames
-        ) 
+        ).filter(dormant_profile_created=True)
         account_messages_sent = []
         
         if accounts.exists():
