@@ -4,7 +4,7 @@ from api.instagram.models import Account,UnwantedAccount
 from django.utils import timezone
 from django.db.models import Q
 from api.dialogflow.helpers.notify_click_up import notify_click_up_tech_notifications, create_click_up_task
-from api.instagram.tasks import qualify_and_reschedule
+# from .tasks import qualify_and_reschedule
 from django.core.mail import send_mail
 
 from crewai import Task, Agent, Crew,Process
@@ -465,6 +465,7 @@ def prequalifying_automatically():
             except Exception as error:
                print(error)
       
+         from api.instagram.tasks import qualify_and_reschedule
          qualify_and_reschedule() # we reload accounts afresh
          prequalifying_automatically() # we call the function again to continue processing until we reach the threshold
 
