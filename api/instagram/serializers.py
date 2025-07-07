@@ -546,7 +546,6 @@ class ExperimentFieldDefinitionSerializer(serializers.ModelSerializer):
         serializer = ExperimentFieldValueSerializer(
             obj.field_values.filter(field_definition_id=obj.id).first(),
         )
-        print(serializer.data)
         return serializer.data.get('value')
     
 
