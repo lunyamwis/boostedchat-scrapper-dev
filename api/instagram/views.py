@@ -3598,14 +3598,8 @@ class ExperimentViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(experiment_type=experiment_type)
 
         if experiment_status:
-            try:
-                # Try match by ID
-                queryset = queryset.filter(status__id=experiment_status)
-            except:
-                # Fallback: match by status name (case insensitive)
-                queryset = queryset.filter(status__name__iexact=experiment_status)
-                
-        
+            queryset = queryset.filter(status__name__iexact=experiment_status)
+               
         page = self.paginate_queryset(queryset)
         if page is not None:
             serializer = self.get_serializer(page, many=True)
