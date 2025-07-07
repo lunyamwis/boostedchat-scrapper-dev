@@ -427,7 +427,11 @@ def send_first_compliment(username, message, repeat=True):
     print(f"results================{results}")
     print(f"results================MMM")
     print(f"results================{message}")
-    first_message = get_gpt_response(account,message)
+    first_message = None
+    try:
+        first_message = get_gpt_response(account,message)
+    except Exception as err:
+        logging.warning(f"error: {err}")
 
     media_id = results.get("media_id", "")
     data = {"username_from":salesrep.ig_username,"message": first_message, "username_to": account.igname, "mediaId": media_id}
@@ -1353,7 +1357,9 @@ def qualify_and_reschedule():
         yesterday = timezone.now() - timezone.timedelta(days=30) # filter on a weekly basis
         unwanted_usernames = UnwantedAccount.objects.values_list('username', flat=True)
         # Filter accounts using the query
-        filtered_accounts = Account.objects.filter(query).filter(created_at__gte=yesterday).exclude(status__name="sent_compliment").exclude(igname__in=unwanted_usernames)
+        filtered_accounts = Account.objects.filter(query).filter(created_at__gte=yesterday).exclude(status__name="sent_compliment").exclude(igname__in=unwanted_usernames).exclude(
+            dormant_profile_created=True
+        )
 
         for account in filtered_accounts:
             account.qualified = True
