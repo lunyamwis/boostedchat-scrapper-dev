@@ -15,6 +15,7 @@ from boostedchatScrapper.spiders.helpers.instagram_login_helper import login_use
 from django.utils import timezone
 from .models import InstagramUser,Account, Message, OutSourced, StatusCheck, Thread, UnwantedAccount, OutreachTime
 from api.scout.models import Scout
+from api.instagram.utils import initialize_hikerapi_client
 from django_tenants.utils import schema_context
 from boostedchatScrapper.spiders.constants import STYLISTS_WORDS,STYLISTS_NEGATIVE_WORDS
 import datetime
@@ -1034,6 +1035,15 @@ def get_headers():
     return headers
 
 def update_account_information(user:InstagramUser):
+    cl = initialize_hikerapi_client()
+    profile_information,user_media = None
+    try:
+        profile_information = cl.user_by_username_v1(user.username)
+        user_media = cl.user_medias(user_id=cl.user_by_username_v1(username=user.username).get("pk"),count=1)[0]
+    except Exception as err:
+        logging.warning(err)
+        profile_information = {"username":user.username}
+        user_media = {"media_id":user.item_id}
     headers = get_headers()
     get_id_account_data = {
         "username": user.username
@@ -1044,7 +1054,7 @@ def update_account_information(user:InstagramUser):
     account_dict = {
         "igname": user.username,
         "is_manually_triggered":True,
-        "relevant_information": {**user.info } if user.info else {"username":user.username,"media_id": user.item_id}
+        "relevant_information": {**profile_information,**{"media_id": user_media.get("id")}}
     }
     response = requests.patch(
         f"{os.getenv('API_URL')}/instagram/account/{account_id}/",
@@ -1060,12 +1070,12 @@ def update_account_information(user:InstagramUser):
 
         if user.info:
             outsourced_dict = {
-                "results": {**user.info, "media_id": user.item_id},  # yet to test
+                "results": {**profile_information,**{"media_id": user_media.get("id")}}
                 "source": "instagram"
             }
         else:
             outsourced_dict = {
-                "results": {"username":user.username,"media_id": user.item_id},
+                "results": {**profile_information,**{"media_id": user_media.get("id")}}
                 "source": "instagram"
             }
         # import pdb;pdb.set_trace()
@@ -1083,10 +1093,19 @@ def update_account_information(user:InstagramUser):
 
 def create_account_information(user:InstagramUser):
     headers = get_headers()
+    profile_information,user_media = None
+    try:
+        profile_information = cl.user_by_username_v1(user.username)
+        user_media = cl.user_medias(user_id=cl.user_by_username_v1(username=user.username).get("pk"),count=1)[0]
+    except Exception as err:
+        logging.warning(err)
+        profile_information = {"username":user.username}
+        user_media = {"media_id":user.item_id}
+        
     account_dict = {
         "igname": user.username,
         "is_manually_triggered":True,
-        "relevant_information": user.info
+        "relevant_information": {**profile_information,**{"media_id": user_media.get("id")}}
     }
     response = requests.post(
         f"{os.getenv('API_URL')}/instagram/account/",
@@ -1100,12 +1119,12 @@ def create_account_information(user:InstagramUser):
 
     if user.info:
         outsourced_dict = {
-            "results": {**user.info},  # yet to test
+            "results": {**profile_information,**{"media_id": user_media.get("id")}},
             "source": "instagram"
         }
     else:
         outsourced_dict = {
-            "results": {"username":user.username,"media_id": user.item_id},
+            "results": {**profile_information,**{"media_id": user_media.get("id")}},
             "source": "instagram"
         }
     # import pdb;pdb.set_trace()
