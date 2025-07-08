@@ -1043,7 +1043,7 @@ def update_account_information(user:InstagramUser):
     except Exception as err:
         logging.warning(err)
         profile_information = {"username":user.username}
-        user_media = {"media_id":user.item_id}
+        user_media = {"id":user.item_id}
     headers = get_headers()
     get_id_account_data = {
         "username": user.username
@@ -1100,7 +1100,7 @@ def create_account_information(user:InstagramUser):
     except Exception as err:
         logging.warning(err)
         profile_information = {"username":user.username}
-        user_media = {"media_id":user.item_id}
+        user_media = {"id":user.item_id}
         
     account_dict = {
         "igname": user.username,
