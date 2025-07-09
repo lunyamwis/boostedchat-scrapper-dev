@@ -509,7 +509,7 @@ class Experiment(BaseModel):
     expected_result = models.FloatField(null=True, blank=True)  # The expected result of
     assignees = models.ManyToManyField('ExperimentAssignee', related_name='experiments', blank=True)
     experiment_type = models.CharField(max_length=255, null=False, blank=False, default='auto')
-    # Add a status that will be draft, active/running, archived, completed 
+
     def __str__(self):
         return self.version
     # Relationships to fixed models
@@ -526,6 +526,37 @@ def set_version_pre_save(sender, instance, **kwargs):
     if not instance.status:
         instance.status = StatusCheck.objects.get(name="draft")
 
+@receiver(post_save, sender=Experiment)
+def update_actual_result_on_status_close(sender, instance, **kwargs):
+    # Only run this logic if status is "completed" or "archived"
+    closed_statuses = ['closed','evaluated']
+    if instance.status.name.lower() not in closed_statuses:
+        return
+    
+    # Ensure both dates are present
+    if not instance.start_date or not instance.end_date:
+        return
+    
+    if not instance.primary_metric:
+        return
+
+    # Normalize dates to avoid naive datetime issues
+    start_date = instance.start_date
+    end_date = instance.end_date
+    primary_metric = instance.primary_metric.lower()
+    
+    # Fetch matching accounts
+    matching_accounts_count = Account.objects.filter(
+        status_param__iexact=primary_metric,
+        outreach_time__gte=start_date,
+        outreach_time__lte=end_date
+    ).count()
+
+
+    # Only update if the count is different
+    if instance.actual_result != matching_accounts_count:
+        instance.actual_result = matching_accounts_count
+        instance.save(update_fields=['actual_result'])
 
 
     
