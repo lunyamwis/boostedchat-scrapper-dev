@@ -1070,12 +1070,12 @@ def update_account_information(user:InstagramUser):
 
         if user.info:
             outsourced_dict = {
-                "results": {**profile_information,**{"media_id": user_media.get("id")}}
+                "results": {**profile_information,**{"media_id": user_media.get("id")}},
                 "source": "instagram"
             }
         else:
             outsourced_dict = {
-                "results": {**profile_information,**{"media_id": user_media.get("id")}}
+                "results": {**profile_information,**{"media_id": user_media.get("id")}},
                 "source": "instagram"
             }
         # import pdb;pdb.set_trace()
