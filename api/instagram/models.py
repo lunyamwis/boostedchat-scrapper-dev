@@ -528,7 +528,10 @@ def set_version_pre_save(sender, instance, **kwargs):
 
 @receiver(post_save, sender=Experiment)
 def update_actual_result_on_status_close(sender, instance, **kwargs):
-    # Only run this logic if status is "completed" or "archived"
+    # only run for auto experiments
+    if instance.experiment_type.lower() is 'manual':
+        return
+    # Only run this logic if status is "closed"
     closed_statuses = ['closed','evaluated']
     if instance.status.name.lower() not in closed_statuses:
         return
