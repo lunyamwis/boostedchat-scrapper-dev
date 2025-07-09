@@ -339,6 +339,7 @@ def send_first_compliment(username, message, repeat=True):
     numTries = 0
     print("Searching for:::>>>>>> ", username)
     account = get_account(username)
+    cl = initialize_hikerapi_client()
     check_user_exists = cl.user_by_username_v1(account.igname)
     if 'exc_type' in check_user_exists.keys():
         account_name = account.igname
