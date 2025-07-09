@@ -11,6 +11,7 @@ from django.core.mail import send_mail
 from crewai import Task, Agent, Crew,Process,LLM
 from django_tenants.utils import schema_context
 from crewai.flow.flow import Flow, and_, listen, start
+from api.instagram.utils import initialize_hikerapi_client
 import json
 import os
 import ast
@@ -373,6 +374,13 @@ def prequalifying_automatically():
                   print(account.outsourced_set.all().latest('created_at').results if account.outsourced_set.exists() else {"username":account.igname})
                # import pdb;pdb.set_trace()
                for account in accounts:
+                  cl = initialize_hikerapi_client()
+                  check_user_exists = cl.user_by_username_v1(account.igname)
+                  if 'exc_type' in check_user_exists.keys():
+                     account_name = account.igname
+                     account.delete()
+                     continue
+                   
                   if not account.outsourced_set.exists():
                      account.qualified = False
                      account.dormant_profile_created = True
