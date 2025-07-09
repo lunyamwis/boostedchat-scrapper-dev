@@ -61,7 +61,7 @@ def get_account(usernames=None):
         status__name="sent_compliment"
     ).exclude(
         igname__in=unwanted_usernames
-    )
+    ).filter(dormant_profile_created=True)
 
     usernames_list = list(accounts.values_list('igname', flat=True))
     if usernames is None or usernames not in usernames_list:
@@ -78,7 +78,7 @@ def get_account(usernames=None):
             status__name="sent_compliment"
         ).exclude(
             igname__in=unwanted_usernames
-        )
+        ).filter(dormant_profile_created=True)
 
         usernames = list(accounts.values_list('igname', flat=True))
         random.shuffle(usernames)  # Shuffle the usernames to randomize the selection
