@@ -506,6 +506,9 @@ class GetMediaLikers(APIView):
                 # media_id = cl.media_pk_from_url_v1(link)
                 likers = cl.media_likers_v2(latest_influencer_media.get("pk"))
                 for liker in likers['users']:
+                    check_user_exists = cl.user_by_username_v1(liker['username'])
+                    if 'exc_type' in check_user_exists.keys():
+                        continue
                     liker_data = {
                         "username": liker['username'],
                         "full_name": liker['full_name'],
