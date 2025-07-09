@@ -7,7 +7,8 @@ from api.dialogflow.helpers.notify_click_up import notify_click_up_tech_notifica
 # from .tasks import qualify_and_reschedule
 from django.core.mail import send_mail
 
-from crewai import Task, Agent, Crew,Process
+
+from crewai import Task, Agent, Crew,Process,LLM
 from django_tenants.utils import schema_context
 from crewai.flow.flow import Flow, and_, listen, start
 import json
@@ -409,17 +410,27 @@ def prequalifying_automatically():
             # print(tasks_)
             for i, agent in enumerate(agents_):
                print(agent.llm)
+               llm_val = None
+               if agent.is_opensource:
+                  llm_val = agent.llm
+               else:
+                  llm_val = LLM(model="gpt-3.5-turbo")
                agents.append({f"agent_{i}":Agent(
                                     role=agent.role.description + " " + agent.role.tone_of_voice if agent.role else "Qualifying department",
                                     goal=agent.goal,
                                     backstory=agent.prompt.last().text_data,
                                     allow_delegation=False,
                                     verbose=True,
-                                    llm=agent.llm
+                                    llm=llm_val
                               ),
                               f"workflow_step_{i}":agent.workflow
                            })
-            for i,task in enumerate(tasks_):              
+            for i,task in enumerate(tasks_):    
+               llm_val = None
+               if agent.is_opensource:
+                  llm_val = task.agent.llm
+               else:
+                  llm_val = LLM(model="gpt-3.5-turbo")
                tasks.append(Task(
                               description=task.prompt.last().text_data if task.prompt.exists() else "perform agents task",
                               expected_output=task.expected_output,
@@ -430,7 +441,7 @@ def prequalifying_automatically():
                                     backstory=task.agent.prompt.last().text_data,
                                     allow_delegation=False,
                                     verbose=True,
-                                    llm=task.agent.llm
+                                    llm=llm_val
                               ),
                               # output_json=OUTPUT_MODELS.get(task.output)
                               output_json=PrequalifyingOutput

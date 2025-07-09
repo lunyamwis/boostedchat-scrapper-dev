@@ -290,7 +290,7 @@ class FbSearchAccounts(APIView):
         if not query:
             return Response({"error": "Query is required."}, status=status.HTTP_400_BAD_REQUEST)
         # Initialize the HikerAPI client
-        cl = initialize_hikerapi_client()
+        cl = initialize_hikerapi_client() 
         try:
             # Search for accounts
             accounts = cl.fb_search_accounts(query)
@@ -481,6 +481,7 @@ class GetMediaById(APIView):
 
 
 class GetMediaLikers(APIView):
+    # I want to work on this
     def post(self, request, *args, **kwargs):
         # Get the media ID from the request data
         media_links = request.data.get('media_links')
@@ -505,6 +506,9 @@ class GetMediaLikers(APIView):
                 # media_id = cl.media_pk_from_url_v1(link)
                 likers = cl.media_likers_v2(latest_influencer_media.get("pk"))
                 for liker in likers['users']:
+                    check_user_exists = cl.user_by_username_v1(liker['username'])
+                    if 'exc_type' in check_user_exists.keys():
+                        continue
                     liker_data = {
                         "username": liker['username'],
                         "full_name": liker['full_name'],
