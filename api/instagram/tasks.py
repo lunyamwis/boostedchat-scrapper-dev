@@ -339,13 +339,6 @@ def send_first_compliment(username, message, repeat=True):
     numTries = 0
     print("Searching for:::>>>>>> ", username)
     account = get_account(username)
-    cl = initialize_hikerapi_client()
-    check_user_exists = cl.user_by_username_v1(account.igname)
-    if 'exc_type' in check_user_exists.keys():
-        account_name = account.igname
-        account.delete()
-        raise Exception(f"The account {account_name} does not exist in ig, and therefore we are deleting it and moving on to the next account")
-    
 
     if account is None:
         err_str = f"{username} account does not exist"
