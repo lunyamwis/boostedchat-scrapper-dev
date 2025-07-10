@@ -54,7 +54,7 @@ from .constants import MSSQL_AGENT_FORMAT_INSTRUCTIONS,MSSQL_AGENT_PREFIX
 
 from crewai_tools import BaseTool
 #from crewai_tools import tool
-from crewai import Agent, Task, Crew, Process
+from crewai import Agent, Task, Crew, Process,LLM
 from django.core.mail import send_mail
 # from api.instagram.tasks import send_logs
 from .models import Agent as AgentModel,Task as TaskModel,Tool, Department
@@ -1234,6 +1234,11 @@ class agentSetup(APIView):
             for agent in department_agents:
                 print(agent)
                 # import pdb;pdb.set_trace()
+                llm_val = None
+                if agent.is_opensource:
+                   llm_val = agent.llm
+                else:
+                   llm_val = LLM(model="gpt-3.5-turbo")
                 if agent.tools.filter().exists():
                     if agent.is_opensource:
                         opensource = agent.is_opensource
@@ -1245,7 +1250,7 @@ class agentSetup(APIView):
                             tools = [TOOLS.get(tool.name) for tool in agent.tools.all()],
                             allow_delegation=False,
                             verbose=True,
-                            llm=agent.llm
+                            llm=llm_val
                         ))
                     else:
                         agents.append(Agent(
@@ -1266,7 +1271,7 @@ class agentSetup(APIView):
                             allow_delegation=False,
                             verbose=True,
                             # llm="huggingface/mistralai/Mistral-7B-Instruct-v0.3"
-                            llm=agent.llm
+                            llm=llm_val
                         ))
                     else:
                         agents.append(Agent(
