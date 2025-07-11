@@ -1243,7 +1243,7 @@ class AccountViewSet(viewsets.ModelViewSet):
                 # created_at__gte=current_week,
                 # created_at__lte=end_of_week,
                 outreach_time__gte=current_week,
-                outreach_time__lte=end_of_week,
+                outreach_time__lt=end_of_week,
                 outreach_success=True,
             ).distinct()
             outreach_count = outreach_accounts.count()
