@@ -61,7 +61,7 @@ class AccountSerializer(serializers.ModelSerializer):
             "status_param",
             "outsourced_info",
             "sales_qualified_date",
-            "statusParam"
+            "statusParam",
             "assigned_to",
         ]
         extra_kwargs = {"id": {"required": False, "allow_null": True},
