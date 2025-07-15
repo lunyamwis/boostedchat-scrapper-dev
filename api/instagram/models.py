@@ -381,6 +381,7 @@ class AccountManager(models.Manager):
                 )
                 .order_by('-last_message_sent_on')  # freshest activity first
             )
+            print(list(qs.values_list('igname', flat=True)))
             account =  qs.first()  # return the single freshest account, or use .all() to get list
             if account:
                 thread = account.thread_set.last() if account else None
