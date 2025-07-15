@@ -1240,6 +1240,11 @@ class agentSetup(APIView):
                 else:
                    llm_val = LLM(model="gpt-3.5-turbo")
                 if agent.tools.filter().exists():
+                    llm_val = None
+                    if agent.is_opensource:
+                        llm_val = agent.llm
+                    else:
+                        llm_val = LLM(model="gpt-3.5-turbo")
                     if agent.is_opensource:
                         opensource = agent.is_opensource
 
@@ -1274,6 +1279,11 @@ class agentSetup(APIView):
                             llm=llm_val
                         ))
                     else:
+                        llm_val = None
+                        if agent.is_opensource:
+                            llm_val = agent.llm
+                        else:
+                            llm_val = LLM(model="gpt-3.5-turbo")
                         agents.append(Agent(
                             role=agent.role.description + " " + agent.role.tone_of_voice if agent.role else department.name,
                             goal=agent.goal,
