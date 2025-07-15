@@ -27,6 +27,8 @@ from django.conf import settings
 from django.utils import timezone
 from calendar import monthrange
 from django.contrib import messages
+
+from api.dialogflow.helpers.notify_click_up import notify_click_up_tech_notifications
 from .tasks import scrap_followers,scrap_info,scrap_users,insert_and_enrich,scrap_mbo,scrap_media,load_info_to_database,scrap_hash_tag
 from api.helpers.dag_generator import generate_dag
 from api.helpers.dag_file_handler import push_file,push_file_gcp
@@ -3241,12 +3243,16 @@ class DMViewset(viewsets.ModelViewSet):
             "username_to": account.igname,
             "username_from": salesrep.ig_username
         }
-        # text_response = requests.post(settings.MQTT_BASE_URL + "/send-message", json=text_data)
-        # if text_response.status_code == 200:
-        #     print(f"Message sent to {account.igname}")
+        text_response = requests.post(settings.MQTT_BASE_URL + "/send-message", json=text_data)
+        if text_response.status_code == 200:
+            print(f"Message sent to {account.igname}")
+            account.follow_up_date = timezone.now().date()
+            account.follow_up_count = account.follow_up_count + 1
+            account.save()
             # send notification to the clickup
-        # return Response({"message": "Followup responses generated successfully"}, status=status.HTTP_200_OK)
-        return Response(text_data, status=status.HTTP_200_OK)
+            notify_click_up_tech_notifications(comment_text=f"Follow up Message sent to ${account.igname}", notify_all=True)
+        return Response({"message": "Followup responses generated successfully"}, status=status.HTTP_200_OK)
+        # return Response(text_data, status=status.HTTP_200_OK)
     
     
     @schema_context(os.getenv('SCHEMA_NAME'))
