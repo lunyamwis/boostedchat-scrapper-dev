@@ -3228,6 +3228,28 @@ class DMViewset(viewsets.ModelViewSet):
         return Response({"message": "Followup responses generated successfully"}, status=status.HTTP_200_OK)
 
     @schema_context(os.getenv('SCHEMA_NAME'))
+    def generate_followup_response_v2(self, request, *args, **kwargs):
+        account = Account.objects.to_follow_up()
+        if not account:
+            return Response({"message": "No accounts to follow up"}, status=status.HTTP_404_NOT_FOUND)
+        # genereate a message based on the history or context if possible
+        # generate_response = f"{os.getenv('API_URL')}/v1/instagram/dflow/{thread.thread_id}/generate-response/v2/"
+        message = "I’ve just seen another barber getting their new clients and they reminded me of you -when is the right time to have a call to unlock your growth ?"
+        salesrep = SalesRep.objects.filter(available=True).latest('created_at')
+        text_data = {
+            "message": message,
+            "username_to": account.igname,
+            "username_from": salesrep.ig_username
+        }
+        # text_response = requests.post(settings.MQTT_BASE_URL + "/send-message", json=text_data)
+        # if text_response.status_code == 200:
+        #     print(f"Message sent to {account.igname}")
+            # send notification to the clickup
+        # return Response({"message": "Followup responses generated successfully"}, status=status.HTTP_200_OK)
+        return Response(text_data, status=status.HTTP_200_OK)
+    
+    
+    @schema_context(os.getenv('SCHEMA_NAME'))
     def generate_response(self, request, *args, **kwargs):
         thread = Thread.objects.filter(thread_id=kwargs.get('thread_id')).latest('created_at')
         req = request.data

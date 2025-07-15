@@ -11,7 +11,12 @@ from django.utils import timezone
 from api.scout.models import Scout
 import pytz
 from django.core.exceptions import ValidationError
-
+from django.db.models import OuterRef, Subquery, Count, Q, F, Value
+from django.utils import timezone
+from django.db.models.functions import Coalesce
+from datetime import datetime
+from django_tenants.utils import schema_context
+import os
 
 # Create your models here.
 class Score(BaseModel):
@@ -309,6 +314,99 @@ class UnwantedAccount(BaseModel):
     def __str__(self) -> str:
         return self.username if self.username else self.id
 
+
+class AccountManager(models.Manager):
+    @schema_context(os.getenv('SCHEMA_NAME'))
+    def to_follow_up(self):
+        max_days = 360 # don’t go back infinitely, e.g., up to ~1 year 
+        days_step = 30
+        for i in range(1, (max_days // days_step) + 1):
+            days_ago = i * days_step
+            
+            print(f"Trying threshold: last {days_ago} days")
+
+            date_threshold = timezone.now() - timezone.timedelta(days=days_ago)
+            # date_threshold = timezone.now() - timezone.timedelta(days=30)
+
+            # Latest account per igname
+            latest_accounts_subquery = (
+                self.model.objects
+                .filter(igname=OuterRef('igname'))
+                .order_by('-created_at')
+            )
+
+            # Last two messages in the thread
+            last_message_subquery = (
+                Message.objects
+                .filter(thread=OuterRef('thread'))
+                .order_by('-sent_on')
+            )
+            second_last_message_subquery = (
+                Message.objects
+                .filter(thread=OuterRef('thread'))
+                .order_by('-sent_on')[1:2]
+            )
+
+            qs = (
+                self.get_queryset()
+                .filter(
+                    qualified=True,
+                    question_asked=False,
+                    status__name='sent_compliment',
+                    created_at__gte=date_threshold
+                )
+                .annotate(
+                    client_message_count=Count(
+                        'thread__message',
+                        filter=Q(thread__message__sent_by='Client')
+                    ),
+                    last_message_sent_by=Subquery(
+                        last_message_subquery.values('sent_by')[:1]
+                    ),
+                    second_last_message_sent_by=Subquery(
+                        second_last_message_subquery.values('sent_by')
+                    ),
+                    last_message_sent_on=Subquery(
+                        last_message_subquery.values('sent_on')[:1]
+                    )
+                )
+                .filter(
+                    last_message_sent_by='Robot',
+                    #client_message_count=0,# never replied
+                    client_message_count__gt=1,  # have replied
+                    created_at=Subquery(latest_accounts_subquery.values('created_at')[:1])
+                )
+                .exclude(
+                    second_last_message_sent_by='Robot'
+                )
+                .order_by('-last_message_sent_on')  # freshest activity first
+            )
+            account =  qs.first()  # return the single freshest account, or use .all() to get list
+            if account:
+                thread = account.thread_set.last() if account else None
+                if thread is None:
+                    queryset = (
+                        Thread.objects
+                        .select_related('account')
+                        .filter(
+                            account__salesrep__isnull=False,
+                            account__igname=account.igname   # or use icontains=search_query if partial
+                        )
+                        .annotate(
+                            last_message_at_ordering=Coalesce('last_message_at', Value(datetime.min))
+                        )
+                        .order_by(F('last_message_at_ordering').desc())
+                    )
+                    thread = queryset.last() if queryset.exists() else None
+                
+                if thread:
+                    return account
+            
+            if days_ago >= 360:  # limit to 1 year
+                break
+        return None  # if no account found in the iterations
+        
+
 class Account(BaseModel):
     igname = models.CharField(max_length=255, null=True, unique=False, blank=True)
     assigned_to = models.TextField(default="Robot")
@@ -344,13 +442,13 @@ class Account(BaseModel):
     lost_date = models.DateField(null=True, blank=True)
     engagement_version = models.CharField(max_length=255, null=True, blank=True, default="1")
     sales_qualified_date = models.DateField(null=True, blank=True)
+    follow_up_date = models.DateField(null=True, blank=True)
+    follow_up_count = models.IntegerField(default=0)
+    objects = AccountManager()
 
     def __str__(self) -> str:
         return self.igname if self.igname else self.id
     
-
-    
-
 
 class OutSourced(BaseModel):
     source = models.CharField(null=True, blank=True, max_length=255)

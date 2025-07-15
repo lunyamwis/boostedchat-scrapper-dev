@@ -183,6 +183,11 @@ urlpatterns = [
         name='generate_followup_response',
     ),
     path(
+        'send-follow-up-v2/',
+        DMViewset.as_view({'post': 'generate_followup_response_v2'}),
+        name='generate_followup_response_v2',
+    ),
+    path(
         'account/account-by-ig-thread/<str:ig_thread_id>/',
         AccountViewSet.as_view({'get': 'account_by_ig_thread_id'}),
         name='account_by_ig_thread_id',
