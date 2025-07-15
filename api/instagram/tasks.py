@@ -595,7 +595,7 @@ def send_test_compliment(username, message, repeat=True):
     print("Searching for:::>>>>>> ", username)
     # account = get_account(username)
     account = None
-    accounts = Account.objects.filter(igname__icontains=username.split('-')[0]).exclude(status__name='sent_compliment')
+    accounts = Account.objects.filter(igname__icontains=username[0]).exclude(status__name='sent_compliment')
     if accounts.exists():
         account = accounts.latest('created_at')
         if not account.salesrep_set.exists():
