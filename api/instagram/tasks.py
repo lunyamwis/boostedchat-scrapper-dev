@@ -441,11 +441,26 @@ def send_first_compliment(username, message, repeat=True):
             else:
                 print(f"Exception during request sending: {error}")
                 notify_click_up_tech_notifications(
-                        comment_text=f"Received {response.status_code} - relogin attempt for {username}, and I shall not retry to login for this case, instead I shall just proceed to the next individual",
+                        comment_text=f"Received {response.status_code} - {username}, and I shall not retry to login for this case, instead I shall just proceed to the next individual I shall do a maximum of 5 accounts in order to save on gpt credits",
                         notify_all=True
                 )
-                message = ""
-                send_first_compliment(get_account(), message)  # recurse to the next individual 
+                message = "" # reset message to avoid sending the same message again
+                max_retries = 5  # Setting a maximum retry limit in order to save on credits
+                retries = 0
+                while retries < max_retries:
+                    try:
+                        next_account = get_account()
+                        send_first_compliment(next_account, message)
+                        break  # Exit the loop if successful
+                    except Exception as inner_error:
+                        retries += 1
+                        notify_click_up_tech_notifications(comment_text=f"Retry: {retries}/{max_retries} failed: {inner_error} account: {username}",notify_all=True)
+                        if retries >= max_retries:
+                            notify_click_up_tech_notifications(
+                                comment_text=f"Max retries reached for {username}. Skipping to the next individual.",
+                                notify_all=True
+                            )
+                            break
             
             return response
             
