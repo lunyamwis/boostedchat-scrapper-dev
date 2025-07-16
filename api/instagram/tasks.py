@@ -429,22 +429,18 @@ def send_first_compliment(username, message, repeat=True):
 
             if response.status_code in [401, 403]:
                 # Refresh login session on auth errors
-                if sales_rep_is_logged_in(account, salesrep):
-                    logout_and_login(account, salesrep)
-                else:
-                    login(account, salesrep)
-
-                    login_success = login(account, salesrep)
-                    if not login_success:
-                        notify_click_up_tech_notifications(
-                            comment_text=f"Login attempt failed for {username}. Aborting further retries.",
-                            notify_all=True
-                        )
-                        
                 notify_click_up_tech_notifications(
                     comment_text=f"Received {response.status_code} - relogin attempt for {username}, and I shall retry doing this 3 times with a 90 seconds interval",
                     notify_all=True
                 )
+                restart_payload = {"container_id": "boostedchat-site-mqtt-1"}  # restart the mqtt container
+                restart_mqtt = requests.post(f"{os.getenv('API_URL')}/serviceManager/restart-container/",data=restart_payload)
+                        
+                if restart_mqtt.status_code == 200:
+                    notify_click_up_tech_notifications(
+                        comment_text=f"Received {response.status_code} - after trying to relogin the following salesrep {salesrep.ig_username} and now we can proceed on to sending the message",
+                        notify_all=True
+                    )
 
             else:
                 print(f"Exception during request sending: {error}")
