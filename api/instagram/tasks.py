@@ -430,7 +430,7 @@ def send_first_compliment(username, message, repeat=True):
             if response.status_code in [401, 403]:
                 # Refresh login session on auth errors
                 notify_click_up_tech_notifications(
-                    comment_text=f"Received {response.status_code} - relogin attempt for {username}, and I shall retry doing this 3 times with a 90 seconds interval",
+                    comment_text=f"Received {response.status_code} - relogin attempt for {salesrep.ig_username}, and I shall retry doing this 3 times with a 90 seconds interval",
                     notify_all=True
                 )
                 restart_payload = {"container_id": "boostedchat-site-mqtt-1"}  # restart the mqtt container
@@ -438,14 +438,13 @@ def send_first_compliment(username, message, repeat=True):
                         
                 if restart_mqtt.status_code == 200:
                     notify_click_up_tech_notifications(
-                        comment_text=f"Received {response.status_code} - after trying to relogin the following salesrep {salesrep.ig_username} and now we can proceed on to sending the message",
+                        comment_text=f"Received {restart_mqtt.status_code} - after trying to relogin the following salesrep {salesrep.ig_username} and now we can proceed on to sending the message",
                         notify_all=True
                     )
 
             else:
-                print(f"Exception during request sending: {error}")
                 notify_click_up_tech_notifications(
-                        comment_text=f"Received {response.status_code} - {username}, and I shall not retry to login for this case, instead I shall just proceed to the next individual I shall do a maximum of 5 accounts in order to save on gpt credits",
+                        comment_text=f"Received error - {username}, and I shall not retry to login for this case, instead I shall just proceed to the next individual I shall do a maximum of 5 accounts in order to save on gpt credits",
                         notify_all=True
                 )
                 message = "" # reset message to avoid sending the same message again
