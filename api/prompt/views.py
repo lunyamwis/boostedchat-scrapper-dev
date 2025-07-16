@@ -1210,6 +1210,7 @@ class agentSetup(APIView):
         # workflow_data = data.get("workflow_data")
         workflow = None
         opensource = False    
+        llm_val = LLM(model="gpt-3.5-turbo")
         with schema_context(os.getenv("SCHEMA_NAME")):
 
             # import pdb;pdb.set_trace()          
@@ -1234,17 +1235,9 @@ class agentSetup(APIView):
             for agent in department_agents:
                 print(agent)
                 # import pdb;pdb.set_trace()
-                llm_val = None
-                if agent.is_opensource:
-                   llm_val = agent.llm
-                else:
-                   llm_val = LLM(model="gpt-3.5-turbo")
+               
                 if agent.tools.filter().exists():
-                    llm_val = None
-                    if agent.is_opensource:
-                        llm_val = agent.llm
-                    else:
-                        llm_val = LLM(model="gpt-3.5-turbo")
+               
                     if agent.is_opensource:
                         opensource = agent.is_opensource
 
@@ -1279,11 +1272,6 @@ class agentSetup(APIView):
                             llm=llm_val
                         ))
                     else:
-                        llm_val = None
-                        if agent.is_opensource:
-                            llm_val = agent.llm
-                        else:
-                            llm_val = LLM(model="gpt-3.5-turbo")
                         agents.append(Agent(
                             role=agent.role.description + " " + agent.role.tone_of_voice if agent.role else department.name,
                             goal=agent.goal,
