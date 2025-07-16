@@ -433,6 +433,14 @@ def send_first_compliment(username, message, repeat=True):
                     logout_and_login(account, salesrep)
                 else:
                     login(account, salesrep)
+
+                    login_success = login(account, salesrep)
+                    if not login_success:
+                        notify_click_up_tech_notifications(
+                            comment_text=f"Login attempt failed for {username}. Aborting further retries.",
+                            notify_all=True
+                        )
+                        
                 notify_click_up_tech_notifications(
                     comment_text=f"Received {response.status_code} - relogin attempt for {username}, and I shall retry doing this 3 times with a 90 seconds interval",
                     notify_all=True
