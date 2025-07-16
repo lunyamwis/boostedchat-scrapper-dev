@@ -441,6 +441,7 @@ def send_first_compliment(username, message, repeat=True):
                         comment_text=f"Received {restart_mqtt.status_code} - after trying to relogin the following salesrep {salesrep.ig_username} and now we can proceed on to sending the message",
                         notify_all=True
                     )
+                    time.sleep(90)  # Wait for 90 seconds before retrying
 
             elif response.status_code != 200 or response.status_code != 201:
                 notify_click_up_tech_notifications(
