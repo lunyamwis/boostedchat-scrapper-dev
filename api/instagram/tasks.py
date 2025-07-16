@@ -443,7 +443,7 @@ def send_first_compliment(username, message, repeat=True):
                     )
                     time.sleep(90)  # Wait for 90 seconds before retrying
 
-            elif response.status_code != 200 or response.status_code != 201:
+            elif response.status_code in [500, 502, 503, 504, 405, 400]:
                 notify_click_up_tech_notifications(
                         comment_text=f"Received the following error:{response.text} - {username}, and I shall not retry to login for this case, instead I shall just proceed to the next individual I shall do a maximum of 5 accounts in order to save on gpt credits",
                         notify_all=True
