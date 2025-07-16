@@ -418,29 +418,27 @@ def send_first_compliment(username, message, repeat=True):
             jitter=None  # no jitter for exact timing
         )
         def send_request():
-            try:
-                print(f"Sending message attempt for username: {username}")
-                response = requests.post(
-                    settings.MQTT_BASE_URL + "/send-first-media-message",
-                    data=json.dumps(data),
-                    headers={"Content-Type": "application/json"}
+            # try:
+            print(f"Sending message attempt for username: {username}")
+            response = requests.post(
+                settings.MQTT_BASE_URL + "/send-first-media-message",
+                data=json.dumps(data),
+                headers={"Content-Type": "application/json"}
+            )
+            print(f"Response status code: {response.status_code}")
+
+            if response.status_code in [401, 403]:
+                # Refresh login session on auth errors
+                if sales_rep_is_logged_in(account, salesrep):
+                    logout_and_login(account, salesrep)
+                else:
+                    login(account, salesrep)
+                notify_click_up_tech_notifications(
+                    comment_text=f"Received {response.status_code} - relogin attempt for {username}, and I shall retry doing this 3 times with a 90 seconds interval",
+                    notify_all=True
                 )
-                print(f"Response status code: {response.status_code}")
 
-                if response.status_code in [401, 403]:
-                    # Refresh login session on auth errors
-                    if sales_rep_is_logged_in(account, salesrep):
-                        logout_and_login(account, salesrep)
-                    else:
-                        login(account, salesrep)
-                    notify_click_up_tech_notifications(
-                        comment_text=f"Received {response.status_code} - relogin attempt for {username}, and I shall retry doing this 3 times with a 90 seconds interval",
-                        notify_all=True
-                    )
-
-                return response
-
-            except Exception as error:
+            else:
                 print(f"Exception during request sending: {error}")
                 notify_click_up_tech_notifications(
                         comment_text=f"Received {response.status_code} - relogin attempt for {username}, and I shall not retry to login for this case, instead I shall just proceed to the next individual",
@@ -448,6 +446,8 @@ def send_first_compliment(username, message, repeat=True):
                 )
                 message = ""
                 send_first_compliment(get_account(), message)  # recurse to the next individual 
+            
+            return response
             
 
         # Execute send with retries handled by backoff decorator
