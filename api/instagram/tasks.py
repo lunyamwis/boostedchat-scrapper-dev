@@ -442,9 +442,9 @@ def send_first_compliment(username, message, repeat=True):
                         notify_all=True
                     )
 
-            else:
+            elif response.status_code != 200 or response.status_code != 201:
                 notify_click_up_tech_notifications(
-                        comment_text=f"Received error - {username}, and I shall not retry to login for this case, instead I shall just proceed to the next individual I shall do a maximum of 5 accounts in order to save on gpt credits",
+                        comment_text=f"Received the following error:{response.text} - {username}, and I shall not retry to login for this case, instead I shall just proceed to the next individual I shall do a maximum of 5 accounts in order to save on gpt credits",
                         notify_all=True
                 )
                 message = "" # reset message to avoid sending the same message again
