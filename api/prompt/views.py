@@ -1485,7 +1485,7 @@ class getAgent(APIView):
         template = transition_prompt.text_data
         all_tasks = [{"task_name":task.name,"task_description":task.prompt.last().text_data,"agent_name":task.agent.name,"agent_goal":task.agent.goal} for task in Department.objects.filter(name="Engagement Department").latest('created_at').tasks.all()]
         prompt = ChatPromptTemplate.from_template(template)
-        model = ChatOpenAI(temperature=0)
+        model = ChatOpenAI(model="gpt-3.5-turbo",temperature=0)
         output_parser = StrOutputParser()
         chain = RunnableMap({
                 "userInput": lambda x: x["userInput"],
