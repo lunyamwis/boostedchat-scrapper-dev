@@ -3246,7 +3246,7 @@ class DMViewset(viewsets.ModelViewSet):
             "username_from": salesrep.ig_username
         }
         text_response = requests.post(settings.MQTT_BASE_URL + "/send-message", json=text_data)
-        if text_response.status_code == 200:
+        if "timestamp" in json.loads(text_response.text):
             print(f"Message sent to {account.igname}")
             account.follow_up_date = timezone.now().date()
             account.follow_up_count = account.follow_up_count + 1
