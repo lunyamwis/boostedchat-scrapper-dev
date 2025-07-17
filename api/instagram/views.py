@@ -3365,7 +3365,7 @@ class DMViewset(viewsets.ModelViewSet):
                     
 
                 # Execute send with retries handled by backoff decorator
-                assert_if_salesrep_logged_in(thread.account.salesrep_set.last().ig_username)
+                # assert_if_salesrep_logged_in(thread.account.salesrep_set.last().ig_username)
                 gpt_resp = get_gpt_response(account, str(client_messages), thread.thread_id)
                 
                 thread.last_message_content = gpt_resp
