@@ -3242,7 +3242,7 @@ class DMViewset(viewsets.ModelViewSet):
         salesrep = SalesRep.objects.filter(available=True).latest('created_at')
         text_data = {
             "message": message,
-            "username_to": 'denn_mokaya',#account.igname,
+            "username_to": account.igname,
             "username_from": salesrep.ig_username
         }
         text_response = requests.post(settings.MQTT_BASE_URL + "/send-message", json=text_data)
