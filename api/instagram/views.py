@@ -8,6 +8,7 @@ import requests
 import pandas as pd
 import subprocess
 import docker
+import backoff
 # Custom Field API Views
 # Create your views here.
 import csv
@@ -29,6 +30,7 @@ from calendar import monthrange
 from django.contrib import messages
 
 from api.dialogflow.helpers.notify_click_up import notify_click_up_tech_notifications
+from api.instagram.tasks import sales_rep_is_logged_in
 from .tasks import scrap_followers,scrap_info,scrap_users,insert_and_enrich,scrap_mbo,scrap_media,load_info_to_database,scrap_hash_tag
 from api.helpers.dag_generator import generate_dag
 from api.helpers.dag_file_handler import push_file,push_file_gcp
@@ -3323,6 +3325,46 @@ class DMViewset(viewsets.ModelViewSet):
                 # if last_message.content and last_message.sent_by == "Robot":
                 #     gpt_resp = "already_responded"
                 # else:
+                def should_retry_on_response(response):
+                    # Retry on HTTP 401 or 403
+                    return response is not None and json.loads(response.text).get(thread.account.salesrep_set.last().ig_username) == False
+
+                @backoff.on_predicate(
+                    backoff.constant,
+                    predicate=should_retry_on_response,
+                    interval=120,  # 120 seconds delay between retries
+                    max_tries=3,
+                    jitter=None  # no jitter for exact timing
+                )
+                def assert_if_salesrep_logged_in(salesrep):
+                    # try:
+                    # print(f"Sending message attempt for username: {username}")
+                    json_data = json.dumps({"igname":salesrep})
+                    response = requests.post(settings.MQTT_BASE_URL + "/accounts/isloggedin", data=json_data, headers={"Content-Type": "application/json"})
+                    print(f"Response status code: {response.status_code}")
+
+                    if json.loads(response.text).get(salesrep) == False: # if salesrep is not logged in
+                        # Refresh login session on auth errors
+                        notify_click_up_tech_notifications(
+                            comment_text=f"Noticed the salesrep:{salesrep} is not logged in just before I responded therefore I shall retry relogin in 3 times with a 120 seconds interval",
+                            notify_all=True
+                        )
+                        restart_payload = {"container_id": "boostedchat-site-mqtt-1"}  # restart the mqtt container
+                        restart_mqtt = requests.post(f"{os.getenv('API_URL')}/serviceManager/restart-container/",data=restart_payload)
+                                
+                        if restart_mqtt.status_code == 200:
+                            notify_click_up_tech_notifications(
+                                comment_text=f"Received {restart_mqtt.status_code} - after trying to relogin the following salesrep:{salesrep} and now we can proceed on to sending the message",
+                                notify_all=True
+                            )
+                            time.sleep(100)  # Wait for 100 seconds to give the container time to restart
+
+                    
+                    return response
+                    
+
+                # Execute send with retries handled by backoff decorator
+                assert_if_salesrep_logged_in(thread.account.salesrep_set.last().ig_username)
                 gpt_resp = get_gpt_response(account, str(client_messages), thread.thread_id)
                 
                 thread.last_message_content = gpt_resp
