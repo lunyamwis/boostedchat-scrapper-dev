@@ -3357,8 +3357,9 @@ class DMViewset(viewsets.ModelViewSet):
                                 comment_text=f"Received {restart_mqtt.status_code} - after trying to relogin the following salesrep:{salesrep} and now we can proceed on to sending the message",
                                 notify_all=True
                             )
-                            time.sleep(100)  # Wait for 100 seconds to give the container time to restart
-
+                            # Wait for 100 seconds to give the container time to restart
+                            import time
+                            time.sleep(100)
                     
                     return response
                     
