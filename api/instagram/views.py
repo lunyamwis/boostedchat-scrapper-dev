@@ -137,6 +137,7 @@ from urllib.parse import urlparse
 from auditlog.models import LogEntry
 from celery.result import AsyncResult
 from datetime import datetime, timedelta, time, timezone as timezone2
+from dateutil.relativedelta import relativedelta
 from instagrapi.exceptions import UserNotFound
 from rest_framework.views import APIView
 from rest_framework import status, viewsets
@@ -1175,7 +1176,7 @@ class AccountViewSet(viewsets.ModelViewSet):
                         Q(status_param='Sales Qualified') | Q(status_param='Won'),
                         # created_at__gte=start_date, created_at__lt=end_date,
                         sales_qualified_date__gte=start_date, sales_qualified_date__lt=end_date
-                    )
+                    ).distinct('id')
             case "outreach":
                 # queryset = queryset.filter(created_at__gte=start_date, created_at__lt=end_date).distinct('id')
                 queryset = queryset.filter(outreach_time__gte=start_date,outreach_time__lt=end_date).distinct('id')
@@ -1238,11 +1239,14 @@ class AccountViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'], url_path="weekly-reporting")
     def weekly_reporting(self, request):
         # Get January 1st of the current year with timezone
-        jan_first = datetime(datetime.now().year, 1, 1, tzinfo=timezone.get_current_timezone())
+        # jan_first = datetime(datetime.now().year, 1, 1, tzinfo=timezone.get_current_timezone())
         # Adjust to the Monday of that week (0 = Monday, 6 = Sunday)
-        start_of_week = jan_first - timedelta(days=jan_first.weekday())
-        # start_of_year = datetime(datetime.now().year, 1, 1, tzinfo=timezone.get_current_timezone())
+        # start_of_week = jan_first - timedelta(days=jan_first.weekday())
+        
+        # Lets get from past three months to save loading time
         today = timezone.now()
+        three_months_ago = today - relativedelta(months=3)
+        start_of_week = three_months_ago - timedelta(days=three_months_ago.weekday())
         current_week = start_of_week 
         results = []
 
