@@ -3361,14 +3361,15 @@ class DMViewset(viewsets.ModelViewSet):
                                 comment_text=f"Received {restart_mqtt.status_code} - after trying to relogin the following salesrep:{salesrep} and now we can proceed on to sending the message",
                                 notify_all=True
                             )
-                            time.sleep(100)  # Wait for 100 seconds to give the container time to restart
-
+                            # Wait for 100 seconds to give the container time to restart
+                            import time
+                            time.sleep(100)
                     
                     return response
                     
 
                 # Execute send with retries handled by backoff decorator
-                assert_if_salesrep_logged_in(thread.account.salesrep_set.last().ig_username)
+                # assert_if_salesrep_logged_in(thread.account.salesrep_set.last().ig_username)
                 gpt_resp = get_gpt_response(account, str(client_messages), thread.thread_id)
                 
                 thread.last_message_content = gpt_resp
