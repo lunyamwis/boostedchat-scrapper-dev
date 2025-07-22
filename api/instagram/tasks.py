@@ -15,6 +15,7 @@ from boostedchatScrapper.spiders.helpers.instagram_login_helper import login_use
 from django.utils import timezone
 from .models import InstagramUser,Account, Message, OutSourced, StatusCheck, Thread, UnwantedAccount, OutreachTime
 from api.scout.models import Scout
+from api.instagram.utils import initialize_hikerapi_client
 from django_tenants.utils import schema_context
 from boostedchatScrapper.spiders.constants import STYLISTS_WORDS,STYLISTS_NEGATIVE_WORDS
 import datetime
@@ -22,6 +23,7 @@ import json
 import logging
 import time
 import random
+import backoff
 import requests
 from datetime import datetime, timedelta
 
@@ -51,7 +53,7 @@ from api.sales_rep.models import SalesRep, Influencer, LeadAssignmentHistory
 from django.db.models import Q
 
 import socket
-
+# test
 false = False
 
 
@@ -79,7 +81,7 @@ def sales_rep_is_logged_in(account, salesrep):
         "igname": igname
     }
     json_data = json.dumps(data)
-    response = requests.post(settings.MQTT_BASE_URL + "/accounts/isloggedin", data=json_data, headers={"Content-Type": "application/json"})
+    json_data = json.dumps(data)
     if response.status_code == 200:
         account_list = None
         try:
@@ -330,16 +332,10 @@ def delete_accounts(duplicate_igname_list):
 @shared_task()
 @schema_context(os.getenv("SCHEMA_NAME"))
 def send_first_compliment(username, message, repeat=True):
-    # check if now is within working hours
-    # if not_in_interval():
-    #     err_str = f"{username} scheduled at wrong time"
-    #     outreachErrorLogger(None, None, err_str, 422, "ERROR", "Time", False) # we can not do anything about the time. Do not reschedule
     
     numTries = 0
     print("Searching for:::>>>>>> ", username)
     account = get_account(username)
-    
-    
 
     if account is None:
         err_str = f"{username} account does not exist"
@@ -354,10 +350,6 @@ def send_first_compliment(username, message, repeat=True):
     account.save()
 
         
-    # thread_exists = ig_thread_exists(username)
-    # if thread_exists:
-    #     outreachErrorLogger(account, None, "Already has thread", 422, "ERROR", "Lead", True) # reshedule_next
-    
     # check that account has sales_rep
     check_value = account_has_sales_rep(account)
 
@@ -373,46 +365,11 @@ def send_first_compliment(username, message, repeat=True):
     if not check_value:
         err_str = f"{account_sales_rep_ig_name} sales rep set for {username} is not available"
         outreachErrorLogger(account, None, err_str, 422, "ERROR", "Sales Rep", False) # Nothing to be done. No action on our part can make it available
-        # outreachErrorLogger(err_str)
-        # raise Exception(f"{account_sales_rep_ig_name} sales rep set for {username} is not available")
-
+    
     salesrep = account.salesrep_set.first()
     if not isMQTTUP():
         outreachErrorLogger(account, salesrep, "MQTT service unavailable. Not handled", 503, "ERROR", "MQTT", False) # Nothinig to be done. No action on our part can bring it up
-    # check if sales_rep is logged_in
-    # try:
-    #     logged_in = sales_rep_is_logged_in(account, salesrep)
-    #     if not logged_in: # log in will need to be handled differently from the others
-    #         err_str = f"{account_sales_rep_ig_name} sales rep set for {username} is not logged in"
-    #         outreachErrorLogger(account, salesrep, err_str, 403, "WARNING", "Sales Rep IG", False)  # WARNING will not break execution
-    #         if not logout_and_login(account, salesrep): # Nothing to be done. We cannot try logging in constantly
-    #             return # nothing to do. Wait for the account to be logged back in manually.
-  
-    # except Exception as e:
-    #     print(f"An error occurred: {e}") 
-    #     return
-
-    # try:
-    #     ig_account_exists = user_exists_in_IG(account, salesrep)
-    #     if not ig_account_exists: # log in will need to be handled differently from the others
-    #         # delete_first_compliment_task(account)
-    #         err_str = f"{username} does not exist"
-    #         outreachErrorLogger(account, salesrep, err_str, 404, "ERROR", "Lead", True)  # WARNING will break execution and reschedule another
-  
-    # except Exception as e:
-    #     print(f"An error occurred: {e}")  # probably an auth error
-    #     # return
-    # check also if available(1)
-
-    # for development: throw this error:
-    # raise Exception("...There is something wrong with mqtt...")
-
-    # full_name = "there"
-    # print(f'Account: {account}')
-    # try:
-    #     full_name = format_full_name(account.full_name)
-    # except Exception as error:
-    #     print(error)
+    
     
     # raise Exception("There is something wrong with mqt----t")
     outsourced_data = OutSourced.objects.filter(account=account)
@@ -449,18 +406,84 @@ def send_first_compliment(username, message, repeat=True):
     print(f"data=============={json.dumps(data)}")
     
     def send(numTries = 0):
-        numTries += 1
-        try:
-            # TODO: authenticate this mqtt request
-            response = requests.post(settings.MQTT_BASE_URL + "/send-first-media-message", data=json.dumps(data),headers={"Content-Type": "application/json"})
-            print("coming in as data")
-        except Exception as error:
-            try:
-                # TODO: authenticate this mqtt request
-                response = requests.post(settings.MQTT_BASE_URL + "/send-first-media-message", json=json.dumps(data), headers={"Content-Type": "application/json"})
-                print("coming in as json")
-            except Exception as error:
-                print(error)
+        def should_retry_on_response(response):
+            # Retry on HTTP 401 or 403
+            return response is not None and response.status_code in [401, 403]
+
+        @backoff.on_predicate(
+            backoff.constant,
+            predicate=should_retry_on_response,
+            interval=90,  # 90 seconds delay between retries
+            max_tries=3,
+            jitter=None  # no jitter for exact timing
+        )
+        def send_request():
+            # try:
+            print(f"Sending message attempt for username: {username}")
+            response = requests.post(
+                settings.MQTT_BASE_URL + "/send-first-media-message",
+                data=json.dumps(data),
+                headers={"Content-Type": "application/json"}
+            )
+            print(f"Response status code: {response.status_code}")
+
+            if response.status_code in [401, 403]:
+                # Refresh login session on auth errors
+                notify_click_up_tech_notifications(
+                    comment_text=f"Received {response.status_code} - relogin attempt for {salesrep.ig_username}, and I shall retry doing this 3 times with a 90 seconds interval",
+                    notify_all=True
+                )
+                restart_payload = {"container_id": "boostedchat-site-mqtt-1"}  # restart the mqtt container
+                restart_mqtt = requests.post(f"{os.getenv('API_URL')}/serviceManager/restart-container/",data=restart_payload)
+                        
+                if restart_mqtt.status_code == 200:
+                    notify_click_up_tech_notifications(
+                        comment_text=f"Received {restart_mqtt.status_code} - after trying to relogin the following salesrep {salesrep.ig_username} and now we can proceed on to sending the message",
+                        notify_all=True
+                    )
+                    time.sleep(90)  # Wait for 90 seconds before retrying
+
+            elif response.status_code in [500, 502, 503, 504, 405, 400]:
+                notify_click_up_tech_notifications(
+                        comment_text=f"Received the following error:{response.text} - {username}, and I shall not retry to login for this case, instead I shall just proceed to the next individual I shall do a maximum of 5 accounts in order to save on gpt credits",
+                        notify_all=True
+                )
+                message = "" # reset message to avoid sending the same message again
+                max_retries = 5  # Setting a maximum retry limit in order to save on credits
+                retries = 0
+                while retries < max_retries:
+                    try:
+                        next_account = get_account()
+                        send_first_compliment(next_account, message)
+                        break  # Exit the loop if successful
+                    except Exception as inner_error:
+                        retries += 1
+                        notify_click_up_tech_notifications(comment_text=f"Retry: {retries}/{max_retries} failed: {inner_error} account: {username}",notify_all=True)
+                        if retries >= max_retries:
+                            notify_click_up_tech_notifications(
+                                comment_text=f"Max retries reached for {username}. Skipping to the next individual.",
+                                notify_all=True
+                            )
+                            break
+            
+            return response
+            
+
+        # Execute send with retries handled by backoff decorator
+        response = send_request()
+
+        # numTries += 1
+        # try:
+        #     # TODO: authenticate this mqtt request
+        #     response = requests.post(settings.MQTT_BASE_URL + "/send-first-media-message", data=json.dumps(data),headers={"Content-Type": "application/json"})
+        #     print("coming in as data")
+        # except Exception as error:
+        #     try:
+        #         # TODO: authenticate this mqtt request
+        #         response = requests.post(settings.MQTT_BASE_URL + "/send-first-media-message", json=json.dumps(data), headers={"Content-Type": "application/json"})
+        #         print("coming in as json")
+        #     except Exception as error:
+        #         print(error)
         print(response.status_code)
         if response.status_code == 200:
             # add user to unwanted accounts to avoid sending them messages again
@@ -541,11 +564,239 @@ def send_first_compliment(username, message, repeat=True):
                 
             except Exception as error:
                 print(error)
+        
+    
+    send()
+
+        # raise Exception("There is something wrong with mqtt")
+
+
+@shared_task()
+@schema_context(os.getenv("SCHEMA_NAME"))
+def send_test_compliment(username, message, repeat=True):
+    # check if now is within working hours
+    # if not_in_interval():
+    #     err_str = f"{username} scheduled at wrong time"
+    #     outreachErrorLogger(None, None, err_str, 422, "ERROR", "Time", False) # we can not do anything about the time. Do not reschedule
+
+    numTries = 0
+    print("Searching for:::>>>>>> ", username)
+    # account = get_account(username)
+    account = None
+    accounts = Account.objects.filter(igname__icontains=username[0]).exclude(status__name='sent_compliment')
+    if accounts.exists():
+        account = accounts.latest('created_at')
+        if not account.salesrep_set.exists():
+            assign_salesrep(account)
+
+    if account is None:
+        err_str = f"{username} account does not exist"
+        outreachErrorLogger(None, None, err_str, 404, "ERROR", "Lead", True)  # reshedule_next
+        # raise Exception(err_str)
+
+    print("Found Account:::>>>>>> ", account)
+    thread_obj = None
+
+    account.status_param = 'Prequalified'
+    # account.outreach_time = target_time
+    account.save()
+
+    # thread_exists = ig_thread_exists(username)
+    # if thread_exists:
+    #     outreachErrorLogger(account, None, "Already has thread", 422, "ERROR", "Lead", True) # reshedule_next
+
+    # check that account has sales_rep
+    check_value = account_has_sales_rep(account)
+
+    if not check_value:
+        err_str = f"{username} has no sales rep assigned"
+        outreachErrorLogger(account, None, err_str, 404, "ERROR", "Sales Rep", True)  # reshedule_next
+        outreachErrorLogger(err_str)
+        raise Exception(err_str)
+
+    account_sales_rep_ig_name = check_value
+    check_value = sales_rep_is_available(account)
+    if not check_value:
+        err_str = f"{account_sales_rep_ig_name} sales rep set for {username} is not available"
+        outreachErrorLogger(account, None, err_str, 422, "ERROR", "Sales Rep",
+                            False)  # Nothing to be done. No action on our part can make it available
+        # outreachErrorLogger(err_str)
+        # raise Exception(f"{account_sales_rep_ig_name} sales rep set for {username} is not available")
+
+    salesrep = account.salesrep_set.first()
+    if not isMQTTUP():
+        outreachErrorLogger(account, salesrep, "MQTT service unavailable. Not handled", 503, "ERROR", "MQTT",
+                            False)  # Nothinig to be done. No action on our part can bring it up
+    # check if sales_rep is logged_in
+    # try:
+    #     logged_in = sales_rep_is_logged_in(account, salesrep)
+    #     if not logged_in: # log in will need to be handled differently from the others
+    #         err_str = f"{account_sales_rep_ig_name} sales rep set for {username} is not logged in"
+    #         outreachErrorLogger(account, salesrep, err_str, 403, "WARNING", "Sales Rep IG", False)  # WARNING will not break execution
+    #         if not logout_and_login(account, salesrep): # Nothing to be done. We cannot try logging in constantly
+    #             return # nothing to do. Wait for the account to be logged back in manually.
+
+    # except Exception as e:
+    #     print(f"An error occurred: {e}")
+    #     return
+
+    # try:
+    #     ig_account_exists = user_exists_in_IG(account, salesrep)
+    #     if not ig_account_exists: # log in will need to be handled differently from the others
+    #         # delete_first_compliment_task(account)
+    #         err_str = f"{username} does not exist"
+    #         outreachErrorLogger(account, salesrep, err_str, 404, "ERROR", "Lead", True)  # WARNING will break execution and reschedule another
+
+    # except Exception as e:
+    #     print(f"An error occurred: {e}")  # probably an auth error
+    #     # return
+    # check also if available(1)
+
+    # for development: throw this error:
+    # raise Exception("...There is something wrong with mqtt...")
+
+    # full_name = "there"
+    # print(f'Account: {account}')
+    # try:
+    #     full_name = format_full_name(account.full_name)
+    # except Exception as error:
+    #     print(error)
+
+    # raise Exception("There is something wrong with mqt----t")
+    outsourced_data = OutSourced.objects.filter(account=account)
+    results = None
+    try:
+        if isinstance(outsourced_data.last().results, str):
+            results = eval(outsourced_data.last().results)
+        else:
+            results = outsourced_data.last().results
+    except:
+        results = {"media_id": "", "media_comment": ""}
+    print(f"results================{results}")
+    print(f"results================MMM")
+    print(f"results================{message}")
+    first_message = None
+    try:
+        first_message = get_gpt_response(account, message)
+    except Exception as err:
+        logging.warning(f"error: {err}")
+
+    media_id = results.get("media_id", "")
+    data = {"username_from": salesrep.ig_username, "message": first_message, "username_to": account.igname,
+            "mediaId": media_id}
+
+    # like and comment
+    is_like_and_comment = like_and_comment(media_id=media_id, media_comment=results.get("media_comment", ""),
+                                           salesrep=salesrep, account=account)
+    if is_like_and_comment:
+        time.sleep(60)  # we break for 1 minute then send message
+        print("successfully liked and commented")
+
+    print(f"data=============={data}")
+    print(f"data=============={json.dumps(data)}")
+
+    def send(numTries=0):
+        numTries += 1
+        try:
+            # TODO: authenticate this mqtt request
+            response = requests.post(settings.MQTT_BASE_URL + "/send-first-media-message", data=json.dumps(data),
+                                     headers={"Content-Type": "application/json"})
+            print("coming in as data")
+        except Exception as error:
+            try:
+                # TODO: authenticate this mqtt request
+                response = requests.post(settings.MQTT_BASE_URL + "/send-first-media-message", json=json.dumps(data),
+                                         headers={"Content-Type": "application/json"})
+                print("coming in as json")
+            except Exception as error:
+                print(error)
+        print(response.status_code)
+        if response.status_code == 200:
+            # add user to unwanted accounts to avoid sending them messages again
+            # set the status to sent_compliment to show they have been reached out to
+            # create a thread if it does not exist and then create the message
+            # if the thread exists filter it out and then add the appropriate message
+            try:
+                UnwantedAccount.objects.create(username=account.igname)
+            except Exception as err:
+                print(err)
+            sent_compliment_status = StatusCheck.objects.get(name="sent_compliment")
+            account.status = sent_compliment_status
+            account.outreach_success = True
+            account.outreach_time = timezone.now()
+            # account.assigned_to = "Human" # NB: do not forget to handle this from prompt level
+            account.save()
+            print(f"response============{response}")
+            try:
+
+                print(f"json======================{response.json()}")
+                returned_data = response.json()
+
+                try:
+                    thread_obj = Thread.objects.create(thread_id=returned_data["thread_id"])
+                    thread_obj.thread_id = returned_data["thread_id"]
+                    thread_obj.account = account
+                    thread_obj.last_message_content = first_message
+                    thread_obj.unread_message_count = 0
+                    thread_obj.last_message_at = datetime.fromtimestamp(
+                        int(returned_data['timestamp']) / 1000000)  # use UTC
+                    thread_obj.save()
+
+                    message = Message()
+                    message.content = first_message
+                    message.sent_by = "Robot"
+                    message.sent_on = datetime.fromtimestamp(int(returned_data["timestamp"]) / 1000000)
+                    message.thread = thread_obj
+                    message.save()
+                    print("message created then saved")
+                except Exception as error:
+                    print(error)
+                    try:
+                        thread_obj = Thread.objects.filter(thread_id=returned_data["thread_id"]).latest('created_at')
+                        thread_obj.thread_id = returned_data["thread_id"]
+                        thread_obj.account = account
+                        thread_obj.last_message_content = first_message
+                        thread_obj.unread_message_count = 0
+                        thread_obj.last_message_at = datetime.fromtimestamp(
+                            int(returned_data['timestamp']) / 1000000)  # use UTC
+                        thread_obj.save()
+
+                        message = Message()
+                        message.content = first_message
+                        message.sent_by = "Robot"
+                        message.sent_on = datetime.fromtimestamp(int(returned_data["timestamp"]) / 1000000)
+                        message.thread = thread_obj
+                        message.save()
+                        print("message is saved")
+                    except Exception as error:
+                        print(error)
+            except Exception as error:
+                print(error)
+                print("message not saved")
+
+            try:
+                subject = 'Hello Team'
+                message = f'Outreach for {account.igname} has been sent'
+                from_email = 'lutherlunyamwi@gmail.com'
+                recipient_list = ['lutherlunyamwi@gmail.com']
+                send_mail(subject, message, from_email, recipient_list)
+                # notify_click_up_tech_notifications(comment_text=message, notify_all=True)
+                # ADD CLICKUP TASK HERE
+                # try:
+                #     if not account.question_asked:
+                #         create_click_up_task(f"Follow up with {account.igname}", "", True)
+                #         account.question_asked = True
+                #         account.save()
+                # except Exception as error:
+                #     print(error)
+
+            except Exception as error:
+                print(error)
 
         else:
             # get last account in queue
             # delay 2 minutes
-            # send  
+            # send
 
             # TODO: Follow the example below so that we can adopt the object oriented paradigm,
             # and increase the team as a result increasing thoroughput
@@ -557,31 +808,34 @@ def send_first_compliment(username, message, repeat=True):
             #     data = {"igname": salesrep.ig_username},
             #     error_message = response.text
             # )
-            message = ""
-            send_first_compliment(get_account(), message) # recurse to the next individual TODO: place a check to determine if the
-            #user exist
+            # message = ""
+            # send_first_compliment(get_account(),
+            #                       message)  # recurse to the next individual TODO: place a check to determine if the
+            # user exist
             # ExceptionHandler(exception.status_code).take_action(data=exception.data)
             print(f"Request failed with status code: {response.status_code}")
             print(f"Response message: {response.text}")
-            try: 
-                username_to = data.get("username_to", "Unknown")
-                notify_click_up_tech_notifications(comment_text=f"message: {response.text} username: {username_to}",notify_all=True)
-            except error:
-                pass
+            # try:
+            #     username_to = data.get("username_to", "Unknown")
+            #     # notify_click_up_tech_notifications(comment_text=f"message: {response.text} username: {username_to}",
+            #                                        notify_all=True)
+            # except error:
+            #     pass
             # sav
             # response = requests.post(f"{os.getenv('API_URL')}/serviceManager/restart-container/",
             #                          headers={'Content-Type': 'application/json'},
             #                          data=json.dumps({"container_id":"boostedchat-site-mqtt-1"}))
-            
+
             # if response.status_code in [200,201]:
             #     logging.warning("Succesfully restarted mqtt")
             # repeatLocal = handleMqTTErrors(account, salesrep, response.status_code, response.text, numTries, repeat)
             # if repeatLocal and numTries <= 1:
-                # send(numTries)
-                # pass
+            # send(numTries)
+            # pass
+
     send()
 
-        # raise Exception("There is something wrong with mqtt")
+    # raise Exception("There is something wrong with mqtt")
 
 
 @shared_task()
@@ -1034,6 +1288,15 @@ def get_headers():
     return headers
 
 def update_account_information(user:InstagramUser):
+    cl = initialize_hikerapi_client()
+    profile_information,user_media = None
+    try:
+        profile_information = cl.user_by_username_v1(user.username)
+        user_media = cl.user_medias(user_id=cl.user_by_username_v1(username=user.username).get("pk"),count=1)[0]
+    except Exception as err:
+        logging.warning(err)
+        profile_information = {"username":user.username}
+        user_media = {"id":user.item_id}
     headers = get_headers()
     get_id_account_data = {
         "username": user.username
@@ -1044,7 +1307,7 @@ def update_account_information(user:InstagramUser):
     account_dict = {
         "igname": user.username,
         "is_manually_triggered":True,
-        "relevant_information": {**user.info } if user.info else {"username":user.username,"media_id": user.item_id}
+        "relevant_information": {**profile_information,**{"media_id": user_media.get("id")}}
     }
     response = requests.patch(
         f"{os.getenv('API_URL')}/instagram/account/{account_id}/",
@@ -1060,12 +1323,12 @@ def update_account_information(user:InstagramUser):
 
         if user.info:
             outsourced_dict = {
-                "results": {**user.info, "media_id": user.item_id},  # yet to test
+                "results": {**profile_information,**{"media_id": user_media.get("id")}},
                 "source": "instagram"
             }
         else:
             outsourced_dict = {
-                "results": {"username":user.username,"media_id": user.item_id},
+                "results": {**profile_information,**{"media_id": user_media.get("id")}},
                 "source": "instagram"
             }
         # import pdb;pdb.set_trace()
@@ -1083,10 +1346,19 @@ def update_account_information(user:InstagramUser):
 
 def create_account_information(user:InstagramUser):
     headers = get_headers()
+    profile_information,user_media = None
+    try:
+        profile_information = cl.user_by_username_v1(user.username)
+        user_media = cl.user_medias(user_id=cl.user_by_username_v1(username=user.username).get("pk"),count=1)[0]
+    except Exception as err:
+        logging.warning(err)
+        profile_information = {"username":user.username}
+        user_media = {"id":user.item_id}
+        
     account_dict = {
         "igname": user.username,
         "is_manually_triggered":True,
-        "relevant_information": user.info
+        "relevant_information": {**profile_information,**{"media_id": user_media.get("id")}}
     }
     response = requests.post(
         f"{os.getenv('API_URL')}/instagram/account/",
@@ -1100,12 +1372,12 @@ def create_account_information(user:InstagramUser):
 
     if user.info:
         outsourced_dict = {
-            "results": {**user.info},  # yet to test
+            "results": {**profile_information,**{"media_id": user_media.get("id")}},
             "source": "instagram"
         }
     else:
         outsourced_dict = {
-            "results": {"username":user.username,"media_id": user.item_id},
+            "results": {**profile_information,**{"media_id": user_media.get("id")}},
             "source": "instagram"
         }
     # import pdb;pdb.set_trace()
@@ -1357,7 +1629,9 @@ def qualify_and_reschedule():
         yesterday = timezone.now() - timezone.timedelta(days=30) # filter on a weekly basis
         unwanted_usernames = UnwantedAccount.objects.values_list('username', flat=True)
         # Filter accounts using the query
-        filtered_accounts = Account.objects.filter(query).filter(created_at__gte=yesterday).exclude(status__name="sent_compliment").exclude(igname__in=unwanted_usernames)
+        filtered_accounts = Account.objects.filter(query).filter(created_at__gte=yesterday).exclude(status__name="sent_compliment").exclude(igname__in=unwanted_usernames).exclude(
+            dormant_profile_created=True
+        )
 
         for account in filtered_accounts:
             account.qualified = True

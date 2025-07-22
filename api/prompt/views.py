@@ -54,7 +54,7 @@ from .constants import MSSQL_AGENT_FORMAT_INSTRUCTIONS,MSSQL_AGENT_PREFIX
 
 from crewai_tools import BaseTool
 #from crewai_tools import tool
-from crewai import Agent, Task, Crew, Process
+from crewai import Agent, Task, Crew, Process,LLM
 from django.core.mail import send_mail
 # from api.instagram.tasks import send_logs
 from .models import Agent as AgentModel,Task as TaskModel,Tool, Department
@@ -1210,6 +1210,7 @@ class agentSetup(APIView):
         # workflow_data = data.get("workflow_data")
         workflow = None
         opensource = False    
+        llm_val = LLM(model="gpt-3.5-turbo")
         with schema_context(os.getenv("SCHEMA_NAME")):
 
             # import pdb;pdb.set_trace()          
@@ -1234,7 +1235,9 @@ class agentSetup(APIView):
             for agent in department_agents:
                 print(agent)
                 # import pdb;pdb.set_trace()
+               
                 if agent.tools.filter().exists():
+               
                     if agent.is_opensource:
                         opensource = agent.is_opensource
 
@@ -1245,7 +1248,7 @@ class agentSetup(APIView):
                             tools = [TOOLS.get(tool.name) for tool in agent.tools.all()],
                             allow_delegation=False,
                             verbose=True,
-                            llm=agent.llm
+                            llm=llm_val
                         ))
                     else:
                         agents.append(Agent(
@@ -1266,7 +1269,7 @@ class agentSetup(APIView):
                             allow_delegation=False,
                             verbose=True,
                             # llm="huggingface/mistralai/Mistral-7B-Instruct-v0.3"
-                            llm=agent.llm
+                            llm=llm_val
                         ))
                     else:
                         agents.append(Agent(
@@ -1482,7 +1485,7 @@ class getAgent(APIView):
         template = transition_prompt.text_data
         all_tasks = [{"task_name":task.name,"task_description":task.prompt.last().text_data,"agent_name":task.agent.name,"agent_goal":task.agent.goal} for task in Department.objects.filter(name="Engagement Department").latest('created_at').tasks.all()]
         prompt = ChatPromptTemplate.from_template(template)
-        model = ChatOpenAI(temperature=0)
+        model = ChatOpenAI(model="gpt-3.5-turbo",temperature=0)
         output_parser = StrOutputParser()
         chain = RunnableMap({
                 "userInput": lambda x: x["userInput"],

@@ -8,6 +8,7 @@ import requests
 import pandas as pd
 import subprocess
 import docker
+import backoff
 # Custom Field API Views
 # Create your views here.
 import csv
@@ -27,6 +28,9 @@ from django.conf import settings
 from django.utils import timezone
 from calendar import monthrange
 from django.contrib import messages
+
+from api.dialogflow.helpers.notify_click_up import notify_click_up_tech_notifications
+from api.instagram.tasks import sales_rep_is_logged_in
 from .tasks import scrap_followers,scrap_info,scrap_users,insert_and_enrich,scrap_mbo,scrap_media,load_info_to_database,scrap_hash_tag
 from api.helpers.dag_generator import generate_dag
 from api.helpers.dag_file_handler import push_file,push_file_gcp
@@ -133,6 +137,7 @@ from urllib.parse import urlparse
 from auditlog.models import LogEntry
 from celery.result import AsyncResult
 from datetime import datetime, timedelta, time, timezone as timezone2
+from dateutil.relativedelta import relativedelta
 from instagrapi.exceptions import UserNotFound
 from rest_framework.views import APIView
 from rest_framework import status, viewsets
@@ -290,7 +295,7 @@ class FbSearchAccounts(APIView):
         if not query:
             return Response({"error": "Query is required."}, status=status.HTTP_400_BAD_REQUEST)
         # Initialize the HikerAPI client
-        cl = initialize_hikerapi_client()
+        cl = initialize_hikerapi_client() 
         try:
             # Search for accounts
             accounts = cl.fb_search_accounts(query)
@@ -481,6 +486,7 @@ class GetMediaById(APIView):
 
 
 class GetMediaLikers(APIView):
+    # I want to work on this
     def post(self, request, *args, **kwargs):
         # Get the media ID from the request data
         media_links = request.data.get('media_links')
@@ -502,9 +508,20 @@ class GetMediaLikers(APIView):
                 influencer = random.choice(influencers_list)
                 logging.warning(f"influencer chosen ---->{influencer}")
                 latest_influencer_media = cl.user_medias(user_id=cl.user_by_username_v1(username=influencer).get("pk"),count=1)[0]
-                # media_id = cl.media_pk_from_url_v1(link)
-                likers = cl.media_likers_v2(latest_influencer_media.get("pk"))
-                for liker in likers['users']:
+
+                media_id = None
+                use_media_links = request.data.get('use_media_links','')
+                if use_media_links:
+                    media_id = cl.media_pk_from_url_v1(link)
+                else:
+                    media_id = latest_influencer_media.get("pk")
+
+                likers = cl.media_likers_v2(media_id)
+                for i,liker in enumerate(likers['users']):
+                    logging.warning(f"state: {i} out of {len(likers['users'])}")
+                    check_user_exists = cl.user_by_username_v1(liker['username'])
+                    if 'exc_type' in check_user_exists.keys():
+                        continue
                     liker_data = {
                         "username": liker['username'],
                         "full_name": liker['full_name'],
@@ -1159,7 +1176,7 @@ class AccountViewSet(viewsets.ModelViewSet):
                         Q(status_param='Sales Qualified') | Q(status_param='Won'),
                         # created_at__gte=start_date, created_at__lt=end_date,
                         sales_qualified_date__gte=start_date, sales_qualified_date__lt=end_date
-                    )
+                    ).distinct('id')
             case "outreach":
                 # queryset = queryset.filter(created_at__gte=start_date, created_at__lt=end_date).distinct('id')
                 queryset = queryset.filter(outreach_time__gte=start_date,outreach_time__lt=end_date).distinct('id')
@@ -1222,11 +1239,14 @@ class AccountViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'], url_path="weekly-reporting")
     def weekly_reporting(self, request):
         # Get January 1st of the current year with timezone
-        jan_first = datetime(datetime.now().year, 1, 1, tzinfo=timezone.get_current_timezone())
+        # jan_first = datetime(datetime.now().year, 1, 1, tzinfo=timezone.get_current_timezone())
         # Adjust to the Monday of that week (0 = Monday, 6 = Sunday)
-        start_of_week = jan_first - timedelta(days=jan_first.weekday())
-        # start_of_year = datetime(datetime.now().year, 1, 1, tzinfo=timezone.get_current_timezone())
+        # start_of_week = jan_first - timedelta(days=jan_first.weekday())
+        
+        # Lets get from past three months to save loading time
         today = timezone.now()
+        three_months_ago = today - relativedelta(months=3)
+        start_of_week = three_months_ago - timedelta(days=three_months_ago.weekday())
         current_week = start_of_week 
         results = []
 
@@ -1238,7 +1258,7 @@ class AccountViewSet(viewsets.ModelViewSet):
                 # created_at__gte=current_week,
                 # created_at__lte=end_of_week,
                 outreach_time__gte=current_week,
-                outreach_time__lte=end_of_week,
+                outreach_time__lt=end_of_week,
                 outreach_success=True,
             ).distinct()
             outreach_count = outreach_accounts.count()
@@ -1248,16 +1268,9 @@ class AccountViewSet(viewsets.ModelViewSet):
             
             # thinking about putting instead of created_at sales_qualified_date__gte=start_date, sales_qualified_date__lt=end_date 
             sales_qualified_accounts = Account.objects.filter(
-                # created_at__gte=current_week,
-                # created_at__lte=end_of_week,
                 sales_qualified_date__gte=current_week,
                 sales_qualified_date__lte=end_of_week,
                 salesrep__isnull=False,
-                # responded_date__isnull=False,
-                status_param='Sales Qualified',
-                #call_scheduled_date__isnull=False,
-                # won_date__isnull=True,
-                # lost_date__isnull=True
             ).distinct()
             
 
@@ -3054,7 +3067,7 @@ class DMViewset(viewsets.ModelViewSet):
             status__name="sent_compliment"
         ).exclude(
             igname__in=unwanted_usernames
-        ) 
+        ).filter(dormant_profile_created=True)
         account_messages_sent = []
         
         if accounts.exists():
@@ -3223,6 +3236,32 @@ class DMViewset(viewsets.ModelViewSet):
         return Response({"message": "Followup responses generated successfully"}, status=status.HTTP_200_OK)
 
     @schema_context(os.getenv('SCHEMA_NAME'))
+    def generate_followup_response_v2(self, request, *args, **kwargs):
+        account = Account.objects.to_follow_up()
+        if not account:
+            return Response({"message": "No accounts to follow up"}, status=status.HTTP_404_NOT_FOUND)
+        # genereate a message based on the history or context if possible
+        # generate_response = f"{os.getenv('API_URL')}/v1/instagram/dflow/{thread.thread_id}/generate-response/v2/"
+        message = "I’ve just seen another barber getting their new clients and they reminded me of you -when is the right time to have a call to unlock your growth ?"
+        salesrep = SalesRep.objects.filter(available=True).latest('created_at')
+        text_data = {
+            "message": message,
+            "username_to": account.igname,
+            "username_from": salesrep.ig_username
+        }
+        text_response = requests.post(settings.MQTT_BASE_URL + "/send-message", json=text_data)
+        if "timestamp" in json.loads(text_response.text):
+            print(f"Message sent to {account.igname}")
+            account.follow_up_date = timezone.now().date()
+            account.follow_up_count = account.follow_up_count + 1
+            account.save()
+            # send notification to the clickup
+            notify_click_up_tech_notifications(comment_text=f"Follow up Message sent to ${account.igname}", notify_all=True)
+        return Response({"message": "Followup responses generated successfully"}, status=status.HTTP_200_OK)
+        # return Response(text_data, status=status.HTTP_200_OK)
+    
+    
+    @schema_context(os.getenv('SCHEMA_NAME'))
     def generate_response(self, request, *args, **kwargs):
         thread = Thread.objects.filter(thread_id=kwargs.get('thread_id')).latest('created_at')
         req = request.data
@@ -3290,6 +3329,47 @@ class DMViewset(viewsets.ModelViewSet):
                 # if last_message.content and last_message.sent_by == "Robot":
                 #     gpt_resp = "already_responded"
                 # else:
+                def should_retry_on_response(response):
+                    # Retry on HTTP 401 or 403
+                    return response is not None and json.loads(response.text).get(thread.account.salesrep_set.last().ig_username) == False
+
+                @backoff.on_predicate(
+                    backoff.constant,
+                    predicate=should_retry_on_response,
+                    interval=120,  # 120 seconds delay between retries
+                    max_tries=3,
+                    jitter=None  # no jitter for exact timing
+                )
+                def assert_if_salesrep_logged_in(salesrep):
+                    # try:
+                    # print(f"Sending message attempt for username: {username}")
+                    json_data = json.dumps({"igname":salesrep})
+                    response = requests.post(settings.MQTT_BASE_URL + "/accounts/isloggedin", data=json_data, headers={"Content-Type": "application/json"})
+                    print(f"Response status code: {response.status_code}")
+
+                    if json.loads(response.text).get(salesrep) == False: # if salesrep is not logged in
+                        # Refresh login session on auth errors
+                        notify_click_up_tech_notifications(
+                            comment_text=f"Noticed the salesrep:{salesrep} is not logged in just before I responded therefore I shall retry relogin in 3 times with a 120 seconds interval",
+                            notify_all=True
+                        )
+                        restart_payload = {"container_id": "boostedchat-site-mqtt-1"}  # restart the mqtt container
+                        restart_mqtt = requests.post(f"{os.getenv('API_URL')}/serviceManager/restart-container/",data=restart_payload)
+                                
+                        if restart_mqtt.status_code == 200:
+                            notify_click_up_tech_notifications(
+                                comment_text=f"Received {restart_mqtt.status_code} - after trying to relogin the following salesrep:{salesrep} and now we can proceed on to sending the message",
+                                notify_all=True
+                            )
+                            # Wait for 100 seconds to give the container time to restart
+                            import time
+                            time.sleep(100)
+                    
+                    return response
+                    
+
+                # Execute send with retries handled by backoff decorator
+                # assert_if_salesrep_logged_in(thread.account.salesrep_set.last().ig_username)
                 gpt_resp = get_gpt_response(account, str(client_messages), thread.thread_id)
                 
                 thread.last_message_content = gpt_resp
@@ -3569,6 +3649,46 @@ class ExperimentViewSet(viewsets.ModelViewSet):
         report_pagination_class = ReportPaginationClass
         
     @schema_context(os.getenv('SCHEMA_NAME'))
+    def list(self, request, pk=None): 
+        queryset = Experiment.objects.all()
+        # Filters from request
+        
+        search_query = request.GET.get("name")
+        start_at_gte = request.GET.get("start_gte")
+        end_at_lt = request.GET.get("end_lt")
+        primary_metric = request.GET.get('primary_metric')
+        experiment_type = request.GET.get('experiment_type')
+        experiment_status = request.GET.get('experiment_status')
+        
+        if search_query:
+            queryset = queryset.filter(name__icontains=search_query)
+        
+        if start_at_gte:
+            formated_start_date = make_aware(datetime.strptime(start_at_gte, "%Y-%m-%d"))
+            queryset = queryset.filter(start_date__gte=formated_start_date)
+        
+        if end_at_lt:
+            formated_end_date = make_aware(datetime.strptime(end_at_lt, "%Y-%m-%d"))
+            queryset = queryset.filter(end_date__lt=formated_end_date)
+        
+        if primary_metric:
+            queryset = queryset.filter(primary_metric=primary_metric)
+        
+        if experiment_type:
+            queryset = queryset.filter(experiment_type=experiment_type)
+
+        if experiment_status:
+            queryset = queryset.filter(status__name__iexact=experiment_status)
+               
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+        
+    @schema_context(os.getenv('SCHEMA_NAME'))
     @action(detail=True, methods=["get"], url_path="experiment_fields")
     def get_field_definitions(self, request, pk=None):
         experiment_id = pk
@@ -3601,7 +3721,7 @@ class ExperimentViewSet(viewsets.ModelViewSet):
             return Response(serializer.data, status=status.HTTP_200_OK)
         except Exception as error:
             return Response({"error": str(error)}, status=status.HTTP_400_BAD_REQUEST)
-        
+          
     @schema_context(os.getenv('SCHEMA_NAME'))
     @action(detail=True, methods=['post'])
     def duplicate(self, request, pk=None):

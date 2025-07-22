@@ -4,11 +4,14 @@ from api.instagram.models import Account,UnwantedAccount
 from django.utils import timezone
 from django.db.models import Q
 from api.dialogflow.helpers.notify_click_up import notify_click_up_tech_notifications, create_click_up_task
+# from .tasks import qualify_and_reschedule
 from django.core.mail import send_mail
 
-from crewai import Task, Agent, Crew,Process
+
+from crewai import Task, Agent, Crew,Process,LLM
 from django_tenants.utils import schema_context
 from crewai.flow.flow import Flow, and_, listen, start
+from api.instagram.utils import initialize_hikerapi_client
 import json
 import os
 import ast
@@ -107,6 +110,7 @@ class PrequalifyingWorkflow(Flow):
       filtered_tasks = [task for task in self.tasks if task.agent.goal == filter_value]
       return filtered_tasks
    
+   @schema_context(os.getenv('SCHEMA_NAME'))
    def patch_account_request(self, output, username):
       username = self.inputs["outsourced_info"]["username"] if isinstance(self.inputs["outsourced_info"], dict) else ast.literal_eval(self.inputs["outsourced_info"])['username']
       
@@ -140,12 +144,20 @@ class PrequalifyingWorkflow(Flow):
          "relevant_information": output if output else {},
          "qualified": prequalified_flag,
       }
-      response = requests.patch(
-         f"{os.getenv('API_URL')}/instagram/account/{account_id}/",
-         headers=self.headers,
-         data=json.dumps(account_dict)
-      )
-      print(response.json())
+
+      # response = requests.patch(
+      #    f"{os.getenv('API_URL')}/instagram/account/{account_id}/",
+      #    headers=self.headers,
+      #    data=json.dumps(account_dict)
+      # )
+      accounts = Account.objects.filter(igname=username)
+      if accounts.exists():
+         for account in accounts:
+            account.relevant_information = output if output else {}
+            account.qualified = prequalified_flag
+            account.dormant_profile_created = True
+            account.save()
+      logging.warning(f"Account {username} updated with prequalified status: {prequalified_flag}")
       return response
 
    @start()
@@ -316,118 +328,163 @@ def prequalifying_automatically():
    null = None
    false, true = False, True
 
-   qualifying_payloads = []
+   threshold = 26
    with schema_context(os.getenv("SCHEMA_NAME")):
-         start_date = timezone.now().date() - timezone.timedelta(days=1)
-         end_date = timezone.now().date() + timezone.timedelta(days=1)
-         unwanted_usernames = UnwantedAccount.objects.values_list('username', flat=True)
-         start_datetime = timezone.make_aware(
-            timezone.datetime.combine(start_date, timezone.datetime.min.time())
-         )
+      start_date = timezone.now().date() - timezone.timedelta(days=0)
+      end_date = timezone.now().date() + timezone.timedelta(days=1)
+      unwanted_usernames = UnwantedAccount.objects.values_list('username', flat=True)
+      start_datetime = timezone.make_aware(
+         timezone.datetime.combine(start_date, timezone.datetime.min.time())
+      )
 
-         accounts = Account.objects.filter(
-            Q(qualified=True) & Q(created_at__gte=start_datetime) & Q(created_at__lte=end_date)
-         ).exclude(
-            status__name="sent_compliment"
-         ).exclude(
-            igname__in=unwanted_usernames
-         ).exclude(
-            dormant_profile_created=True
-         )
+      prequalified_accounts = Account.objects.filter(
+         Q(qualified=True) & Q(created_at__gte=start_datetime) & Q(created_at__lte=end_date)
+      ).exclude(
+         status__name="sent_compliment"
+      ).exclude(
+         igname__in=unwanted_usernames
+      ).filter(dormant_profile_created=True)
 
-         print(f"Accounts to process: {accounts.count()}")
-         for account in accounts:
-            print(account.outsourced_set.all().latest('created_at').results if account.outsourced_set.exists() else {"username":account.igname})
-         # import pdb;pdb.set_trace()
-         for account in accounts:
-            if not account.outsourced_set.exists():
-               continue
+      while prequalified_accounts.count() < threshold:
+               # return
+         qualifying_payloads = []
+         with schema_context(os.getenv("SCHEMA_NAME")):
+               start_date = timezone.now().date() - timezone.timedelta(days=0)
+               end_date = timezone.now().date() + timezone.timedelta(days=1)
+               unwanted_usernames = UnwantedAccount.objects.values_list('username', flat=True)
+               start_datetime = timezone.make_aware(
+                  timezone.datetime.combine(start_date, timezone.datetime.min.time())
+               )
+
+               accounts = Account.objects.filter(
+                  Q(qualified=True) & Q(created_at__gte=start_datetime) & Q(created_at__lte=end_date)
+               ).exclude(
+                  status__name="sent_compliment"
+               ).exclude(
+                  igname__in=unwanted_usernames
+               ).exclude(
+                  dormant_profile_created=True
+               )[:10]
+
+               # accounts = accounts.filter(igname="_barberc").distinct('igname')
+               print(f"Accounts to process: {accounts.count()}")
+               # if accounts.count() < threshold:
+                  # print(f"Not enough accounts to process. Only {accounts.count()} accounts found.")
+               for account in accounts:
+                  print(account.outsourced_set.all().latest('created_at').results if account.outsourced_set.exists() else {"username":account.igname})
+               # import pdb;pdb.set_trace()
+               for account in accounts:
+                  cl = initialize_hikerapi_client()
+                  check_user_exists = cl.user_by_username_v1(account.igname)
+                  if 'exc_type' in check_user_exists.keys():
+                     account_name = account.igname
+                     account.delete()
+                     continue
+                   
+                  if not account.outsourced_set.exists():
+                     account.qualified = False
+                     account.dormant_profile_created = True
+                     account.save()
+                     continue
 
 
-            qualifying_payload = {
-               "department":"Prequalifying",
-               "agent_name":"Qualifying Agent",
-               "agent_task":"QD_QualifyingA_CalculatePersonaInfluencerAuditQualifyingScoreT",
-               "converstations":"",
-               "Scraped":{
-                  "message":"",
-                  "sales_rep":"barbersince98",
-                  "influencer_ig_name":"barbersince98",
-                  "outsourced_info":account.outsourced_set.all().latest('created_at').results if account.outsourced_set.exists() else {"username":account.igname},
-                  "relevant_information": account.relevant_information if account.relevant_information else {}
-               }
-            }
-            qualifying_payloads.append(qualifying_payload)
+                  qualifying_payload = {
+                     "department":"Prequalifying",
+                     "agent_name":"Qualifying Agent",
+                     "agent_task":"QD_QualifyingA_CalculatePersonaInfluencerAuditQualifyingScoreT",
+                     "converstations":"",
+                     "Scraped":{
+                        "message":"",
+                        "sales_rep":"barbersince98",
+                        "influencer_ig_name":"barbersince98",
+                        "outsourced_info":account.outsourced_set.all().latest('created_at').results if account.outsourced_set.exists() else {"username":account.igname},
+                        "relevant_information": account.relevant_information if account.relevant_information else {}
+                     }
+                  }
+                  qualifying_payloads.append(qualifying_payload)
 
 
 
-   agents = []
-   tasks = []
-   department_name = "Prequalifying"
+         agents = []
+         tasks = []
+         department_name = "Prequalifying"
 
-   with schema_context(os.getenv("SCHEMA_NAME")):
-      print(Department.objects.filter(name=department_name))
-      department = Department.objects.filter(name=department_name).latest("created_at")
+         with schema_context(os.getenv("SCHEMA_NAME")):
+            print(Department.objects.filter(name=department_name))
+            department = Department.objects.filter(name=department_name).latest("created_at")
+            
+            agents_ = department.agents.all()
+            tasks_ = department.tasks.all()
+            # print(tasks_)
+            for i, agent in enumerate(agents_):
+               print(agent.llm)
+               llm_val = None
+               if agent.is_opensource:
+                  llm_val = agent.llm
+               else:
+                  llm_val = LLM(model="gpt-3.5-turbo")
+               agents.append({f"agent_{i}":Agent(
+                                    role=agent.role.description + " " + agent.role.tone_of_voice if agent.role else "Qualifying department",
+                                    goal=agent.goal,
+                                    backstory=agent.prompt.last().text_data,
+                                    allow_delegation=False,
+                                    verbose=True,
+                                    llm=llm_val
+                              ),
+                              f"workflow_step_{i}":agent.workflow
+                           })
+            for i,task in enumerate(tasks_):    
+               llm_val = None
+               if agent.is_opensource:
+                  llm_val = task.agent.llm
+               else:
+                  llm_val = LLM(model="gpt-3.5-turbo")
+               tasks.append(Task(
+                              description=task.prompt.last().text_data if task.prompt.exists() else "perform agents task",
+                              expected_output=task.expected_output,
+                              tools=[TOOLS.get(tool.name) for tool in task.tools.all()],
+                              agent=Agent(
+                                    role=task.agent.role.description + " " + task.agent.role.tone_of_voice if task.agent.role else "Qualifying department",
+                                    goal=task.agent.goal,
+                                    backstory=task.agent.prompt.last().text_data,
+                                    allow_delegation=False,
+                                    verbose=True,
+                                    llm=llm_val
+                              ),
+                              # output_json=OUTPUT_MODELS.get(task.output)
+                              output_json=PrequalifyingOutput
+                           ))
+                           
+            # print(tasks)
+            # I need to get it to work continually with a threshold of x
+            for i,payload in enumerate(qualifying_payloads):
+            #  if i == 2:
+                  # break 
+               try:
+                  flow = PrequalifyingWorkflow(agents = agents,tasks = tasks,inputs = payload.get(department.baton.start_key))
+                  asyncio.run(flow.kickoff())
+               except Exception as e:
+                  print(f"Error processing payload {i}-for user {payload}: {e}")
+                  continue
+            
+            try:
+
+               if prequalified_accounts.count() >= 25:
+                  message = f'Finished prequalifying accounts for today {timezone.now()}'
+               else:
+                  message = (
+                        f'Finished prequalifying current batch but did not reach the threshold target of 25, therefore we are proceeding to the next batch.'
+                        f'Only {prequalified_accounts.count()} accounts were processed as of {timezone.now()}'
+                  )
+               subject = 'Hello Team'
+               from_email = 'lutherlunyamwi@gmail.com'
+               recipient_list = ['lutherlunyamwi@gmail.com', 'tomek@boostedchat.com']
+               # send_mail(subject, message, from_email, recipient_list)
+               notify_click_up_tech_notifications(comment_text=message, notify_all=True)
+            except Exception as error:
+               print(error)
       
-      agents_ = department.agents.all()
-      tasks_ = department.tasks.all()
-      # print(tasks_)
-      for i, agent in enumerate(agents_):
-         print(agent.llm)
-         agents.append({f"agent_{i}":Agent(
-                              role=agent.role.description + " " + agent.role.tone_of_voice if agent.role else "Qualifying department",
-                              goal=agent.goal,
-                              backstory=agent.prompt.last().text_data,
-                              allow_delegation=False,
-                              verbose=True,
-                              llm=agent.llm
-                        ),
-                        f"workflow_step_{i}":agent.workflow
-                     })
-      for i,task in enumerate(tasks_):              
-         tasks.append(Task(
-                        description=task.prompt.last().text_data if task.prompt.exists() else "perform agents task",
-                        expected_output=task.expected_output,
-                        tools=[TOOLS.get(tool.name) for tool in task.tools.all()],
-                        agent=Agent(
-                              role=task.agent.role.description + " " + task.agent.role.tone_of_voice if task.agent.role else "Qualifying department",
-                              goal=task.agent.goal,
-                              backstory=task.agent.prompt.last().text_data,
-                              allow_delegation=False,
-                              verbose=True,
-                              llm=task.agent.llm
-                        ),
-                        # output_json=OUTPUT_MODELS.get(task.output)
-                        output_json=PrequalifyingOutput
-                     ))
-                     
-      # print(tasks)
-      # I need to get it to work continually with a threshold of x
-      for i,payload in enumerate(qualifying_payloads):
-        #  if i == 2:
-            # break 
-         try:
-            flow = PrequalifyingWorkflow(agents = agents,tasks = tasks,inputs = payload.get(department.baton.start_key))
-            asyncio.run(flow.kickoff())
-         except Exception as e:
-            print(f"Error processing payload {i}-for user {payload}: {e}")
-            continue
-      
-      try:
-
-         qualified_dormant_count = 26
-         if qualified_dormant_count >= 25:
-            message = f'Finished prequalifying accounts for today {timezone.now()}'
-         else:
-            message = (
-                  f'Finished prequalifying but did not reach the target 25. '
-                  f'Only {qualified_dormant_count} accounts were processed as of {timezone.now()}'
-            )
-         subject = 'Hello Team'
-         from_email = 'lutherlunyamwi@gmail.com'
-         recipient_list = ['lutherlunyamwi@gmail.com', 'tomek@boostedchat.com']
-         send_mail(subject, message, from_email, recipient_list)
-         notify_click_up_tech_notifications(comment_text=message, notify_all=True)
-      except Exception as error:
-         print(error)
+         from api.instagram.tasks import qualify_and_reschedule
+         qualify_and_reschedule() # we reload accounts afresh
+         prequalifying_automatically() # we call the function again to continue processing until we reach the threshold
 

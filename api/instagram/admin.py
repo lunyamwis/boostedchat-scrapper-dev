@@ -21,8 +21,7 @@ admin.site.register(Video)
 from django.http import HttpResponseRedirect
 from django.urls import reverse
 from .utils import get_the_cut_info  # Import your function
-from .tasks import send_first_compliment,qualify_and_reschedule, delete_accounts
-
+from api.instagram.tasks import send_first_compliment,qualify_and_reschedule, send_test_compliment, delete_accounts
 @admin.action(description='Get The Cut Info')
 def get_cut_info_action(modeladmin, request, queryset):
     for obj in queryset:
@@ -144,7 +143,7 @@ class UnscheduledFilter(admin.SimpleListFilter):
 class AccountAdmin(admin.ModelAdmin):
     search_fields = ['igname__icontains']
     actions = [get_cut_info_action, set_qualified_true_action, set_disqualified_true_action,
-               'send_compliment','qualify_reschedule','use_latest_prompt','use_previous_prompt',
+               'send_compliment','send_test_compliment','qualify_reschedule','use_latest_prompt','use_previous_prompt',
                'remove_duplicates']
     
     list_filter = [
@@ -154,6 +153,22 @@ class AccountAdmin(admin.ModelAdmin):
         StatusFilter,
         'dormant_profile_created',
     ]
+
+    @admin.action(description=_('Send Test Compliment'))
+    def send_test_compliment(self, request, queryset):
+        """
+        Checks the availability of selected scouts by attempting to log them in.
+        """
+        # Get the list of selected scout IDs
+
+        selected_instagram_account = queryset.values_list('igname', flat=True)
+        print(selected_instagram_account)
+        send_test_compliment.delay(username=list(selected_instagram_account), message="")
+        self.message_user(request, _(
+            f'Successfully sending test compliment.'
+        ), messages.INFO)
+
+    send_test_compliment.short_description = _('Send Test Compliment')
 
     @admin.action(description=_('Send Compliment'))
     def send_compliment(self, request, queryset):
