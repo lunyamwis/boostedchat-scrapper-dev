@@ -1239,14 +1239,14 @@ class AccountViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'], url_path="weekly-reporting")
     def weekly_reporting(self, request):
         # Get January 1st of the current year with timezone
-        # jan_first = datetime(datetime.now().year, 1, 1, tzinfo=timezone.get_current_timezone())
+        jan_first = datetime(datetime.now().year, 1, 1, tzinfo=timezone.get_current_timezone())
         # Adjust to the Monday of that week (0 = Monday, 6 = Sunday)
-        # start_of_week = jan_first - timedelta(days=jan_first.weekday())
+        start_of_week = jan_first - timedelta(days=jan_first.weekday())
         
         # Lets get from past three months to save loading time
         today = timezone.now()
-        three_months_ago = today - relativedelta(months=3)
-        start_of_week = three_months_ago - timedelta(days=three_months_ago.weekday())
+        # three_months_ago = today - relativedelta(months=3)
+        # start_of_week = three_months_ago - timedelta(days=three_months_ago.weekday())
         current_week = start_of_week 
         results = []
 
