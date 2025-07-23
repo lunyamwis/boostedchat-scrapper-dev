@@ -81,7 +81,7 @@ def sales_rep_is_logged_in(account, salesrep):
         "igname": igname
     }
     json_data = json.dumps(data)
-    json_data = json.dumps(data)
+    response = requests.post(settings.MQTT_BASE_URL + "/accounts/isloggedin", data=json_data, headers={"Content-Type": "application/json"})
     if response.status_code == 200:
         account_list = None
         try:
@@ -1347,6 +1347,7 @@ def update_account_information(user:InstagramUser):
 def create_account_information(user:InstagramUser):
     headers = get_headers()
     profile_information,user_media = None
+    cl = initialize_hikerapi_client()
     try:
         profile_information = cl.user_by_username_v1(user.username)
         user_media = cl.user_medias(user_id=cl.user_by_username_v1(username=user.username).get("pk"),count=1)[0]
