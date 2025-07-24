@@ -1773,11 +1773,18 @@ def fetch_all_followers_task(username, user_id):
                 break
             
             for follower in followers_chunk:
+                logging.warning(f"Processing follower: {follower['username']} out of {len(followers_chunk)}")
                 try:
-                    InstagramUser.objects.create(
-                        username=follower.username,
-                        info=cl.user_by_username_v1(follower.username)
+                    account = Account.objects.create(
+                        igname=follower['username'],
+                        relevant_information=cl.user_by_username_v1(follower['username'])
                     )
+                    OutSourced.objects.create(
+                        results=cl.user_by_username_v1(follower['username']),
+                        account=account
+                    )
+                    all_followers.append(follower['username'])
+
                 except Exception:
                     pass  # User already exists
             
