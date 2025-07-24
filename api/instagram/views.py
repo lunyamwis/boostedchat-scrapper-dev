@@ -499,11 +499,10 @@ class GetFollowersAsync(APIView):
             user_id = user_info.get('pk')
             
             # Start async task
-            task = fetch_all_followers_task.delay(username, user_id)
+            fetch_all_followers_task.delay(username, user_id)
             
             return Response({
                 "message": "Follower fetching started",
-                "task_id": task.id,
                 "status": "processing"
             }, status=status.HTTP_202_ACCEPTED)
             
