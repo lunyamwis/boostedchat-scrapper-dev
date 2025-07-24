@@ -1752,3 +1752,44 @@ def get_media_likers(media_links=None):
             
         except Exception as e:
             logging.warning(f"error: {str(e)}")
+
+
+@shared_task
+@schema_context(os.getenv("SCHEMA_NAME"))
+def fetch_all_followers_task(username, user_id):
+    cl = initialize_hikerapi_client()
+    all_followers = []
+    max_id = None
+    page_count = 0
+    
+    while page_count < 100:  # Adjust limit as needed
+        try:
+            if max_id:
+                followers_chunk = cl.user_followers_chunk_v1(user_id, max_id=max_id)
+            else:
+                followers_chunk = cl.user_followers_chunk_v1(user_id)
+            
+            if not followers_chunk:
+                break
+            
+            for follower in followers_chunk:
+                try:
+                    InstagramUser.objects.create(
+                        username=follower.username,
+                        info=cl.user_by_username_v1(follower.username)
+                    )
+                except Exception:
+                    pass  # User already exists
+            
+            if len(followers_chunk) < 200:
+                break
+                
+            max_id = followers_chunk[-1].pk if hasattr(followers_chunk[-1], 'pk') else None
+            page_count += 1
+            time.sleep(2)  # Rate limiting
+            
+        except Exception as e:
+            print(f"Error on page {page_count}: {e}")
+            break
+    
+    return {"status": "completed", "pages_processed": page_count}

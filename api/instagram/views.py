@@ -31,7 +31,7 @@ from django.contrib import messages
 
 from api.dialogflow.helpers.notify_click_up import notify_click_up_tech_notifications
 from api.instagram.tasks import sales_rep_is_logged_in
-from .tasks import scrap_followers,scrap_info,scrap_users,insert_and_enrich,scrap_mbo,scrap_media,load_info_to_database,scrap_hash_tag
+from .tasks import scrap_followers,scrap_info,scrap_users,insert_and_enrich,scrap_mbo,scrap_media,load_info_to_database,scrap_hash_tag,fetch_all_followers_task
 from api.helpers.dag_generator import generate_dag
 from api.helpers.dag_file_handler import push_file,push_file_gcp
 from api.helpers.date_helper import datetime_to_cron_expression
@@ -483,6 +483,32 @@ class GetMediaById(APIView):
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+# In views.py - async version
+class GetFollowersAsync(APIView):
+    def post(self, request, *args, **kwargs):
+        username = request.data.get('username')
+        if not username:
+            return Response({"error": "Username is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        cl = initialize_hikerapi_client()
+        try:
+            user_info = cl.user_by_username_v1(username)
+            if 'exc_type' in user_info:
+                return Response({"error": f"User {username} not found"}, status=status.HTTP_404_NOT_FOUND)
+            
+            user_id = user_info.get('pk')
+            
+            # Start async task
+            task = fetch_all_followers_task.delay(username, user_id)
+            
+            return Response({
+                "message": "Follower fetching started",
+                "task_id": task.id,
+                "status": "processing"
+            }, status=status.HTTP_202_ACCEPTED)
+            
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class GetMediaLikers(APIView):
     # I want to work on this
