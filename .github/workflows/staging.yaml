@@ -1,0 +1,117 @@
+name: Deploy to staging
+
+on:
+  push:
+    branches: [ actions-test ]
+
+env:
+  REGISTRY: docker.io
+  IMAGE_NAME: lunyamwimages/scrapper-dev:latest
+  # CELERY_BROKER_URL: redis://redis:6379  .
+  # CELERY_RESULT_BACKEND: redis://redis:6379
+  # OPENAI_API_KEY: ${{SECRETS.OPENAI_API_KEY}} 
+  # EMAIL_HOST_USER: ${{SECRETS.EMAIL_HOST_USER}}
+  # EMAIL_HOST_PASSWORD: ${{SECRETS.EMAIL_HOST_PASSWORD}}
+  # CHALLENGE_EMAIL: ${{SECRETS.CHALLENGE_EMAIL}}
+  # CHALLENGE_PASSWORD: ${{SECRETS.CHALLENGE_PASSWORD}}
+  # POSTGRES_DBNAME: ${{ secrets.STAGING_POSTGRES_DBNAME }}
+  # POSTGRES_USERNAME: ${{ secrets.STAGING_POSTGRES_USERNAME }}
+  # POSTGRES_PASSWORD: ${{ secrets.STAGING_POSTGRES_PASSWORD }}
+  # POSTGRES_HOST: ${{ secrets.STAGING_POSTGRES_HOST }}
+  # POSTGRES_PORT: 5432
+  # MAILCHIMP_DATA_CENTER: ${{secrets.MAILCHIMP_DATA_CENTER}}
+  # EMAIL_RECIPIENTS: "${{ secrets.EMAIL_HOST_USER }},${{ secrets.TECH_CHANNEL_EMAIL }}"
+  # API_BASE_URL: http://web:8000/api/v1
+  # CLIENT_ORG:  ${{ secrets.CLIENT_ORG}}
+  # SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+  # SMTP_PORT: ${{ secrets.SMTP_PORT }}
+  # SMTP_HOST: ${{ secrets.SMTP_HOST }}
+  # MAILCHIMP_API_KEY: ${{ secrets.MAILCHIMP_API_KEY }}
+  # MAILCHIMP_EMAIL_LIST_ID: ${{secrets.MAILCHIMP_EMAIL_LIST_ID}}
+  # APP_URL: 'https://api.booksy.us.boostedchat.com'
+  # SCRAPPER_URL: 'http://127.0.0.1:8003'
+  # DOMAIN1: 'booksy.us'
+  # DOMAIN2: 'booksy.us'
+  # MQTT_URL: 'https://mqtt.booksy.us.boostedchat.com'
+  # SCRIPTING_URL: 'https://promptemplate.booksy.us.boostedchat.com'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      max-parallel: 4
+      matrix:
+        python-version: [3.9]
+    steps:
+    - uses: actions/checkout@v3
+    - name: Build the Docker image
+      run: docker compose build --no-cache --force-rm 
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v3
+      with:
+        python-version: ${{ matrix.python-version }}
+    # - name: Set up Python ${{ matrix.python-version }}
+    #   uses: actions/setup-python@v3
+    #   with:
+    #     python-version: ${{ matrix.python-version }}
+    # - name: Install Dependencies
+    #   run: |
+    #     python -m pip install --upgrade pip
+    #     pip install -r requirements.txt
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+   
+    - name: Login To Docker Hub
+      uses: docker/login-action@v3 # mr-smithers-excellent/docker-build-push@v4 # use existing coker action
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+        
+    - name: Extract metadata (tags, labels) for Docker
+      id: meta
+      uses: docker/metadata-action@98669ae865ea3cffbcbaa878cf57c20bbf1c6c38
+      with:
+        images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+
+
+    # - name: Set up Docker Buildx
+    #   uses: docker/setup-buildx-action@v3
+
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: "{{defaultContext}}"
+        push: true
+        tags: lunyamwimages/scrapper-dev:latest
+
+    - name: Set up ssh agent
+      uses: webfactory/ssh-agent@v0.9.0
+      with:
+        ssh-private-key: ${{ secrets.STAGING_DEPLOY_SSH_PRIVATE_KEY }}
+
+    - name: Add server to known_hosts
+      run: |
+        ssh-keyscan -H 84.247.184.136 >> ~/.ssh/known_hosts
+
+    - name: Test SSH connection
+      run: |
+        ssh -v ubuntu@84.247.184.136 'echo "I AM IN THE SERVER"'
+      env:
+        SSH_PRIVATE_KEY: ${{ secrets.STAGING_DEPLOY_SSH_PRIVATE_KEY }}
+  
+    - name: Pull staging image and builde docker on staging server
+      run: |
+       ssh ubuntu@84.247.184.136 '
+          cd /home/ubuntu/booksy-boostedchat-deployment/boostedchat-site && \
+          docker pull lunyamwimages/scrapper-dev:latest && \
+          if [ "$(docker ps -a -q -f name=boostedchat-site-web-1)" ]; then \
+            docker stop boostedchat-site-web-1 && docker rm boostedchat-site-web-1 && \
+            unset DOCKER_HOST && docker compose --env-file .env -f docker-compose.airflow.yaml up --build -d web; \
+          else \
+            echo "No such container: boostedchat-site-web-1, starting web service" && docker compose -f docker-compose.airflow.yaml --env-file .env up -d web; \
+          fi  
+        '
+
+      env:
+        SSH_PRIVATE_KEY: ${{ secrets.STAGING_DEPLOY_SSH_PRIVATE_KEY }} 
