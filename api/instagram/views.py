@@ -1281,7 +1281,7 @@ class AccountViewSet(viewsets.ModelViewSet):
                 outreach_time__gte=current_week,
                 outreach_time__lt=end_of_week,
                 outreach_success=True,
-            ).distinct()
+            ).distinct('id')
             outreach_count = outreach_accounts.count()
             
             print("Outrech count **",outreach_count)
@@ -1292,7 +1292,7 @@ class AccountViewSet(viewsets.ModelViewSet):
                 sales_qualified_date__gte=current_week,
                 sales_qualified_date__lte=end_of_week,
                 salesrep__isnull=False,
-            ).distinct()
+            ).distinct('id')
             
 
             responded_messages = Message.objects.filter(
