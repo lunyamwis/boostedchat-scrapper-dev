@@ -1197,10 +1197,10 @@ class AccountViewSet(viewsets.ModelViewSet):
                 ).distinct('id')
             case "sales_qualified":
                 queryset = queryset.filter(
-                        Q(status_param='Sales Qualified') | Q(status_param='Won'),
+                        Q(status_param__iexact='sales qualified')| Q(status_param__iexact='Won'),
                         # created_at__gte=start_date, created_at__lt=end_date,
                         sales_qualified_date__gte=start_date, sales_qualified_date__lt=end_date
-                    )
+                    ).distinct('id')
             case "outreach":
                 # queryset = queryset.filter(created_at__gte=start_date, created_at__lt=end_date).distinct('id')
                 queryset = queryset.filter(outreach_time__gte=start_date,outreach_time__lt=end_date).distinct('id')
