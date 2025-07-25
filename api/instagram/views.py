@@ -1140,7 +1140,7 @@ class AccountViewSet(viewsets.ModelViewSet):
         })
 
         if search_query:
-            queryset = queryset.filter(igname__icontains=search_query.strip())
+            queryset = queryset.filter(igname__icontains=search_query.strip()).distinct('id')
         
         # if status_param:
         #     if status_param.lower() == "null":
@@ -1158,7 +1158,7 @@ class AccountViewSet(viewsets.ModelViewSet):
                 
         if outreach_success:
             if outreach_success.lower() == "true":
-                queryset = queryset.filter(outreach_success=True)
+                queryset = queryset.filter(outreach_success=True).distinct('id')
      
         start_date = make_aware(datetime.strptime(created_at_gte, "%Y-%m-%d"))
         end_date = make_aware(datetime.strptime(created_at_lt, "%Y-%m-%d") )
@@ -1185,7 +1185,7 @@ class AccountViewSet(viewsets.ModelViewSet):
             case "lost":
                 queryset = queryset.filter(lost_date__range=(start_date, end_date)).distinct('id')
             case _:
-                queryset
+                queryset.distinct('id')
                 # Paginator for main list
         paginator = self.report_pagination_class()
         paginated_qs = paginator.paginate_queryset(queryset, request)
