@@ -465,7 +465,20 @@ def send_first_compliment(username, message, repeat=True):
                                 notify_all=True
                             )
                             break
-            
+            elif response.status_code == 522:
+                notify_click_up_tech_notifications(
+                        comment_text=f"Received the following error:{response.text} - {username}, waiting for 10 minutes before login retry",
+                        notify_all=True
+                )
+                time.sleep(600)  # Wait for 30 minutes before retrying
+                restart_payload = {"container_id": "boostedchat-site-mqtt-1"}  # restart the mqtt container
+                restart_mqtt = requests.post(f"{os.getenv('API_URL')}/serviceManager/restart-container/",data=restart_payload)
+                        
+                if restart_mqtt.status_code == 200:
+                    notify_click_up_tech_notifications(
+                        comment_text=f"Received {restart_mqtt.status_code} - after trying to relogin the following salesrep {salesrep.ig_username} and now we can proceed on to sending the message",
+                        notify_all=True
+                    )
             return response
             
 

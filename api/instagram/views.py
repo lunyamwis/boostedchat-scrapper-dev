@@ -137,6 +137,7 @@ from urllib.parse import urlparse
 from auditlog.models import LogEntry
 from celery.result import AsyncResult
 from datetime import datetime, timedelta, time, timezone as timezone2
+from dateutil.relativedelta import relativedelta
 from instagrapi.exceptions import UserNotFound
 from rest_framework.views import APIView
 from rest_framework import status, viewsets
@@ -1266,8 +1267,11 @@ class AccountViewSet(viewsets.ModelViewSet):
         jan_first = datetime(datetime.now().year, 1, 1, tzinfo=timezone.get_current_timezone())
         # Adjust to the Monday of that week (0 = Monday, 6 = Sunday)
         start_of_week = jan_first - timedelta(days=jan_first.weekday())
-        # start_of_year = datetime(datetime.now().year, 1, 1, tzinfo=timezone.get_current_timezone())
+        
+        # Lets get from past three months to save loading time
         today = timezone.now()
+        # three_months_ago = today - relativedelta(months=3)
+        # start_of_week = three_months_ago - timedelta(days=three_months_ago.weekday())
         current_week = start_of_week 
         results = []
 

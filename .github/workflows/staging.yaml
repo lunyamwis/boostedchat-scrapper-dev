@@ -7,33 +7,6 @@ on:
 env:
   REGISTRY: docker.io
   IMAGE_NAME: lunyamwimages/scrapper-dev:latest
-  # CELERY_BROKER_URL: redis://redis:6379  .
-  # CELERY_RESULT_BACKEND: redis://redis:6379
-  # OPENAI_API_KEY: ${{SECRETS.OPENAI_API_KEY}} 
-  # EMAIL_HOST_USER: ${{SECRETS.EMAIL_HOST_USER}}
-  # EMAIL_HOST_PASSWORD: ${{SECRETS.EMAIL_HOST_PASSWORD}}
-  # CHALLENGE_EMAIL: ${{SECRETS.CHALLENGE_EMAIL}}
-  # CHALLENGE_PASSWORD: ${{SECRETS.CHALLENGE_PASSWORD}}
-  # POSTGRES_DBNAME: ${{ secrets.STAGING_POSTGRES_DBNAME }}
-  # POSTGRES_USERNAME: ${{ secrets.STAGING_POSTGRES_USERNAME }}
-  # POSTGRES_PASSWORD: ${{ secrets.STAGING_POSTGRES_PASSWORD }}
-  # POSTGRES_HOST: ${{ secrets.STAGING_POSTGRES_HOST }}
-  # POSTGRES_PORT: 5432
-  # MAILCHIMP_DATA_CENTER: ${{secrets.MAILCHIMP_DATA_CENTER}}
-  # EMAIL_RECIPIENTS: "${{ secrets.EMAIL_HOST_USER }},${{ secrets.TECH_CHANNEL_EMAIL }}"
-  # API_BASE_URL: http://web:8000/api/v1
-  # CLIENT_ORG:  ${{ secrets.CLIENT_ORG}}
-  # SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
-  # SMTP_PORT: ${{ secrets.SMTP_PORT }}
-  # SMTP_HOST: ${{ secrets.SMTP_HOST }}
-  # MAILCHIMP_API_KEY: ${{ secrets.MAILCHIMP_API_KEY }}
-  # MAILCHIMP_EMAIL_LIST_ID: ${{secrets.MAILCHIMP_EMAIL_LIST_ID}}
-  # APP_URL: 'https://api.booksy.us.boostedchat.com'
-  # SCRAPPER_URL: 'http://127.0.0.1:8003'
-  # DOMAIN1: 'booksy.us'
-  # DOMAIN2: 'booksy.us'
-  # MQTT_URL: 'https://mqtt.booksy.us.boostedchat.com'
-  # SCRIPTING_URL: 'https://promptemplate.booksy.us.boostedchat.com'
 
 jobs:
   build:
@@ -50,15 +23,6 @@ jobs:
       uses: actions/setup-python@v3
       with:
         python-version: ${{ matrix.python-version }}
-    # - name: Set up Python ${{ matrix.python-version }}
-    #   uses: actions/setup-python@v3
-    #   with:
-    #     python-version: ${{ matrix.python-version }}
-    # - name: Install Dependencies
-    #   run: |
-    #     python -m pip install --upgrade pip
-    #     pip install -r requirements.txt
-
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
    
@@ -73,10 +37,6 @@ jobs:
       uses: docker/metadata-action@98669ae865ea3cffbcbaa878cf57c20bbf1c6c38
       with:
         images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-
-
-    # - name: Set up Docker Buildx
-    #   uses: docker/setup-buildx-action@v3
 
     - name: Build and push Docker image
       uses: docker/build-push-action@v5
