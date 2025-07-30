@@ -1785,24 +1785,27 @@ def fetch_all_followers_task(username, user_id):
             if not followers_chunk:
                 break
             
-            for follower in followers_chunk:
-                logging.warning(f"Processing follower: {follower['username']} out of {len(followers_chunk)}")
-                try:
-                    account = Account.objects.create(
-                        igname=follower['username'],
-                        relevant_information=cl.user_by_username_v1(follower['username'])
-                    )
-                    OutSourced.objects.create(
-                        results=cl.user_by_username_v1(follower['username']),
-                        account=account
-                    )
-                    all_followers.append(follower['username'])
 
-                except Exception:
-                    pass  # User already exists
+            for followers in followers_chunk:
+                if followers:
+                    for follower in followers:
+                        logging.warning(f"Processing follower: {follower['username']} out of {len(followers_chunk)}")
+                        try:
+                            account = Account.objects.create(
+                                igname=follower['username'],
+                                relevant_information=cl.user_by_username_v1(follower['username'])
+                            )
+                            OutSourced.objects.create(
+                                results=cl.user_by_username_v1(follower['username']),
+                                account=account
+                            )
+                            all_followers.append(follower['username'])
+
+                        except Exception:
+                            pass  # User already exists
             
-            if len(followers_chunk) < 200:
-                break
+            # if len(followers_chunk) < 200:
+            #     break
                 
             max_id = followers_chunk[-1].pk if hasattr(followers_chunk[-1], 'pk') else None
             page_count += 1
