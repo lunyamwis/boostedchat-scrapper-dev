@@ -1791,15 +1791,22 @@ def fetch_all_followers_task(username, user_id):
                     for follower in followers:
                         logging.warning(f"Processing follower: {follower['username']} out of {len(followers_chunk)}")
                         try:
-                            account = Account.objects.create(
-                                igname=follower['username'],
-                                relevant_information=cl.user_by_username_v1(follower['username'])
-                            )
-                            OutSourced.objects.create(
-                                results=cl.user_by_username_v1(follower['username']),
-                                account=account
-                            )
-                            all_followers.append(follower['username'])
+                            # Check if the user already exists
+                            if Account.objects.filter(username=follower['username']).exists():
+                                print(f"User {follower['username']} already exists in the database.")
+                                continue
+                            else:
+                                account = Account.objects.create(
+                                    igname=follower['username'],
+                                    # relevant_information=cl.user_by_username_v1(follower['username'])
+                                    relevant_information=follower
+                                )
+                                OutSourced.objects.create(
+                                    # results=cl.user_by_username_v1(follower['username']),
+                                    results = follower,
+                                    account=account
+                                )
+                                all_followers.append(follower['username'])
 
                         except Exception:
                             pass  # User already exists
