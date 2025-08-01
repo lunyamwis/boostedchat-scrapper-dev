@@ -23,7 +23,7 @@ admin.site.register(Video)
 from django.http import HttpResponseRedirect
 from django.urls import reverse
 from .utils import get_the_cut_info  # Import your function
-from api.instagram.tasks import send_first_compliment,qualify_and_reschedule, send_test_compliment, delete_accounts
+from api.instagram.tasks import send_first_compliment,qualify_and_reschedule, send_test_compliment, delete_accounts, remove_duplicates_task
 @admin.action(description='Get The Cut Info')
 def get_cut_info_action(modeladmin, request, queryset):
     for obj in queryset:
@@ -238,33 +238,7 @@ class AccountAdmin(admin.ModelAdmin):
 
     @admin.action(description=_('Remove Duplicates'))
     def remove_duplicates(self, request, queryset):
-        with schema_context(os.getenv('SCHEMA_NAME')):
-            duplicates = (
-                Account.objects.values('igname')
-                .annotate(igname_count=Count('igname'))
-                .filter(igname_count__gt=1)
-            )
-
-            for dup in duplicates:
-                accounts = Account.objects.filter(igname=dup['igname']).order_by('id')
-
-                # Find account with status__name='sent_compliment'
-                preferred = accounts.filter(status__name='sent_compliment').first()
-
-                if not preferred:
-                    # Find account with outsourced info
-                    for acc in accounts:
-                        if acc.outsourced_set.exists():
-                            preferred = acc
-                            break
-
-                if not preferred:
-                    # Keep the first one if none matched the above
-                    preferred = accounts.latest('created_at')
-
-                # Delete all others except preferred
-                accounts_to_delete = accounts.exclude(id=preferred.id)
-                accounts_to_delete.delete()
+        remove_duplicates_task.delay()
 
         self.message_user(request, _(
             f'Successfully removed duplicates.'

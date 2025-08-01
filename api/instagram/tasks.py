@@ -10,6 +10,7 @@ import wandb
 import time
 import uuid
 import subprocess
+from django.db.models import Q, Count
 from boostedchatScrapper.spiders.instagram import InstagramSpider
 from boostedchatScrapper.spiders.helpers.instagram_login_helper import login_user
 from django.utils import timezone
@@ -1823,3 +1824,36 @@ def fetch_all_followers_task(username, user_id):
             break
     
     return {"status": "completed", "pages_processed": page_count}
+
+
+
+
+@shared_task
+def remove_duplicates_task():
+    with schema_context(os.getenv('SCHEMA_NAME')):
+            duplicates = (
+                Account.objects.values('igname')
+                .annotate(igname_count=Count('igname'))
+                .filter(igname_count__gt=1)
+            )
+
+            for dup in duplicates:
+                accounts = Account.objects.filter(igname=dup['igname']).order_by('id')
+
+                # Find account with status__name='sent_compliment'
+                preferred = accounts.filter(status__name='sent_compliment').first()
+
+                if not preferred:
+                    # Find account with outsourced info
+                    for acc in accounts:
+                        if acc.outsourced_set.exists():
+                            preferred = acc
+                            break
+
+                if not preferred:
+                    # Keep the first one if none matched the above
+                    preferred = accounts.latest('created_at')
+
+                # Delete all others except preferred
+                accounts_to_delete = accounts.exclude(id=preferred.id)
+                accounts_to_delete.delete()
