@@ -1781,7 +1781,7 @@ def fetch_all_followers_task(username, user_id):
         if follower:
             try:
                 # Check if the user already exists
-                if Account.objects.filter(username=follower['username']).exists():
+                if Account.objects.filter(igname=follower['username']).exists():
                     print(f"User {follower['username']} already exists in the database.")
                     continue
                 else:
