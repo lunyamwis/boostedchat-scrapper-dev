@@ -4,11 +4,13 @@ from .models import ExperimentAssignee, ExperimentStatus, InstagramUser,LeadSour
 # Register your models here.
 # Register your models here.
 import json
+import os
 import logging
 
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from django.contrib.admin import DateFieldListFilter
+from django_tenants.utils import schema_context  # or your schema context utility
 from django.contrib import messages
 from django.db.models import Count
 
@@ -236,15 +238,34 @@ class AccountAdmin(admin.ModelAdmin):
 
     @admin.action(description=_('Remove Duplicates'))
     def remove_duplicates(self, request, queryset):
-        duplicate_igname_list = (
-            queryset.objects.values('igname')
-            .annotate(igname_count=Count('igname'))
-            .filter(igname_count__gt=1)
-            .values_list('igname', flat=True)
-        )
-        print(f"How many duplicates? {len(duplicate_igname_list)}")
-        if len(duplicate_igname_list) > 0:
-            delete_accounts.delay(list(duplicate_igname_list))
+        with schema_context(os.getenv('SCHEMA_NAME')):
+            duplicates = (
+                Account.objects.values('igname')
+                .annotate(igname_count=Count('igname'))
+                .filter(igname_count__gt=1)
+            )
+
+            for dup in duplicates:
+                accounts = Account.objects.filter(igname=dup['igname']).order_by('id')
+
+                # Find account with status__name='sent_compliment'
+                preferred = accounts.filter(status__name='sent_compliment').first()
+
+                if not preferred:
+                    # Find account with outsourced info
+                    for acc in accounts:
+                        if acc.outsourced_set.exists():
+                            preferred = acc
+                            break
+
+                if not preferred:
+                    # Keep the first one if none matched the above
+                    preferred = accounts.latest('created_at')
+
+                # Delete all others except preferred
+                accounts_to_delete = accounts.exclude(id=preferred.id)
+                accounts_to_delete.delete()
+
         self.message_user(request, _(
             f'Successfully removed duplicates.'
         ), messages.INFO)
