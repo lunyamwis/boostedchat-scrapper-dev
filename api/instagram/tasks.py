@@ -1776,52 +1776,72 @@ def fetch_all_followers_task(username, user_id):
     max_id = None
     page_count = 0
     
-    while page_count < 100:  # Adjust limit as needed
-        try:
-            if max_id:
-                followers_chunk = cl.user_followers_chunk_v1(user_id, max_id=max_id)
-            else:
-                followers_chunk = cl.user_followers_chunk_v1(user_id)
+    followers = cl.user_followers(user_id=user_id, count=3000)
+    for follower in followers:
+        if follower:
+            try:
+                # Check if the user already exists
+                if Account.objects.filter(username=follower['username']).exists():
+                    print(f"User {follower['username']} already exists in the database.")
+                    continue
+                else:
+                    account = Account.objects.create(
+                        igname=follower['username'],
+                        relevant_information=follower
+                    )
+                    OutSourced.objects.create(
+                        results=follower,
+                        account=account
+                    )
+                    all_followers.append(follower['username'])
+            except Exception as e:
+                print(f"Error processing follower {follower['username']}: {e}")
+    # while page_count < 100:  # Adjust limit as needed
+        # try:
+        #     if max_id:
+        #         followers_chunk = cl.user_followers_chunk_v1(user_id, max_id=max_id)
+        #     else:
+        #         followers_chunk = cl.user_followers_chunk_v1(user_id)
             
-            if not followers_chunk:
-                break
+        #     if not followers_chunk:
+        #         break
             
 
-            for followers in followers_chunk:
-                if followers:
-                    for follower in followers:
-                        logging.warning(f"Processing follower: {follower['username']} out of {len(followers_chunk)}")
-                        try:
-                            # Check if the user already exists
-                            if Account.objects.filter(username=follower['username']).exists():
-                                print(f"User {follower['username']} already exists in the database.")
-                                continue
-                            else:
-                                account = Account.objects.create(
-                                    igname=follower['username'],
-                                    # relevant_information=cl.user_by_username_v1(follower['username'])
-                                    relevant_information=follower
-                                )
-                                OutSourced.objects.create(
-                                    # results=cl.user_by_username_v1(follower['username']),
-                                    results = follower,
-                                    account=account
-                                )
-                                all_followers.append(follower['username'])
+        #     for followers in followers_chunk:
+        #         if followers:
+        #             for follower in followers:
+        #                 logging.warning(f"Processing follower: {follower['username']} out of {len(followers_chunk)}")
+        #                 try:
+        #                     # Check if the user already exists
+        #                     if Account.objects.filter(username=follower['username']).exists():
+        #                         print(f"User {follower['username']} already exists in the database.")
+        #                         continue
+        #                     else:
+        #                         account = Account.objects.create(
+        #                             igname=follower['username'],
+        #                             # relevant_information=cl.user_by_username_v1(follower['username'])
+        #                             relevant_information=follower
+        #                         )
+        #                         OutSourced.objects.create(
+        #                             # results=cl.user_by_username_v1(follower['username']),
+        #                             results = follower,
+        #                             account=account
+        #                         )
+        #                         all_followers.append(follower['username'])
 
-                        except Exception:
-                            pass  # User already exists
+        #                 except Exception:
+        #                     pass  # User already exists
             
-            # if len(followers_chunk) < 200:
-            #     break
+        #     # if len(followers_chunk) < 200:
+        #     #     break
                 
-            max_id = followers_chunk[-1].pk if hasattr(followers_chunk[-1], 'pk') else None
-            page_count += 1
-            time.sleep(2)  # Rate limiting
+        #     max_id = followers_chunk[-1].pk if hasattr(followers_chunk[-1], 'pk') else None
+        #     page_count += 1
+        #     time.sleep(2)  # Rate limiting
             
-        except Exception as e:
-            print(f"Error on page {page_count}: {e}")
-            break
+        # except Exception as e:
+        #     print(f"Error on page {page_count}: {e}")
+        #     break
     
     return {"status": "completed", "pages_processed": page_count}
 
