@@ -1190,21 +1190,20 @@ class AccountViewSet(viewsets.ModelViewSet):
         match list_type.lower():    
             case "all":
                 queryset = queryset.filter(
-                    Q(outreach_time__range=(start_date, end_date)) |
+                    Q(outreach_time__date__range=(start_date, end_date)) |
                     Q(won_date__range=(start_date, end_date)) |
                     Q(lost_date__range=(start_date, end_date)) |
-                    # Q(responded_date__range=(start_date, end_date))
                     Q(sales_qualified_date__range=(start_date, end_date))
                 ).distinct('id')
             case "sales_qualified":
                 queryset = queryset.filter(
                         Q(status_param__iexact='sales qualified')| Q(status_param__iexact='Won'),
                         # created_at__gte=start_date, created_at__lt=end_date,
-                        sales_qualified_date__gte=start_date, sales_qualified_date__lt=end_date
+                        sales_qualified_date__gte=start_date, sales_qualified_date__lte=end_date
                     ).distinct('id')
             case "outreach":
                 # queryset = queryset.filter(created_at__gte=start_date, created_at__lt=end_date).distinct('id')
-                queryset = queryset.filter(outreach_time__gte=start_date,outreach_time__lt=end_date).distinct('id')
+                queryset = queryset.filter(outreach_time__gte=start_date,outreach_time__date__lte=end_date).distinct('id')
             case "won":
                 queryset = queryset.filter(won_date__range=(start_date, end_date)).distinct('id')
             case "lost":
@@ -1375,25 +1374,19 @@ class AccountViewSet(viewsets.ModelViewSet):
                 # created_at__gte=start_of_month,
                 # created_at__lte=end_of_month,
                 outreach_time__gte=start_of_month,
-                outreach_time__lte=end_of_month,
+                outreach_time__date__lte=end_of_month,
                 outreach_success=True,
-            ).distinct()
+            ).distinct('id')
             outreach_count = outreach_accounts.count()
             
             print("Outrech count **",outreach_count)
             
             sales_qualified_accounts = Account.objects.filter(
-                # created_at__gte=start_of_month,
-                # created_at__lte=end_of_month,
+                Q(status_param__iexact='sales qualified')| Q(status_param__iexact='Won'),
                 sales_qualified_date__gte=start_of_month,
                 sales_qualified_date__lte=end_of_month,
                 salesrep__isnull=False,
-                # responded_date__isnull=False,
-                status_param='Sales Qualified',
-                #call_scheduled_date__isnull=False,
-                # won_date__isnull=True,
-                # lost_date__isnull=True
-            ).distinct()
+            ).distinct('id')
             
 
             responded_messages = Message.objects.filter(
