@@ -1776,7 +1776,7 @@ def fetch_all_followers_task(username, user_id):
     max_id = None
     page_count = 0
     
-    followers = cl.user_followers(user_id=user_id, count=3000)
+    followers = cl.user_followers(user_id=user_id, count=7000)
     for follower in followers:
         if follower:
             try:
@@ -1787,7 +1787,8 @@ def fetch_all_followers_task(username, user_id):
                 else:
                     account = Account.objects.create(
                         igname=follower['username'],
-                        relevant_information=follower
+                        relevant_information=follower,
+                        dormant_profile_created=True  # Set to True if you want to mark it as dormant
                     )
                     OutSourced.objects.create(
                         results=follower,
