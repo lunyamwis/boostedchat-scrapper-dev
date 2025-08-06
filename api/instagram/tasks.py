@@ -10,6 +10,7 @@ import wandb
 import time
 import uuid
 import subprocess
+from django.db.models import Q, Count
 from boostedchatScrapper.spiders.instagram import InstagramSpider
 from boostedchatScrapper.spiders.helpers.instagram_login_helper import login_user
 from django.utils import timezone
@@ -81,7 +82,7 @@ def sales_rep_is_logged_in(account, salesrep):
         "igname": igname
     }
     json_data = json.dumps(data)
-    json_data = json.dumps(data)
+    response = requests.post(settings.MQTT_BASE_URL + "/accounts/isloggedin", data=json_data, headers={"Content-Type": "application/json"})
     if response.status_code == 200:
         account_list = None
         try:
@@ -465,7 +466,20 @@ def send_first_compliment(username, message, repeat=True):
                                 notify_all=True
                             )
                             break
-            
+            elif response.status_code == 522:
+                notify_click_up_tech_notifications(
+                        comment_text=f"Received the following error:{response.text} - {username}, waiting for 10 minutes before login retry",
+                        notify_all=True
+                )
+                time.sleep(600)  # Wait for 30 minutes before retrying
+                restart_payload = {"container_id": "boostedchat-site-mqtt-1"}  # restart the mqtt container
+                restart_mqtt = requests.post(f"{os.getenv('API_URL')}/serviceManager/restart-container/",data=restart_payload)
+                        
+                if restart_mqtt.status_code == 200:
+                    notify_click_up_tech_notifications(
+                        comment_text=f"Received {restart_mqtt.status_code} - after trying to relogin the following salesrep {salesrep.ig_username} and now we can proceed on to sending the message",
+                        notify_all=True
+                    )
             return response
             
 
@@ -1347,6 +1361,7 @@ def update_account_information(user:InstagramUser):
 def create_account_information(user:InstagramUser):
     headers = get_headers()
     profile_information,user_media = None
+    cl = initialize_hikerapi_client()
     try:
         profile_information = cl.user_by_username_v1(user.username)
         user_media = cl.user_medias(user_id=cl.user_by_username_v1(username=user.username).get("pk"),count=1)[0]
@@ -1751,3 +1766,115 @@ def get_media_likers(media_links=None):
             
         except Exception as e:
             logging.warning(f"error: {str(e)}")
+
+
+@shared_task
+@schema_context(os.getenv("SCHEMA_NAME"))
+def fetch_all_followers_task(username, user_id):
+    cl = initialize_hikerapi_client()
+    all_followers = []
+    max_id = None
+    page_count = 0
+    
+    followers = cl.user_followers(user_id=user_id, count=7000)
+    for follower in followers:
+        if follower:
+            try:
+                # Check if the user already exists
+                if Account.objects.filter(igname=follower['username']).exists():
+                    print(f"User {follower['username']} already exists in the database.")
+                    continue
+                else:
+                    account = Account.objects.create(
+                        igname=follower['username'],
+                        relevant_information=follower,
+                        dormant_profile_created=True  # Set to True if you want to mark it as dormant
+                    )
+                    OutSourced.objects.create(
+                        results=follower,
+                        account=account
+                    )
+                    all_followers.append(follower['username'])
+            except Exception as e:
+                print(f"Error processing follower {follower['username']}: {e}")
+    # while page_count < 100:  # Adjust limit as needed
+        # try:
+        #     if max_id:
+        #         followers_chunk = cl.user_followers_chunk_v1(user_id, max_id=max_id)
+        #     else:
+        #         followers_chunk = cl.user_followers_chunk_v1(user_id)
+            
+        #     if not followers_chunk:
+        #         break
+            
+
+        #     for followers in followers_chunk:
+        #         if followers:
+        #             for follower in followers:
+        #                 logging.warning(f"Processing follower: {follower['username']} out of {len(followers_chunk)}")
+        #                 try:
+        #                     # Check if the user already exists
+        #                     if Account.objects.filter(username=follower['username']).exists():
+        #                         print(f"User {follower['username']} already exists in the database.")
+        #                         continue
+        #                     else:
+        #                         account = Account.objects.create(
+        #                             igname=follower['username'],
+        #                             # relevant_information=cl.user_by_username_v1(follower['username'])
+        #                             relevant_information=follower
+        #                         )
+        #                         OutSourced.objects.create(
+        #                             # results=cl.user_by_username_v1(follower['username']),
+        #                             results = follower,
+        #                             account=account
+        #                         )
+        #                         all_followers.append(follower['username'])
+
+        #                 except Exception:
+        #                     pass  # User already exists
+            
+        #     # if len(followers_chunk) < 200:
+        #     #     break
+                
+        #     max_id = followers_chunk[-1].pk if hasattr(followers_chunk[-1], 'pk') else None
+        #     page_count += 1
+        #     time.sleep(2)  # Rate limiting
+            
+        # except Exception as e:
+        #     print(f"Error on page {page_count}: {e}")
+        #     break
+    
+    return {"status": "completed", "pages_processed": page_count}
+
+
+
+
+@shared_task
+def remove_duplicates_task():
+    with schema_context(os.getenv('SCHEMA_NAME')):
+            duplicates = (
+                Account.objects.values('igname')
+                .annotate(igname_count=Count('igname'))
+                .filter(igname_count__gt=1)
+            )
+
+            for dup in duplicates:
+                accounts = Account.objects.filter(igname=dup['igname']).order_by('id')
+
+                # Find account with status__name='sent_compliment'
+                preferred = accounts.filter(status__name='sent_compliment').first()
+
+                if not preferred:
+                    # Find account with outsourced info
+                    for acc in accounts:
+                        if acc.outsourced_set.exists():
+                            preferred = acc
+                            break
+
+                if not preferred:
+                    # Keep the first one if none matched the above
+                    preferred = accounts.latest('created_at')
+
+                # Delete all others except preferred
+                accounts_to_delete = accounts.exclude(id=preferred.id)
+                accounts_to_delete.delete()

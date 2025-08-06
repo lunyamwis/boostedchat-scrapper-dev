@@ -93,6 +93,7 @@ urlpatterns = [
     path('displayWorkflow/', views.display_workflows,name="workflows"),
     path('generateWorkflow/', views.generate_workflow,name="create_workflowset"),
     path('scrapFollowers/', views.ScrapFollowers.as_view()),
+    path('scrapFollowersTask/', views.GetFollowersAsync.as_view()),
     path('scrapGmaps/', views.ScrapGmaps.as_view()),
     path('scrapTheCut/', views.ScrapTheCut.as_view()),
     path('scrapStyleseat/',views.ScrapStyleseat.as_view()),

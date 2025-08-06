@@ -4,11 +4,13 @@ from .models import ExperimentAssignee, ExperimentStatus, InstagramUser,LeadSour
 # Register your models here.
 # Register your models here.
 import json
+import os
 import logging
 
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from django.contrib.admin import DateFieldListFilter
+from django_tenants.utils import schema_context  # or your schema context utility
 from django.contrib import messages
 from django.db.models import Count
 
@@ -21,7 +23,7 @@ admin.site.register(Video)
 from django.http import HttpResponseRedirect
 from django.urls import reverse
 from .utils import get_the_cut_info  # Import your function
-from api.instagram.tasks import send_first_compliment,qualify_and_reschedule, send_test_compliment, delete_accounts
+from api.instagram.tasks import send_first_compliment,qualify_and_reschedule, send_test_compliment, delete_accounts, remove_duplicates_task
 @admin.action(description='Get The Cut Info')
 def get_cut_info_action(modeladmin, request, queryset):
     for obj in queryset:
@@ -236,15 +238,8 @@ class AccountAdmin(admin.ModelAdmin):
 
     @admin.action(description=_('Remove Duplicates'))
     def remove_duplicates(self, request, queryset):
-        duplicate_igname_list = (
-            queryset.objects.values('igname')
-            .annotate(igname_count=Count('igname'))
-            .filter(igname_count__gt=1)
-            .values_list('igname', flat=True)
-        )
-        print(f"How many duplicates? {len(duplicate_igname_list)}")
-        if len(duplicate_igname_list) > 0:
-            delete_accounts.delay(list(duplicate_igname_list))
+        remove_duplicates_task.delay()
+
         self.message_user(request, _(
             f'Successfully removed duplicates.'
         ), messages.INFO)

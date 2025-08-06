@@ -1257,7 +1257,8 @@ class agentSetup(APIView):
                             backstory=agent.prompt.last().text_data,
                             tools = [TOOLS.get(tool.name) for tool in agent.tools.all()],
                             allow_delegation=False,
-                            verbose=True
+                            verbose=True,
+                            llm=llm_val
                         ))
                 else:
                     if agent.is_opensource:
@@ -1277,7 +1278,8 @@ class agentSetup(APIView):
                             goal=agent.goal,
                             backstory=agent.prompt.last().text_data,
                             allow_delegation=False,
-                            verbose=True
+                            verbose=True,
+                            llm=llm_val
                         ))
                 
             tasks = []

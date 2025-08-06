@@ -31,7 +31,7 @@ from django.contrib import messages
 
 from api.dialogflow.helpers.notify_click_up import notify_click_up_tech_notifications
 from api.instagram.tasks import sales_rep_is_logged_in
-from .tasks import scrap_followers,scrap_info,scrap_users,insert_and_enrich,scrap_mbo,scrap_media,load_info_to_database,scrap_hash_tag
+from .tasks import scrap_followers,scrap_info,scrap_users,insert_and_enrich,scrap_mbo,scrap_media,load_info_to_database,scrap_hash_tag,fetch_all_followers_task
 from api.helpers.dag_generator import generate_dag
 from api.helpers.dag_file_handler import push_file,push_file_gcp
 from api.helpers.date_helper import datetime_to_cron_expression
@@ -484,6 +484,31 @@ class GetMediaById(APIView):
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+# In views.py - async version
+class GetFollowersAsync(APIView):
+    def post(self, request, *args, **kwargs):
+        username = request.data.get('username')
+        if not username:
+            return Response({"error": "Username is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        cl = initialize_hikerapi_client()
+        try:
+            user_info = cl.user_by_username_v1(username)
+            if 'exc_type' in user_info:
+                return Response({"error": f"User {username} not found"}, status=status.HTTP_404_NOT_FOUND)
+            
+            user_id = user_info.get('pk')
+            
+            # Start async task
+            fetch_all_followers_task.delay(username, user_id)
+            
+            return Response({
+                "message": "Follower fetching started",
+                "status": "processing"
+            }, status=status.HTTP_202_ACCEPTED)
+            
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 class GetMediaLikers(APIView):
     # I want to work on this
@@ -1140,7 +1165,7 @@ class AccountViewSet(viewsets.ModelViewSet):
         })
 
         if search_query:
-            queryset = queryset.filter(igname__icontains=search_query.strip())
+            queryset = queryset.filter(igname__icontains=search_query.strip()).distinct('id')
         
         # if status_param:
         #     if status_param.lower() == "null":
@@ -1158,34 +1183,33 @@ class AccountViewSet(viewsets.ModelViewSet):
                 
         if outreach_success:
             if outreach_success.lower() == "true":
-                queryset = queryset.filter(outreach_success=True)
+                queryset = queryset.filter(outreach_success=True).distinct('id')
      
         start_date = make_aware(datetime.strptime(created_at_gte, "%Y-%m-%d"))
         end_date = make_aware(datetime.strptime(created_at_lt, "%Y-%m-%d") )
         match list_type.lower():    
             case "all":
                 queryset = queryset.filter(
-                    Q(outreach_time__range=(start_date, end_date)) |
+                    Q(outreach_time__date__range=(start_date, end_date)) |
                     Q(won_date__range=(start_date, end_date)) |
                     Q(lost_date__range=(start_date, end_date)) |
-                    # Q(responded_date__range=(start_date, end_date))
                     Q(sales_qualified_date__range=(start_date, end_date))
                 ).distinct('id')
             case "sales_qualified":
                 queryset = queryset.filter(
-                        Q(status_param='Sales Qualified') | Q(status_param='Won'),
+                        Q(status_param__iexact='sales qualified')| Q(status_param__iexact='Won'),
                         # created_at__gte=start_date, created_at__lt=end_date,
-                        sales_qualified_date__gte=start_date, sales_qualified_date__lt=end_date
+                        sales_qualified_date__gte=start_date, sales_qualified_date__lte=end_date
                     ).distinct('id')
             case "outreach":
                 # queryset = queryset.filter(created_at__gte=start_date, created_at__lt=end_date).distinct('id')
-                queryset = queryset.filter(outreach_time__gte=start_date,outreach_time__lt=end_date).distinct('id')
+                queryset = queryset.filter(outreach_time__gte=start_date,outreach_time__date__lte=end_date).distinct('id')
             case "won":
                 queryset = queryset.filter(won_date__range=(start_date, end_date)).distinct('id')
             case "lost":
                 queryset = queryset.filter(lost_date__range=(start_date, end_date)).distinct('id')
             case _:
-                queryset
+                queryset.distinct('id')
                 # Paginator for main list
         paginator = self.report_pagination_class()
         paginated_qs = paginator.paginate_queryset(queryset, request)
@@ -1239,14 +1263,14 @@ class AccountViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'], url_path="weekly-reporting")
     def weekly_reporting(self, request):
         # Get January 1st of the current year with timezone
-        # jan_first = datetime(datetime.now().year, 1, 1, tzinfo=timezone.get_current_timezone())
+        jan_first = datetime(datetime.now().year, 1, 1, tzinfo=timezone.get_current_timezone())
         # Adjust to the Monday of that week (0 = Monday, 6 = Sunday)
-        # start_of_week = jan_first - timedelta(days=jan_first.weekday())
+        start_of_week = jan_first - timedelta(days=jan_first.weekday())
         
         # Lets get from past three months to save loading time
         today = timezone.now()
-        three_months_ago = today - relativedelta(months=3)
-        start_of_week = three_months_ago - timedelta(days=three_months_ago.weekday())
+        # three_months_ago = today - relativedelta(months=3)
+        # start_of_week = three_months_ago - timedelta(days=three_months_ago.weekday())
         current_week = start_of_week 
         results = []
 
@@ -1260,7 +1284,7 @@ class AccountViewSet(viewsets.ModelViewSet):
                 outreach_time__gte=current_week,
                 outreach_time__lt=end_of_week,
                 outreach_success=True,
-            ).distinct()
+            ).distinct('id')
             outreach_count = outreach_accounts.count()
             
             print("Outrech count **",outreach_count)
@@ -1271,7 +1295,7 @@ class AccountViewSet(viewsets.ModelViewSet):
                 sales_qualified_date__gte=current_week,
                 sales_qualified_date__lte=end_of_week,
                 salesrep__isnull=False,
-            ).distinct()
+            ).distinct('id')
             
 
             responded_messages = Message.objects.filter(
@@ -1350,25 +1374,19 @@ class AccountViewSet(viewsets.ModelViewSet):
                 # created_at__gte=start_of_month,
                 # created_at__lte=end_of_month,
                 outreach_time__gte=start_of_month,
-                outreach_time__lte=end_of_month,
+                outreach_time__date__lte=end_of_month,
                 outreach_success=True,
-            ).distinct()
+            ).distinct('id')
             outreach_count = outreach_accounts.count()
             
             print("Outrech count **",outreach_count)
             
             sales_qualified_accounts = Account.objects.filter(
-                # created_at__gte=start_of_month,
-                # created_at__lte=end_of_month,
+                Q(status_param__iexact='sales qualified')| Q(status_param__iexact='Won'),
                 sales_qualified_date__gte=start_of_month,
                 sales_qualified_date__lte=end_of_month,
                 salesrep__isnull=False,
-                # responded_date__isnull=False,
-                status_param='Sales Qualified',
-                #call_scheduled_date__isnull=False,
-                # won_date__isnull=True,
-                # lost_date__isnull=True
-            ).distinct()
+            ).distinct('id')
             
 
             responded_messages = Message.objects.filter(
