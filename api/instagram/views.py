@@ -3102,7 +3102,7 @@ class DMViewset(viewsets.ModelViewSet):
                             client_messages = Message.objects.filter(Q(thread__thread_id=thread.thread_id) & Q(sent_by="Client")).order_by("-sent_on")
                             robot_messages = Message.objects.filter(Q(thread__thread_id=thread.thread_id) & Q(sent_by="Robot")).order_by("-sent_on")
                             if client_messages.count() > 0 and robot_messages.count() == 0:
-                                print("outbound sales")
+                                print("inbound sales")
                                 # import pdb;pdb.set_trace()
                                 time_slots = OutreachTime.objects.filter(time_slot__gte=timezone.now()).order_by('time_slot')
                                 try:
@@ -3125,7 +3125,7 @@ class DMViewset(viewsets.ModelViewSet):
                                 except Exception as err:
                                     print(err)
                     else:
-                        print("inbound sales")
+                        print("outbound sales")
                         # import pdb;pdb.set_trace()
                         time_slots = OutreachTime.objects.filter(time_slot__gte=timezone.now()).order_by('time_slot')
                         random_number = 1.5 + (2.5 - 1.5) * random.random()
