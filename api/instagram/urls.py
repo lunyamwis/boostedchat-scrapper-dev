@@ -271,5 +271,76 @@ urlpatterns = [
     path('hashtag-medias/', views.HikerHashtagMedias.as_view(), name='hiker-hashtag-medias'),
     path('hashtag-medias-chunk/', views.HikerHashtagMediasChunk.as_view(), name='hiker-hashtag-medias-chunk'),
     path('trending-hashtags/', views.HikerTrendingTags.as_view(), name='hiker-trending-hashtags'),
+    path('location-medias/', views.HikerLocationMedias.as_view(), name='hiker-location-medias'),
+    path('location-info/', views.HikerLocationInfo.as_view(), name='hiker-location-info'),
+    
+    # HikerAPI Story endpoints (MISSING)
+    path('story-info/', views.HikerStoryInfo.as_view(), name='hiker-story-info'),
+    path('highlight-medias/', views.HikerHighlightMedias.as_view(), name='hiker-highlight-medias'),
+    
+    # HikerAPI Explore endpoints (MISSING)
+    path('explore-medias/', views.HikerExploreMedias.as_view(), name='hiker-explore-medias'),
+    
+    # HikerAPI Advanced endpoints (MISSING)
+    path('media-likers-chunk/', views.HikerMediaLikersChunk.as_view(), name='hiker-media-likers-chunk'),
+    path('media-commenters-chunk/', views.HikerMediaCommentersChunk.as_view(), name='hiker-media-commenters-chunk'),
+    
+    # HikerAPI Account endpoints (MISSING)
+    path('account-info/', views.HikerAccountInfo.as_view(), name='hiker-account-info'),
+    path('account-search/', views.HikerAccountSearch.as_view(), name='hiker-account-search'),
+    
+    # HikerAPI Relationship endpoints (MISSING)
+    path('user-friendship/', views.HikerUserFriendship.as_view(), name='hiker-user-friendship'),
+    path('user-blocked/', views.HikerUserBlocked.as_view(), name='hiker-user-blocked'),
+    
+    # HikerAPI Feed endpoints (MISSING)
+    path('timeline-feed/', views.HikerTimelineFeed.as_view(), name='hiker-timeline-feed'),
+    path('user-feed/', views.HikerUserFeed.as_view(), name='hiker-user-feed'),
+    
+    # HikerAPI Direct Message endpoints (MISSING)
+    path('direct-threads/', views.HikerDirectThreads.as_view(), name='hiker-direct-threads'),
+    path('direct-messages/', views.HikerDirectMessages.as_view(), name='hiker-direct-messages'),
+    path('direct-thread-info/', views.HikerDirectThreadInfo.as_view(), name='hiker-direct-thread-info'),
+    
+    # HikerAPI Insights/Analytics endpoints (MISSING)
+    path('media-insights/', views.HikerMediaInsights.as_view(), name='hiker-media-insights'),
+    path('account-insights/', views.HikerAccountInsights.as_view(), name='hiker-account-insights'),
+    
+    # HikerAPI Live endpoints (MISSING)
+    path('live-broadcasts/', views.HikerLiveBroadcasts.as_view(), name='hiker-live-broadcasts'),
+    path('live-info/', views.HikerLiveInfo.as_view(), name='hiker-live-info'),
+    
+    # HikerAPI Shopping endpoints (MISSING)
+    path('shopping-products/', views.HikerShoppingProducts.as_view(), name='hiker-shopping-products'),
+    path('product-info/', views.HikerProductInfo.as_view(), name='hiker-product-info'),
+    
+    # HikerAPI Collection endpoints (MISSING)
+    path('user-collections/', views.HikerUserCollections.as_view(), name='hiker-user-collections'),
+    path('collection-medias/', views.HikerCollectionMedias.as_view(), name='hiker-collection-medias'),
+    
+    # HikerAPI Music endpoints (MISSING)
+    path('music-search/', views.HikerMusicSearch.as_view(), name='hiker-music-search'),
+    path('music-info/', views.HikerMusicInfo.as_view(), name='hiker-music-info'),
+    
+    # HikerAPI Business endpoints (MISSING)
+    path('business-info/', views.HikerBusinessInfo.as_view(), name='hiker-business-info'),
+    path('business-insights/', views.HikerBusinessInsights.as_view(), name='hiker-business-insights'),
+    
+    # HikerAPI Notification endpoints (MISSING)
+    path('notifications/', views.HikerNotifications.as_view(), name='hiker-notifications'),
+    path('notification-badge/', views.HikerNotificationBadge.as_view(), name='hiker-notification-badge'),
+    
+    # HikerAPI Archive endpoints (MISSING)
+    path('story-archive/', views.HikerStoryArchive.as_view(), name='hiker-story-archive'),
+    path('media-archive/', views.HikerMediaArchive.as_view(), name='hiker-media-archive'),
+    
+    # HikerAPI Utility endpoints (MISSING)
+    path('upload-photo/', views.HikerUploadPhoto.as_view(), name='hiker-upload-photo'),
+    path('upload-video/', views.HikerUploadVideo.as_view(), name='hiker-upload-video'),
+    path('delete-media/', views.HikerDeleteMedia.as_view(), name='hiker-delete-media'),
+    
+    # HikerAPI Batch operations (MISSING)
+    path('batch-user-info/', views.HikerBatchUserInfo.as_view(), name='hiker-batch-user-info'),
+    path('batch-media-info/', views.HikerBatchMediaInfo.as_view(), name='hiker-batch-media-info'),
 ]
 
