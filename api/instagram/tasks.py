@@ -333,7 +333,13 @@ def delete_accounts(duplicate_igname_list):
 @shared_task()
 @schema_context(os.getenv("SCHEMA_NAME"))
 def send_first_compliment(username, message, repeat=True):
-    
+    """
+    Send the first compliment to a user.
+    :param username: The Instagram username of the user to send the compliment to.
+    :param message: The message to send as a compliment.
+    :param repeat: Whether to repeat the task if it fails.
+    :return: None
+    """
     numTries = 0
     print("Searching for:::>>>>>> ", username)
     account = get_account(username)
