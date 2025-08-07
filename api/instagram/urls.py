@@ -236,6 +236,40 @@ urlpatterns = [
         'experiments/<str:pk>/experiment_fields/',
         ExperimentViewSet.as_view({'get': 'get_field_definitions'}),
         name='get_field_definitions',
-    )
+    ),
+
+    path('user-info/', views.HikerUserInfoByUsername.as_view(), name='hiker-user-info'),
+    path('user-medias/', views.HikerUserMedias.as_view(), name='hiker-user-medias'),
+    path('user-medias-v2/', views.HikerUserMediasV2.as_view(), name='hiker-user-medias-v2'),
+    path('user-followers/', views.HikerUserFollowers.as_view(), name='hiker-user-followers'),
+    path('user-followers-chunk/', views.HikerUserFollowersChunk.as_view(), name='hiker-user-followers-chunk'),
+    path('user-following/', views.HikerUserFollowing.as_view(), name='hiker-user-following'),
+    path('user-following-chunk/', views.HikerUserFollowingChunk.as_view(), name='hiker-user-following-chunk'),
+    path('user-stories/', views.HikerUserStories.as_view(), name='hiker-user-stories'),
+    path('user-highlights/', views.HikerUserHighlights.as_view(), name='hiker-user-highlights'),
+    path('user-reels/', views.HikerReelsMedias.as_view(), name='hiker-user-reels'),
+    path('user-igtv/', views.HikerIgtvMedias.as_view(), name='hiker-user-igtv'),
+    path('user-tagged/', views.HikerUserTaggedMedias.as_view(), name='hiker-user-tagged'),
+    path('user-mutual-followers/', views.HikerUserMutualFollowers.as_view(), name='hiker-mutual-followers'),
+
+    # HikerAPI Media endpoints
+    path('media-info/', views.HikerMediaInfo.as_view(), name='hiker-media-info'),
+    path('media-pk-from-url/', views.HikerMediaPkFromUrl.as_view(), name='hiker-media-pk-url'),
+    path('media-likers-v1/', views.HikerMediaLikersV1.as_view(), name='hiker-media-likers-v1'),
+    path('media-commenters-v1/', views.HikerMediaCommentersV1.as_view(), name='hiker-media-commenters-v1'),
+    path('media-viewers/', views.HikerMediaViewers.as_view(), name='hiker-media-viewers'),
+
+    # HikerAPI Comments endpoints
+    path('comments-chunk/', views.HikerCommentsChunkGql.as_view(), name='hiker-comments-chunk'),
+    path('comments-threaded/', views.HikerCommentsThreadedChunkGql.as_view(), name='hiker-comments-threaded'),
+    
+    # HikerAPI Search endpoints
+    path('search-users/', views.HikerSearchUsers.as_view(), name='hiker-search-users'),
+    path('search-medias/', views.HikerSearchMedias.as_view(), name='hiker-search-medias'),
+
+    # HikerAPI Hashtag endpoints
+    path('hashtag-medias/', views.HikerHashtagMedias.as_view(), name='hiker-hashtag-medias'),
+    path('hashtag-medias-chunk/', views.HikerHashtagMediasChunk.as_view(), name='hiker-hashtag-medias-chunk'),
+    path('trending-hashtags/', views.HikerTrendingTags.as_view(), name='hiker-trending-hashtags'),
 ]
 
