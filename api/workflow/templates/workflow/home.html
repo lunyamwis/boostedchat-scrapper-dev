@@ -1,0 +1,1501 @@
+
+<!DOCTYPE html>
+<html lang="en" >
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>🚀 Social Media Workflow Builder</title>
+
+  <!-- Extensive CSS covering 50+ properties -->
+  <style>
+    /*! Reset and base */
+    *, *::before, *::after {
+      margin: 0; padding: 0; box-sizing: border-box;
+      -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
+    }
+    html, body {
+      height: 100%; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(120deg, #121212, #262626);
+      color: #f0f0f0;
+      overflow: hidden;
+      scroll-behavior: smooth;
+      scrollbar-width: thin;
+      scrollbar-color: #3ecf8e #222;
+      --main-color: #3ecf8e;
+      --accent-color: #2a9d8f;
+      --danger-color: #e63946;
+      --warn-color: #f4a261;
+      --bg-dark: #181818;
+      --bg-light: #2a2a2a;
+      --shadow-light: rgba(62, 207, 142, 0.8);
+    }
+    body::-webkit-scrollbar {
+      width: 12px;
+      background-color: #222;
+    }
+    body::-webkit-scrollbar-thumb {
+      background-color: var(--main-color);
+      border-radius: 12px;
+      border: 3px solid #222;
+      transition: background-color 0.3s ease;
+    }
+    body::-webkit-scrollbar-thumb:hover {
+      background-color: var(--accent-color);
+    }
+
+    /* Header - flexGrid & clip-path */
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1.25rem 2rem;
+      background: #080b0a;
+      border-bottom: 2px solid var(--main-color);
+      clip-path: polygon(0 0, 100% 0, 100% 95%, 0% 100%);
+      user-select: none;
+    }
+    header h1 {
+      font-weight: 900;
+      font-size: clamp(1.75rem, 4vw, 2rem);
+      letter-spacing: 0.15em;
+      color: var(--main-color);
+      text-shadow: 0 0 10px var(--shadow-light);
+    }
+    nav button {
+      background: transparent;
+      border: 2px solid var(--main-color);
+      color: var(--main-color);
+      font-weight: 700;
+      font-size: 1rem;
+      padding: 0.7em 1.5em;
+      border-radius: 35px;
+      cursor: pointer;
+      outline-offset: 3px;
+      transition: background 0.4s ease, color 0.4s ease;
+      box-shadow: 0 0 10px transparent;
+    }
+    nav button:hover, nav button:focus {
+      background: var(--main-color);
+      color: #080b0a;
+      box-shadow: 0 0 25px var(--main-color);
+      outline: none;
+    }
+
+    /* Layout */
+    main {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      grid-template-rows: 1fr auto;
+      height: calc(100vh - 80px);
+      gap: 1rem;
+      padding: 1rem 2rem 2rem;
+      overflow: hidden;
+    }
+    aside#sidebar {
+      background: var(--bg-light);
+      border-radius: 14px;
+      padding: 1.25rem 1.5rem;
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      scroll-snap-type: y mandatory;
+      scrollbar-width: thin;
+      scrollbar-color: var(--main-color) var(--bg-dark);
+    }
+    aside#sidebar::-webkit-scrollbar {
+      width: 8px;
+    }
+    aside#sidebar::-webkit-scrollbar-thumb {
+      background-color: var(--main-color);
+      border-radius: 8px;
+    }
+    aside#sidebar > * {
+      scroll-snap-align: start;
+      margin-bottom: 1.5rem;
+    }
+    aside#sidebar h2 {
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: var(--main-color);
+      margin-bottom: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      user-select: none;
+    }
+    aside#sidebar label {
+      font-size: 0.9rem;
+      font-weight: 600;
+      margin-bottom: 0.3rem;
+      color: #aaa;
+      display: block;
+    }
+
+    /* Form inputs: text, number, select, textarea */
+    input[type="text"],
+    input[type="number"],
+    select,
+    textarea {
+      width: 100%;
+      padding: 0.5rem 0.7rem;
+      font-size: 1rem;
+      border-radius: 8px;
+      border: 2px solid var(--accent-color);
+      background-color: var(--bg-dark);
+      color: #ddd;
+      font-weight: 500;
+      resize: vertical;
+      transition: border-color 0.3s ease, background-color 0.3s ease;
+      font-variant-numeric: tabular-nums;
+      text-rendering: optimizeLegibility;
+    }
+    input[type="text"]:focus,
+    input[type="number"]:focus,
+    select:focus,
+    textarea:focus {
+      border-color: var(--main-color);
+      background-color: #1f2a27;
+      outline: none;
+      box-shadow: 0 0 10px var(--shadow-light);
+    }
+
+    /* Buttons */
+    button.action-btn {
+      user-select: none;
+      border: none;
+      background-image: linear-gradient(45deg, var(--main-color), var(--accent-color));
+      color: #080b0a;
+      font-weight: 700;
+      padding: 0.85rem 1.5rem;
+      font-size: 1.1rem;
+      border-radius: 35px;
+      cursor: pointer;
+      box-shadow: 0 0 15px var(--shadow-light);
+      transition: all 0.3s ease;
+      margin-top: 1rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    button.action-btn:focus,
+    button.action-btn:hover {
+      background-image: linear-gradient(45deg, var(--accent-color), var(--main-color));
+      box-shadow: 0 0 25px var(--main-color);
+      outline: none;
+      transform: scale(1.05);
+    }
+
+    /* Canvas workflow container */
+    section#canvasWrapper {
+      position: relative;
+      background: var(--bg-dark);
+      border-radius: 15px;
+      overflow: hidden;
+      box-shadow: 0 0 20px #0d392f inset;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      border: 2px solid var(--accent-color);
+    }
+
+    /* Toolbar inside canvas */
+    div#canvasToolbar {
+      display: flex;
+      justify-content: center;
+      background: #19332f;
+      border-bottom: 2px solid var(--main-color);
+      padding: 0.5rem;
+      gap: 1rem;
+      flex-shrink: 0;
+    }
+    div#canvasToolbar button {
+      font-size: 0.9rem;
+      font-weight: 700;
+      padding: 0.6rem 1.2rem;
+      border-radius: 30px;
+      border: none;
+      background: var(--accent-color);
+      color: #0a0a0a;
+      cursor: pointer;
+      transition: background 0.4s ease;
+      outline-offset: 4px;
+    }
+    div#canvasToolbar button:hover,
+    div#canvasToolbar button:focus {
+      background: var(--main-color);
+      outline: none;
+      box-shadow: 0 0 14px var(--main-color);
+    }
+    div#canvasToolbar button.active {
+      background: var(--danger-color);
+      color: white;
+      box-shadow: 0 0 20px var(--danger-color);
+    }
+
+    /* Actual workflow canvas (SVG + nodes wrapper) */
+    section#canvas {
+      position: relative;
+      flex-grow: 1;
+      overflow: auto;
+      background: linear-gradient(90deg, #041c1b 0%, #0b3835 100%);
+      scroll-snap-type: both mandatory;
+      -webkit-overflow-scrolling: touch;
+    }
+    section#canvas:focus {
+      outline: 3px solid var(--main-color);
+      outline-offset: 5px;
+    }
+    section#canvas svg#connections-svg {
+      pointer-events: none;
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      top: 0; left: 0;
+      z-index: 0;
+      overflow: visible;
+    }
+
+    /* Nodes styles */
+    article.node {
+      position: absolute;
+      width: 260px;
+      min-height: 100px;
+      border: 3px solid var(--main-color);
+      background: #052922cc;
+      box-shadow: 0 2px 8px #042a2088, 0 0 20px var(--main-color);
+      border-radius: 16px;
+      padding: 1rem 1.25rem;
+      color: #ddd;
+      cursor: grab;
+      user-select: none;
+      transition: transform 0.25s ease, box-shadow 0.25s ease;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      font-weight: 600;
+      outline-offset: 4px;
+      z-index: 10;
+    }
+    article.node:focus {
+      outline: 4px solid var(--accent-color);
+      transform: scale(1.06);
+      box-shadow: 0 0 30px var(--accent-color);
+    }
+    article.node:active {
+      cursor: grabbing;
+      user-select: auto;
+    }
+    article.node:hover {
+      transform: scale(1.07);
+      box-shadow: 0 0 35px var(--main-color);
+      z-index: 20;
+    }
+
+    /* Node header */
+    article.node header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.6rem;
+      border-bottom: 2px solid var(--accent-color);
+      font-weight: 900;
+      font-size: 1.1rem;
+      color: var(--main-color);
+      padding-bottom: 0.4rem;
+      user-select: text;
+    }
+    article.node header h3 {
+      text-transform: uppercase;
+      letter-spacing: 0.18em;
+      user-select: text;
+      flex-grow: 1;
+      font-family: 'Segoe UI Black', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    article.node header button.close-btn {
+      user-select: none;
+      border: none;
+      background: transparent;
+      font-size: 1.6rem;
+      color: var(--danger-color);
+      cursor: pointer;
+      font-weight: 700;
+      padding: 0 6px;
+      transition: color 0.3s ease;
+      line-height: 1;
+    }
+    article.node header button.close-btn:hover,
+    article.node header button.close-btn:focus {
+      color: #ff1a1a;
+      outline: none;
+    }
+
+    /* Node body content */
+    article.node div.content {
+      flex-grow: 1;
+      font-size: 0.9rem;
+      font-weight: 400;
+      overflow-wrap: break-word;
+      margin-bottom: 0.7rem;
+      color: #cee8d1;
+      font-style: italic;
+      line-height: 1.3;
+      user-select: text;
+      white-space: pre-wrap;
+      min-height: 42px;
+    }
+    article.node div.wait-time {
+      font-size: 0.85rem;
+      font-weight: 900;
+      color: var(--warn-color);
+      user-select: none;
+      font-family: monospace;
+      letter-spacing: 0.08em;
+      padding-top: 0.15rem;
+    }
+
+    /* SVG connection lines */
+    line.connection {
+      stroke: var(--main-color);
+      stroke-width: 4;
+      filter: drop-shadow(0 0 6px var(--main-color));
+      transition: stroke 0.35s ease;
+      cursor: pointer;
+    }
+
+    /* Tooltip: positioned fixed */
+    div#tooltip {
+      position: fixed;
+      padding: 6px 14px;
+      font-size: 0.85rem;
+      background: var(--accent-color);
+      color: #080b0a;
+      border-radius: 12px;
+      box-shadow: 0 0 20px var(--accent-color);
+      pointer-events: none;
+      opacity: 0;
+      user-select: none;
+      will-change: transform, opacity;
+      transition: opacity 0.25s ease;
+      max-width: 360px;
+      z-index: 50;
+      font-weight: 700;
+      font-family: monospace;
+      white-space: pre-wrap;
+    }
+
+    /* Footer */
+    footer {
+      grid-column: 1 / -1;
+      background: #0a1b1a;
+      text-align: center;
+      padding: 1rem 0;
+      font-size: 0.9rem;
+      color: var(--main-color);
+      border-top: 2px solid var(--main-color);
+      user-select: none;
+    }
+
+    /* Accessibility focus rings */
+    :focus-visible {
+      outline: 3px solid var(--accent-color);
+      outline-offset: 3px;
+    }
+
+    /* Responsive */
+    @media (max-width: 1024px){
+      main {
+        grid-template-columns: 1fr;
+        grid-template-rows: 360px 1fr auto;
+        padding: 1rem 1rem 1rem;
+        height: 100vh;
+      }
+      aside#sidebar {
+        border-radius: 14px 14px 0 0;
+      }
+      section#canvasWrapper {
+        border-radius: 0 0 14px 14px;
+        height: 100%;
+      }
+    }
+
+    @media (max-width: 480px){
+      nav button {
+        padding: 0.6rem 1rem;
+        font-size: 0.875rem;
+      }
+      article.node {
+        width: 90vw !important;
+        min-height: 130px;
+      }
+    }
+
+  </style>
+
+</head>
+<body>
+
+<header>
+  <h1 tabindex="0" aria-label="Wild social media workflow builder title">🚀 W⚡LD Social Media Workflow Builder</h1>
+  <nav aria-label="Primary navigation">
+    <button id="resetBtn" title="Clear all workflow nodes and connections" aria-describedby="resetDesc">Reset Workflow</button>
+    <span id="resetDesc" hidden>Resets the entire workflow to empty</span>
+  </nav>
+</header>
+
+<main>
+  <aside id="sidebar" aria-label="Workflow Controls and Node Creation" tabindex="0">
+    <section id="node-creator" aria-labelledby="creatorH">
+      <h2 id="creatorH">Add New Workflow Node</h2>
+
+      <form id="nodeForm" novalidate autocomplete="off" aria-live="polite" aria-relevant="additions removals">
+        <label for="nodeType">Node Type:</label>
+        <select id="nodeType" name="nodeType" aria-describedby="nodeTypeDesc" required>
+          <option value="" disabled selected>-- Select an action --</option>
+          <option value="post" title="Post a message on social media">Post</option>
+          <option value="like" title="Like a post or comment">Like</option>
+          <option value="comment" title="Add a comment">Comment</option>
+          <option value="share" title="Share a post">Share</option>
+          <option value="dm" title="Send direct message">Direct Message</option>
+          <option value="tag" title="Tag a user in a post or comment">Tag User</option>
+          <option value="wait" title="Wait for specified time">Wait (Timer)</option>
+          <option value="filter" title="Conditionally branch workflow">Filter (Condition)</option>
+          <option value="analytics" title="Track analytics event">Analytics Event</option>
+        </select>
+        <p id="nodeTypeDesc" class="desc">Choose the type of action or workflow step.</p>
+
+        <label for="nodeContent">Content / Message / Condition:</label>
+        <textarea id="nodeContent" name="nodeContent" rows="4" placeholder="Describe your action or condition..." required></textarea>
+
+        <label for="waitTime" id="waitLabel" hidden>Wait Time (seconds):</label>
+        <input type="number" id="waitTime" name="waitTime" min="0" max="3600" step="1" placeholder="Time in seconds" aria-describedby="waitDesc" hidden />
+        <p id="waitDesc" class="desc" hidden>Set how many seconds to wait before next action.</p>
+
+        <label for="priority" title="Workflow step priority">Priority (1 to 5):</label>
+        <input type="range" id="priority" name="priority" min="1" max="5" value="3" step="1" aria-valuemin="1" aria-valuemax="5" aria-valuenow="3" aria-label="Set priority from 1 to 5" />
+
+        <fieldset aria-labelledby="execModeLabel" style="margin-top:1rem;">
+          <legend id="execModeLabel">Execution Mode</legend>
+          <label><input type="radio" name="execMode" value="automatic" checked /> Automatic</label><br/>
+          <label><input type="radio" name="execMode" value="manual" /> Manual</label>
+        </fieldset>
+
+        <button type="submit" class="action-btn" aria-label="Add node to workflow">Add Node ➕</button>
+      </form>
+    </section>
+
+    <section id="workflow-actions" aria-labelledby="actionsH">
+      <h2 id="actionsH">Workflow Actions</h2>
+      <button id="toggleConnectBtn" class="action-btn" aria-pressed="false" aria-label="Toggle connect nodes mode">Toggle Connect Nodes 🔗</button>
+      <button id="simulateBtn" class="action-btn" aria-label="Simulate workflow execution">Simulate Workflow ▶️</button>
+      <button id="exportBtn" class="action-btn" aria-label="Export current workflow data">Export Workflow 📂</button>
+      <button id="importBtn" class="action-btn" aria-label="Import workflow data from JSON">Import Workflow 📥</button>
+      <input type="file" id="importFile" accept="application/json" aria-hidden="true" tabindex="-1" style="display:none;" />
+    </section>
+
+    <section id="html-tags-preview" aria-labelledby="tagsH" style="font-size:0.75rem; user-select:none;">
+      <h2 id="tagsH">Partial HTML Tags Preview</h2>
+      <p title="Some HTML tags used in this app (for demonstration)">
+        &lt;a&gt; &lt;abbr&gt; &lt;address&gt; &lt;area&gt; &lt;article&gt; &lt;aside&gt; &lt;audio&gt; &lt;b&gt; &lt;base&gt; &lt;bdi&gt; &lt;bdo&gt; &lt;blockquote&gt; &lt;body&gt; &lt;br&gt; &lt;button&gt; &lt;canvas&gt; &lt;caption&gt; &lt;cite&gt; &lt;code&gt; &lt;col&gt; &lt;colgroup&gt; &lt;data&gt; &lt;datalist&gt; &lt;dd&gt; &lt;del&gt; &lt;details&gt; &lt;dfn&gt; &lt;dialog&gt; &lt;div&gt; &lt;dl&gt; &lt;dt&gt; &lt;em&gt; &lt;embed&gt; &lt;fieldset&gt; &lt;figcaption&gt; &lt;figure&gt; &lt;footer&gt; &lt;form&gt; &lt;h1&gt;-&lt;h6&gt; &lt;head&gt; &lt;header&gt; &lt;hr&gt; &lt;html&gt; &lt;i&gt; &lt;iframe&gt; &lt;img&gt; &lt;input&gt; &lt;ins&gt; &lt;kbd&gt; &lt;label&gt; &lt;legend&gt; &lt;li&gt; &lt;link&gt; &lt;main&gt; &lt;map&gt; &lt;mark&gt; &lt;meta&gt; &lt;meter&gt; &lt;nav&gt; &lt;noscript&gt; &lt;object&gt; &lt;ol&gt; &lt;optgroup&gt; &lt;option&gt; &lt;output&gt; &lt;p&gt; &lt;param&gt; &lt;picture&gt; &lt;pre&gt; &lt;progress&gt; &lt;q&gt; &lt;rp&gt; &lt;rt&gt; &lt;ruby&gt; &lt;s&gt; &lt;samp&gt; &lt;script&gt; &lt;section&gt; &lt;select&gt; &lt;small&gt; &lt;source&gt; &lt;span&gt; &lt;strong&gt; &lt;style&gt; &lt;sub&gt; &lt;summary&gt; &lt;sup&gt; &lt;svg&gt; &lt;table&gt; &lt;tbody&gt; &lt;td&gt; &lt;template&gt; &lt;textarea&gt; &lt;tfoot&gt; &lt;th&gt; &lt;thead&gt; &lt;time&gt; &lt;title&gt; &lt;tr&gt; &lt;track&gt; &lt;u&gt; &lt;ul&gt; &lt;var&gt; &lt;video&gt; &lt;wbr&gt;
+      </p>
+    </section>
+
+  </aside>
+
+  <section id="canvasWrapper" aria-label="Workflow design canvas">
+    <div id="canvasToolbar" role="toolbar" aria-label="Canvas mode controls">
+      <button id="wildModeBtn" aria-pressed="false" aria-label="Toggle wild mode for crazy colors and animations">Wild Mode 🌈</button>
+      <button id="voiceInputBtn" aria-pressed="false" aria-label="Toggle voice input mode">Voice Input 🎙️</button>
+    </div>
+    <section id="canvas" tabindex="0" aria-label="Workflow Canvas" role="main" aria-live="polite">
+      <!-- Nodes inserted dynamically -->
+      <svg id="connections-svg" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg"></svg>
+    </section>
+
+  </section>
+</main>
+
+<footer>
+  <time datetime="2025-08-08" aria-label="Year 2025">© 2025 Wild Workflow Corp.</time> All Rights Reserved.
+</footer>
+
+<!-- Tooltip for nodes and interactive hints -->
+<div id="tooltip" role="tooltip" aria-hidden="true"></div>
+
+<!-- Templates container with all kinds of HTML tags used for demonstration -->
+<template id="template-all-tags">
+  <!-- Demonstrated HTML tags nested for semantics -->
+  <article>
+    <header><h1>Template Title</h1></header>
+    <section>
+      <p>This is a <strong>strong</strong>, <em>emphasized</em>, <mark>marked</mark> and <small>small print</small> text.</p>
+      <figure>
+        <img src="https://via.placeholder.com/100x100.png?text=Img" alt="Placeholder image" />
+        <figcaption>Figure caption</figcaption>
+      </figure>
+      <dl>
+        <dt>Definition Term 1</dt>
+        <dd>Definition description 1</dd>
+        <dt>Definition Term 2</dt>
+        <dd>Definition description 2</dd>
+      </dl>
+      <audio controls src="https://interactive-examples.mdn.mozilla.net/media/examples/t-rex-roar.mp3"></audio>
+      <video controls width="250" src="https://interactive-examples.mdn.mozilla.net/media/examples/flower.webm"></video>      
+      <blockquote cite="https://www.w3.org/">
+        Blockquote citation with a 
+        <cite>W3C website</cite>.
+      </blockquote>
+      <code><samp>Sample code block here</samp></code>
+      <button>Example button inside template</button>
+    </section>
+  </article>
+</template>
+
+<script>
+  (() => {
+    'use strict';
+
+    // ========== Global DOM Elements ==========
+    const sidebar = document.getElementById('sidebar');
+    const nodeForm = document.getElementById('nodeForm');
+    const nodeTypeSelect = document.getElementById('nodeType');
+    const nodeContentTextarea = document.getElementById('nodeContent');
+    const waitTimeInput = document.getElementById('waitTime');
+    const waitLabel = document.getElementById('waitLabel');
+    const priorityInput = document.getElementById('priority');
+    const execModeRadios = nodeForm.execMode;
+    const addNodeBtn = nodeForm.querySelector('button[type="submit"]');
+    const resetBtn = document.getElementById('resetBtn');
+    const toggleConnectBtn = document.getElementById('toggleConnectBtn');
+    const exportBtn = document.getElementById('exportBtn');
+    const importBtn = document.getElementById('importBtn');
+    const importFileInput = document.getElementById('importFile');
+    const simulateBtn = document.getElementById('simulateBtn');
+    const canvasWrapper = document.getElementById('canvasWrapper');
+    const canvas = document.getElementById('canvas');
+    const svg = document.getElementById('connections-svg');
+    const tooltip = document.getElementById('tooltip');
+    const wildModeBtn = document.getElementById('wildModeBtn');
+    const voiceInputBtn = document.getElementById('voiceInputBtn');
+
+    // ========== State Variables ==========
+    let nodes = [];
+    let connections = [];
+    let connectMode = false;
+    let connectingFrom = null;
+    let wildMode = false;
+    let speechRecognition = null;
+    let voiceInputActive = false;
+    const voiceSpeechSynthesis = window.speechSynthesis;
+
+    // Using WeakMap for DOM node state efficiently
+    const nodeMeta = new WeakMap();
+
+    // Proxy to log nodeMeta changes - showcasing proxy usage
+    const nodeMetaProxy = new Proxy(nodeMeta, {
+      set(target, key, value) {
+        console.debug(`Node meta changed`, key, value);
+        return Reflect.set(target, key, value);
+      },
+      get(target, key) {
+        return Reflect.get(target, key);
+      }
+    });
+
+    // ========== Utility functions using JS built-in methods (50+ distinct) ==========
+    // Examples include methods from: Array, String, Object, Number, Math, Promise, Intl,
+    // Web APIs (SpeechSynthesis, Drag & Drop, Fetch), Proxy, WeakMap.
+
+    // 1. Generate unique IDs using crypto API and randomUUID
+    const generateId = () => (crypto.randomUUID ? crypto.randomUUID() : 'node_' + Math.random().toString(36).slice(2));
+
+    // 2. Clamp number between min and max using Math.min and Math.max
+    const clamp = (num, min, max) => Math.min(Math.max(num, min), max);
+
+    // 3. Debounce function to limit how often a function runs
+    const debounce = (func, wait) => {
+      let timeout;
+      return (...args) => {
+        clearTimeout(timeout);
+        timeout = setTimeout(() => func.apply(this, args), wait);
+      };
+    };
+
+    // 4. Deep clone an object using structuredClone if available
+    const deepClone = (obj) => (window.structuredClone ? structuredClone(obj) : JSON.parse(JSON.stringify(obj)));
+
+    // 5. Detect if string is valid JSON
+    const isValidJSON = (str) => {
+      try { JSON.parse(str); return true; } catch { return false; }
+    };
+
+    // 6. Scroll element into view smoothly
+    const smoothScrollTo = (el) => el.scrollIntoView({behavior: 'smooth', block: 'center'});
+
+    // 7. Format date with Intl.DateTimeFormat
+    const formatDate = (date) => new Intl.DateTimeFormat('en-US', { dateStyle: 'medium', timeStyle: 'short' }).format(date);
+
+    // 8. Convert NodeList to Array with Array.from
+    const nodeListToArray = (nl) => Array.from(nl);
+
+    // 9. Get unique items using Set
+    const uniqueArray = (arr) => [...new Set(arr)];
+
+    // 10. Array reduce example - get ids of nodes
+    const getNodeIds = () => nodes.reduce((ids, node) => { ids.push(node.id); return ids; }, []);
+
+    // 11. Trim, startsWith, endsWith string methods
+    const descriptionValid = (txt) => txt.trim().length > 0 && txt.startsWith('') && txt.endsWith('');
+
+    // 12. Fetch example (dummy) to demonstrate API use
+    async function fetchDummy() {
+      return fetch('https://jsonplaceholder.typicode.com/posts/1')
+        .then(response => response.json())
+        .then(data => console.log('Dummy fetch success:', data.title))
+        .catch(err => console.error('Dummy fetch fail:', err));
+    }
+
+    // Immediately call fetchDummy but don't await
+    fetchDummy();
+
+    // 13. Use Promise.all to run multiple async tasks (simulate with timeout)
+    const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+    // 14. Use Map to map node types to colors
+    const nodeTypeColors = new Map([
+      ['post', '#1abc9c'],
+      ['like', '#e67e22'],
+      ['comment', '#9b59b6'],
+      ['share', '#3498db'],
+      ['dm', '#e74c3c'],
+      ['tag', '#f1c40f'],
+      ['wait', '#95a5a6'],
+      ['filter', '#34495e'],
+      ['analytics', '#2ecc71']
+    ]);
+
+    // 15. Sleep helper (async delay)
+    const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+    // 16. Use String.padStart and padEnd
+    const formatPriority = (num) => num.toString().padStart(2, '0').padEnd(3, '!');
+
+    // 17. Use Number.toFixed to format wait times
+    const formatWaitTime = (seconds) => Number(seconds).toFixed(2);
+
+    // 18. Object.assign example (merge defaults)
+    const mergeDefaults = (obj, defaults) => Object.assign({}, defaults, obj);
+
+    // 19. Use Intl.Collator for sorting node types
+    const collator = new Intl.Collator('en', { sensitivity: 'base' });
+
+    // 20. Sort nodes by priority descending
+    const sortNodesByPriority = (nodes) => nodes.sort((a, b) => collator.compare(b.dataset.priority, a.dataset.priority));
+
+    // 21. Use Array.every to verify all nodes have required data
+    const allNodesValid = () => nodes.every(n => n.dataset.content && n.dataset.type);
+
+    // 22. Use Object.freeze to freeze config objects
+    const config = Object.freeze({
+      maxNodes: 50,
+      maxConnections: 100
+    });
+
+    // 23. Calculate distance between two nodes (Math.hypot)
+    const distanceBetween = (x1,y1,x2,y2) => Math.hypot(x2 - x1, y2 - y1);
+
+    // 24. Use WeakMap to store node drag state
+    const dragStates = new WeakMap();
+
+    // 25. Use Proxy to observe node changes (stub, no actual trap here - for demo)
+    const createNodeProxy = (node) => new Proxy(node, {
+      set(target, property, value) {
+        if(property === 'style') {
+          console.log(`Style changed on node ${target.id}`);
+        }
+        target[property] = value;
+        return true;
+      }
+    });
+
+    // 26. String.includes example for filtering node content
+    const nodeHasKeyword = (node, keyword) => node.dataset.content.toLowerCase().includes(keyword.toLowerCase());
+
+    // 27. Use Array.filter to get nodes matching keyword
+    const filterNodesByKeyword = (keyword) => nodes.filter(n => nodeHasKeyword(n, keyword));
+
+    // 28. Use Array.find to find node by ID
+    const findNodeById = (id) => nodes.find(n => n.id === id);
+
+    // 29. Number.parseInt to parse waitDuration
+    const parseWaitTime = (str) => Number.parseInt(str, 10) || 0;
+
+    // 30. Use String.replace and RegExp to sanitize content
+    const sanitizeText = (txt) => txt.replace(/[<>]/g, '');
+
+    // 31. Use Math.random for color variation in wild mode
+    const randomHexColor = () => '#'+Math.floor(Math.random()*16777215).toString(16).padStart(6, '0');
+
+    // 32. Use Element.classList methods (add, remove, toggle, contains)
+    const toggleClass = (el, className) => el.classList.toggle(className);
+
+    // 33. Use URL API to parse URLs (dummy example)
+    const isValidURL = (str) => {
+      try { new URL(str); return true; } catch { return false; }
+    };
+
+    // 34. Use HTMLElement.closest to find ancestor nodes
+    const findNodeElement = (el) => el.closest('article.node');
+
+    // 35. Use Element.matches for delegate event checks
+    const isDeleteBtn = (el) => el.matches('button.close-btn');
+
+    // 36. Use DocumentFragment to improve DOM performance when adding multiple nodes
+    const createFragmentFromNodes = (nodeDataArray) => {
+      const frag = document.createDocumentFragment();
+      nodeDataArray.forEach(nd => {
+        const el = createNode(nd);
+        frag.appendChild(el);
+      });
+      return frag;
+    };
+
+    // 37. Use Math.sign for direction decisions (placeholder in connect drag behavior)
+    const signNum = (n) => Math.sign(n);
+
+    // 38. Use Date.now for timestamps (to track node creation or moves)
+    const nowTimestamp = () => Date.now();
+
+    // 39. Use Object.entries to iterate config keys
+    const printConfigKeys = () => Object.entries(config).map(entry => entry[0]);
+
+    // 40. Use Number.isNaN to validate numeric inputs
+    const isNumberValid = (n) => !Number.isNaN(n);
+
+    // 41. Use DOMParser to parse HTML text strings (imported workflows)
+    const parseHTMLString = (htmlString) => {
+      const parser = new DOMParser();
+      return parser.parseFromString(htmlString, 'text/html');
+    };
+
+    // 42. Use Array.some as check for existing connections
+    const hasConnection = (from, to) => connections.some(c => c.from === from && c.to === to);
+
+    // 43. Use Window.localStorage for persistence
+    const saveToStorage = (key, value) => localStorage.setItem(key, value);
+    const loadFromStorage = (key) => localStorage.getItem(key);
+
+    // 44. Use IntersectionObserver as optimization (observe when nodes enter viewport)
+    // (Omitted for brevity - not used but reserved for future optimization)
+
+    // 45. Use Intl.NumberFormat to format numbers nicely
+    const formatNumber = new Intl.NumberFormat('en-US');
+
+    // === Helper to Create DOM elements ===
+    function createEl(tag, attrs = {}, ...children) {
+      const el = document.createElement(tag);
+
+      Object.entries(attrs).forEach(([key, val]) => {
+        if (key === 'class') {
+          if(Array.isArray(val)) val.forEach(c => el.classList.add(c)); else el.classList.add(val);
+        } else if (key === 'style') {
+          Object.entries(val).forEach(([sKey,sVal]) => el.style[sKey] = sVal);
+        } else if(key === 'dataset') {
+          Object.entries(val).forEach(([dKey,dVal]) => el.dataset[dKey] = dVal);
+        } else if(key.startsWith('on') && typeof val === 'function') {
+          el.addEventListener(key.slice(2), val);
+        } else if(key === 'html') {
+          el.innerHTML = val;
+        } else {
+          el.setAttribute(key, val);
+        }
+      });
+
+      children.forEach(child => {
+        if(child === null || child === undefined) return;
+        if(Array.isArray(child)) child.forEach(c => el.appendChild(typeof c === 'string' ? document.createTextNode(c) : c))
+        else el.appendChild(typeof child === 'string' ? document.createTextNode(child) : child);
+      });
+
+      return el;
+    }
+
+    // ========== Node Creation & Rendering ==========
+
+    /**
+     * Create workflow node element from data object
+     * @param {object} data - Node data
+     *   type: string, content: string, id: string, x: number, y: number, wait: number, priority: number, execMode: string
+     * @returns HTMLElement node article element
+     */
+    function createNode(data) {
+      const {
+        id = generateId(),
+        type = 'post',
+        content = '',
+        x = 50,
+        y = 50,
+        wait = 0,
+        priority = 3,
+        execMode = 'automatic'
+      } = data;
+
+      // Create main node element
+      const node = createEl('article', {
+        class: 'node',
+        id,
+        role: 'region',
+        tabindex: '0',
+        'aria-label': `Workflow node: ${type}, priority ${priority}, execution mode ${execMode}`,
+        dataset: { type, content, wait, priority, execMode },
+        style: {
+          left: x + 'px',
+          top: y + 'px',
+          borderColor: nodeTypeColors.get(type) || 'var(--main-color)',
+          boxShadow: `0 0 20px ${nodeTypeColors.get(type) || 'var(--main-color)'}88`
+        }
+      });
+
+      // Create header with title and remove button
+      const header = createEl('header', {},
+        createEl('h3', {}, type.toUpperCase()),
+        createEl('button', {
+          class: 'close-btn',
+          title: 'Remove node',
+          'aria-label': 'Remove this workflow node',
+          onClick: (e) => {
+            e.stopPropagation();
+            removeNode(node);
+          }
+        }, '×')
+      );
+
+      // Content div
+      const contentDiv = createEl('div', {class: 'content'}, content);
+
+      // If wait node, add wait time display
+      const waitDiv = (type === 'wait')
+        ? createEl('div', {class: 'wait-time'}, `Wait Time: ${formatWaitTime(wait)}s`)
+        : null;
+
+      // Footer displaying priority and execMode
+      const footer = createEl('footer', {
+        style: {
+          fontSize: '0.75rem', fontWeight: '700', color: '#ccc', textAlign: 'right', fontVariantNumeric: 'tabular-nums'
+        }
+      },
+        `Priority: ${priority} | Mode: ${execMode.charAt(0).toUpperCase() + execMode.slice(1)}`
+      );
+
+      // Append children
+      node.appendChild(header);
+      node.appendChild(contentDiv);
+      if(waitDiv) node.appendChild(waitDiv);
+      node.appendChild(footer);
+
+      // Make draggable
+      makeNodeDraggable(node);
+
+      // Add event listeners for connect mode
+      node.addEventListener('click', onNodeClickInConnectMode);
+      node.addEventListener('keydown', onNodeKeyDownForConnect);
+
+      // Tooltip hover handlers
+      node.addEventListener('mouseenter', (e) => showTooltip(content, e.clientX + 15, e.clientY + 15));
+      node.addEventListener('mouseleave', hideTooltip);
+
+      nodeMeta.set(node, { lastMoved: Date.now() });
+
+      return node;
+    }
+
+    // Add new node to canvas and store in state
+    function addNode(data) {
+      if(nodes.length >= config.maxNodes) {
+        alert(`Max node limit (${config.maxNodes}) reached!`);
+        return null;
+      }
+      const node = createNode(data);
+      nodes.push(node);
+      canvas.appendChild(node);
+      saveWorkflowDebounced();
+      return node;
+    }
+
+    // Remove node and associated connections
+    function removeNode(node) {
+      // Remove connections linking to/from node
+      const toRemove = connections.filter(c => c.from === node || c.to === node);
+      for (const c of toRemove) {
+        svg.removeChild(c.line);
+      }
+      connections = connections.filter(c => c.from !== node && c.to !== node);
+
+      // Remove node element
+      if (node.parentElement) node.parentElement.removeChild(node);
+
+      nodes = nodes.filter(n => n !== node);
+      saveWorkflowDebounced();
+      updateConnections();
+    }
+
+    // ========== Drag and Drop for nodes ==========
+    function makeNodeDraggable(node) {
+      let offsetX = 0, offsetY = 0;
+      let dragging = false;
+
+      const onDragStart = (evt) => {
+        if(evt.type === 'touchstart') evt.preventDefault();
+        dragging = true;
+        const rect = node.getBoundingClientRect();
+        const e = evt.touches ? evt.touches[0] : evt;
+        offsetX = e.clientX - rect.left;
+        offsetY = e.clientY - rect.top;
+        node.style.cursor = 'grabbing';
+
+        // Store focused element for restore after drag
+        node.focus();
+
+        window.addEventListener('mousemove', onDragMove);
+        window.addEventListener('touchmove', onDragMove, {passive: false});
+        window.addEventListener('mouseup', onDragEnd);
+        window.addEventListener('touchend', onDragEnd);
+      };
+
+      const onDragMove = (evt) => {
+        if(!dragging) return;
+        evt.preventDefault();
+        const e = evt.touches ? evt.touches[0] : evt;
+        const rect = canvas.getBoundingClientRect();
+
+        let x = clamp(e.clientX - rect.left - offsetX, 0, canvas.clientWidth - node.offsetWidth);
+        let y = clamp(e.clientY - rect.top - offsetY, 0, canvas.clientHeight - node.offsetHeight);
+
+        node.style.left = x + 'px';
+        node.style.top = y + 'px';
+
+        nodeMeta.get(node).lastMoved = Date.now();
+
+        updateConnections();
+      };
+
+      const onDragEnd = () => {
+        dragging = false;
+        node.style.cursor = 'grab';
+        window.removeEventListener('mousemove', onDragMove);
+        window.removeEventListener('touchmove', onDragMove);
+        window.removeEventListener('mouseup', onDragEnd);
+        window.removeEventListener('touchend', onDragEnd);
+        saveWorkflowDebounced();
+      };
+
+      node.style.position = 'absolute';
+      node.style.cursor = 'grab';
+      node.addEventListener('mousedown', onDragStart);
+      node.addEventListener('touchstart', onDragStart, {passive: false});
+    }
+
+    // ========== Connections between nodes handling ==========
+
+    /**
+     * Create SVG connection line between fromNode and toNode
+     * @param {HTMLElement} fromNode 
+     * @param {HTMLElement} toNode 
+     * @returns SVG line element
+     */
+    function createConnectionLine(fromNode, toNode) {
+      const line = document.createElementNS('http://www.w3.org/2000/svg','line');
+      line.classList.add('connection');
+      line.dataset.fromId = fromNode.id;
+      line.dataset.toId = toNode.id;
+
+      // Click to remove connection
+      line.addEventListener('click', () => {
+        removeConnection(line);
+      });
+      svg.appendChild(line);
+      return line;
+    }
+
+    // Update all connection lines positions dynamically
+    function updateConnections() {
+      connections.forEach(({from, to, line}) => {
+        const fromRect = from.getBoundingClientRect();
+        const toRect = to.getBoundingClientRect();
+        const canvasRect = canvas.getBoundingClientRect();
+
+        const x1 = fromRect.left + fromRect.width/2 - canvasRect.left + canvas.scrollLeft;
+        const y1 = fromRect.top + fromRect.height/2 - canvasRect.top + canvas.scrollTop;
+        const x2 = toRect.left + toRect.width/2 - canvasRect.left + canvas.scrollLeft;
+        const y2 = toRect.top + toRect.height/2 - canvasRect.top + canvas.scrollTop;
+
+        line.setAttribute('x1', x1);
+        line.setAttribute('y1', y1);
+        line.setAttribute('x2', x2);
+        line.setAttribute('y2', y2);
+      });
+    }
+
+    // Remove connection and update connections array
+    function removeConnection(line) {
+      connections = connections.filter(c => c.line !== line);
+      if(line.parentElement) line.parentElement.removeChild(line);
+      saveWorkflowDebounced();
+    }
+
+    // Add connection given fromNode and toNode
+    function connectNodes(fromNode, toNode) {
+      if(fromNode === toNode) return; // No self connection
+      if(connections.length >= config.maxConnections) {
+        alert(`Max connections limit (${config.maxConnections}) reached!`);
+        return;
+      }
+      if(hasConnection(fromNode, toNode)) return; // Avoid duplicates
+      const line = createConnectionLine(fromNode, toNode);
+      connections.push({ from: fromNode, to: toNode, line });
+      saveWorkflowDebounced();
+      updateConnections();
+    }
+
+    // Handle click on node while in connect mode
+    function onNodeClickInConnectMode(evt) {
+      if(!connectMode) return;
+      evt.stopPropagation(); // prevent bubbling
+
+      const node = evt.currentTarget;
+      if(!connectingFrom) {
+        connectingFrom = node;
+        node.classList.add('connecting-from');
+        showTooltip('Select target node to connect', evt.clientX + 10, evt.clientY + 10);
+      } else if(node !== connectingFrom) {
+        connectNodes(connectingFrom, node);
+        connectingFrom.classList.remove('connecting-from');
+        connectingFrom = null;
+        hideTooltip();
+      }
+    }
+
+    // Keyboard support for connecting nodes (Enter or Space)
+    function onNodeKeyDownForConnect(evt) {
+      if(!connectMode) return;
+
+      if(evt.key === 'Enter' || evt.key === ' ') {
+        evt.preventDefault();
+        const node = evt.currentTarget;
+        if(!connectingFrom) {
+          connectingFrom = node;
+          node.classList.add('connecting-from');
+          showTooltip('Select target node then press Enter', node.getBoundingClientRect().right + 10, node.getBoundingClientRect().top);
+        } else if(node !== connectingFrom) {
+          connectNodes(connectingFrom, node);
+          connectingFrom.classList.remove('connecting-from');
+          connectingFrom = null;
+          hideTooltip();
+        }
+      } else if(evt.key === 'Escape') {
+        if(connectingFrom) {
+          connectingFrom.classList.remove('connecting-from');
+          connectingFrom = null;
+          hideTooltip();
+        }
+      }
+    }
+
+    // ========== Workflow export & import (JSON) ==========
+    function exportWorkflow() {
+      const workflowData = {
+        nodes: nodes.map(n => ({
+          id: n.id,
+          type: n.dataset.type,
+          content: n.dataset.content,
+          x: parseInt(n.style.left, 10),
+          y: parseInt(n.style.top, 10),
+          wait: parseFloat(n.dataset.wait) || 0,
+          priority: parseInt(n.dataset.priority) || 3,
+          execMode: n.dataset.execMode || 'automatic'
+        })),
+        connections: connections.map(conn => ({
+          fromId: conn.from.id,
+          toId: conn.to.id
+        }))
+      };
+      return JSON.stringify(workflowData, null, 2);
+    }
+
+    function importWorkflow(jsonString) {
+      if(!isValidJSON(jsonString)) {
+        alert('Invalid JSON format!');
+        return;
+      }
+      const data = JSON.parse(jsonString);
+      clearWorkflow();
+
+      const fragment = document.createDocumentFragment();
+      data.nodes.forEach(nd => {
+        const node = createNode(nd);
+        fragment.appendChild(node);
+        nodes.push(node);
+      });
+      canvas.appendChild(fragment);
+
+      data.connections.forEach(conn => {
+        const fromNode = findNodeById(conn.fromId);
+        const toNode = findNodeById(conn.toId);
+        if(fromNode && toNode) {
+          const line = createConnectionLine(fromNode, toNode);
+          connections.push({from: fromNode, to: toNode, line});
+        }
+      });
+
+      updateConnections();
+      saveWorkflowDebounced();
+    }
+
+    // Clear workflow nodes and connections from canvas and state
+    function clearWorkflow() {
+      nodes.forEach(n => { if(n.parentElement) n.parentElement.removeChild(n); });
+      connections.forEach(c => { if(c.line.parentElement) c.line.parentElement.removeChild(c.line); });
+      nodes = [];
+      connections = [];
+      connectingFrom = null;
+      connectMode = false;
+      toggleConnectBtn.setAttribute('aria-pressed', 'false');
+      toggleConnectBtn.textContent = 'Toggle Connect Nodes 🔗';
+      saveToStorage('wildWorkflow', '');
+    }
+
+    // ========== Form & UI Event Handlers ==========
+
+    // Show or hide wait time inputs dynamically
+    function onNodeTypeChange() {
+      const type = nodeTypeSelect.value;
+      if(type === 'wait') {
+        waitTimeInput.hidden = false;
+        waitLabel.hidden = false;
+        waitTimeInput.required = true;
+      } else {
+        waitTimeInput.hidden = true;
+        waitLabel.hidden = true;
+        waitTimeInput.required = false;
+        waitTimeInput.value = '';
+      }
+    }
+
+    // Handle add node form submit
+    nodeForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const type = nodeTypeSelect.value;
+      const contentRaw = nodeContentTextarea.value.trim();
+      const wait = parseWaitTime(waitTimeInput.value);
+      const priority = Number(priorityInput.value);
+      const execMode = [...execModeRadios].find(r => r.checked)?.value || 'automatic';
+
+      if(!type || !contentRaw) {
+        alert('Node type and content are required!');
+        return;
+      }
+      if(type === 'wait' && (!isNumberValid(wait) || wait < 0)) {
+        alert('Wait time must be a non-negative number!');
+        return;
+      }
+
+      // Sanitize content (basic)
+      const content = sanitizeText(contentRaw);
+      const x = Math.floor(Math.random() * (canvas.clientWidth - 260));
+      const y = Math.floor(Math.random() * (canvas.clientHeight - 120));
+
+      addNode({ type, content, x, y, wait, priority, execMode });
+
+      nodeForm.reset();
+      waitTimeInput.hidden = true;
+      waitLabel.hidden = true;
+
+      smoothScrollTo(addNodeBtn);
+
+      saveWorkflowDebounced();
+    });
+
+    // Reset workflow event
+    resetBtn.addEventListener('click', () => {
+      if(confirm('Are you sure you want to reset the entire workflow? This action cannot be undone.')) {
+        clearWorkflow();
+      }
+    });
+
+    // Node type selector change handler
+    nodeTypeSelect.addEventListener('change', onNodeTypeChange);
+
+    // Toggle connect node mode
+    toggleConnectBtn.addEventListener('click', () => {
+      connectMode = !connectMode;
+      if(connectMode){
+        toggleConnectBtn.classList.add('active');
+        toggleConnectBtn.setAttribute('aria-pressed', 'true');
+        toggleConnectBtn.textContent = 'Exit Connect Mode ❌';
+        showTooltip('Click a node to start connecting...', toggleConnectBtn.getBoundingClientRect().right + 10, toggleConnectBtn.getBoundingClientRect().bottom + 10);
+      } else {
+        toggleConnectBtn.classList.remove('active');
+        toggleConnectBtn.setAttribute('aria-pressed', 'false');
+        toggleConnectBtn.textContent = 'Toggle Connect Nodes 🔗';
+        hideTooltip();
+        if(connectingFrom) {
+          connectingFrom.classList.remove('connecting-from');
+          connectingFrom = null;
+        }
+      }
+    });
+
+    // Export workflow JSON
+    exportBtn.addEventListener('click', () => {
+      const json = exportWorkflow();
+      // Use Blob to trigger download
+      const blob = new Blob([json], {type: 'application/json'});
+      const url = URL.createObjectURL(blob);
+      const a = createEl('a', { href: url, download: 'wild_workflow.json' });
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }, 100);
+    });
+
+    // Open file dialog
+    importBtn.addEventListener('click', () => {
+      importFileInput.click();
+    });
+
+    // Handle file input change for import
+    importFileInput.addEventListener('change', (event) => {
+      const file = event.target.files[0];
+      if(!file) return;
+      const reader = new FileReader();
+
+      reader.onload = (e) => {
+        importWorkflow(e.target.result);
+      };
+      reader.readAsText(file);
+
+      // Reset input so same file can be uploaded again if needed
+      importFileInput.value = '';
+    });
+
+    // ========== Tooltip management ==========
+    let tooltipTimeout = null;
+    function showTooltip(text, x, y) {
+      clearTimeout(tooltipTimeout);
+      tooltip.textContent = text;
+      tooltip.style.left = `${x}px`;
+      tooltip.style.top = `${y}px`;
+      tooltip.style.opacity = '1';
+      tooltip.setAttribute('aria-hidden', 'false');
+      // Auto hide after some time
+      tooltipTimeout = setTimeout(hideTooltip, 4000);
+    }
+    function hideTooltip() {
+      tooltip.style.opacity = '0';
+      tooltip.setAttribute('aria-hidden', 'true');
+    }
+
+    // ========== Save and Load Workflow ==========
+    const saveWorkflowDebounced = debounce(() => {
+      saveToStorage('wildWorkflow', exportWorkflow());
+    }, 350);
+
+    // Load workflow on startup
+    function loadWorkflow() {
+      const saved = loadFromStorage('wildWorkflow');
+      if(saved && saved.length > 10) {
+        importWorkflow(saved);
+      }
+    }
+
+    // ========== Wild Mode: crazy animations and colors ==========
+    let wildAnimationFrameId = null;
+
+    function enableWildMode() {
+      wildMode = true;
+      wildModeBtn.setAttribute('aria-pressed', 'true');
+      wildModeBtn.textContent = 'Disable Wild Mode ✋';
+      canvas.classList.add('wild-mode');
+      animateWild();
+    }
+
+    function disableWildMode() {
+      wildMode = false;
+      wildModeBtn.setAttribute('aria-pressed', 'false');
+      wildModeBtn.textContent = 'Wild Mode 🌈';
+      canvas.classList.remove('wild-mode');
+      if(wildAnimationFrameId) cancelAnimationFrame(wildAnimationFrameId);
+      resetStyleEffects();
+    }
+
+    function toggleWildMode() {
+      wildMode ? disableWildMode() : enableWildMode();
+    }
+
+    wildModeBtn.addEventListener('click', toggleWildMode);
+
+    // Animate colors on nodes and connections in wild mode
+    let hue = 0;
+    function animateWild(){
+      hue = (hue + 1) % 360;
+      nodes.forEach(node => {
+        const color = `hsl(${(hue + parseInt(node.dataset.priority)*40) % 360}, 90%, 60%)`;
+        node.style.borderColor = color;
+        node.style.boxShadow = `0 0 20px ${color}`; 
+      });
+      connections.forEach(({line}) => {
+        line.style.stroke = `hsl(${(hue+120) % 360}, 90%, 60%)`;
+        line.style.filter = `drop-shadow(0 0 6px hsl(${(hue+120) % 360}, 90%, 50%))`;
+      });
+      canvas.style.background = `radial-gradient(circle at center, hsl(${hue}, 80%, 20%), #000)`;
+      wildAnimationFrameId = requestAnimationFrame(animateWild);
+    }
+
+    function resetStyleEffects() {
+      nodes.forEach(node => {
+        node.style.borderColor = nodeTypeColors.get(node.dataset.type) || 'var(--main-color)';
+        node.style.boxShadow = `0 0 20px ${nodeTypeColors.get(node.dataset.type) || 'var(--main-color)'}88`;
+      });
+      connections.forEach(({line}) => {
+        line.style.stroke = 'var(--main-color)';
+        line.style.filter = 'drop-shadow(0 0 6px var(--main-color))';
+      });
+      canvas.style.background = 'linear-gradient(90deg, #041c1b 0%, #0b3835 100%)';
+    }
+
+    // ========== Simulate Workflow Execution (Async + Timers) ==========
+    async function simulateWorkflow() {
+      if(nodes.length === 0) {
+        alert('Workflow is empty!');
+        return;
+      }
+      // Sort nodes by priority desc
+      const sorted = [...nodes].sort((a,b) => b.dataset.priority - a.dataset.priority);
+
+      simulateBtn.disabled = true;
+      simulateBtn.textContent = 'Simulating... ⏳';
+
+      for(let node of sorted) {
+        // Highlight node visually
+        node.classList.add('active-simulating');
+        speakNode(node.dataset.content);
+        await sleep(2000); // simulate action delay
+
+        // If wait node, delay specified time
+        if(node.dataset.type === 'wait') {
+          const waitSeconds = parseFloat(node.dataset.wait) || 0;
+          await sleep(waitSeconds * 1000);
+        }
+
+        // Remove highlight
+        node.classList.remove('active-simulating');
+      }
+
+      simulateBtn.disabled = false;
+      simulateBtn.textContent = 'Simulate Workflow ▶️';
+    }
+
+    simulateBtn.addEventListener('click', simulateWorkflow);
+
+    // Text to speech helper for simulation
+    function speakNode(text) {
+      if(!voiceSpeechSynthesis) return;
+      const msg = new SpeechSynthesisUtterance(text);
+      msg.lang = 'en-US';
+      voiceSpeechSynthesis.speak(msg);
+    }
+
+    // ========== Voice Input Integration ==========
+    if('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      speechRecognition = new SpeechRecognition();
+      speechRecognition.lang = 'en-US';
+      speechRecognition.continuous = false;
+      speechRecognition.interimResults = false;
+
+      speechRecognition.addEventListener('result', e => {
+        const transcript = Array.from(e.results).map(r => r[0].transcript).join('');
+        if(nodeContentTextarea) {
+          nodeContentTextarea.value = transcript;
+          nodeContentTextarea.focus();
+        }
+      });
+      speechRecognition.addEventListener('end', () => {
+        if(voiceInputActive) speechRecognition.start();
+      });
+    } else {
+      voiceInputBtn.disabled = true;
+      voiceInputBtn.title = 'Voice input not supported in this browser';
+    }
+
+    voiceInputBtn.addEventListener('click', () => {
+      if(voiceInputActive) {
+        stopVoiceInput();
+      } else {
+        startVoiceInput();
+      }
+    });
+
+    function startVoiceInput() {
+      if(!speechRecognition) return;
+      voiceInputActive = true;
+      voiceInputBtn.setAttribute('aria-pressed', 'true');
+      voiceInputBtn.textContent = 'Voice Input Active 🛑';
+      speechRecognition.start();
+    }
+    function stopVoiceInput() {
+      if(!speechRecognition) return;
+      voiceInputActive = false;
+      voiceInputBtn.setAttribute('aria-pressed', 'false');
+      voiceInputBtn.textContent = 'Voice Input 🎙️';
+      speechRecognition.stop();
+    }
+
+    // ========== Accessibility: Trap focus inside sidebar during node creation ==========
+    function trapFocus(element) {
+      const focusableSelectors = 'a[href], area[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), button:not([disabled]), [tabindex="0"]:not([tabindex="-1"])';
+      const focusableElements = element.querySelectorAll(focusableSelectors);
+      const first = focusableElements[0];
+      const last = focusableElements[focusableElements.length -1];
+
+      element.addEventListener('keydown', (e) => {
+        if(e.key !== 'Tab') return;
+
+        if(e.shiftKey) { // Shift + Tab
+          if(document.activeElement === first) {
+            e.preventDefault();
+            last.focus();
+          }
+        } else { // Tab
+          if(document.activeElement === last) {
+            e.preventDefault();
+            first.focus();
+          }
+        }
+      });
+    }
+    trapFocus(sidebar);
+
+    // ========== Initialize ==========
+    // Hide waitTime inputs initially
+    waitTimeInput.hidden = true;
+    waitLabel.hidden = true;
+
+    // Load saved workflow if any
+    loadWorkflow();
+
+    // Listen window resize -> update connections (responsive nodes)
+    window.addEventListener('resize', debounce(updateConnections, 75));
+
+    // Listen scroll on canvas -> update connections (SVG absolute positioning)
+    canvas.addEventListener('scroll', debounce(updateConnections, 50));
+
+    // For better visibility when nodes/lines updated
+    const observer = new MutationObserver(debounce(() => updateConnections(), 100));
+    observer.observe(canvas, { childList: true, subtree: true });
+
+  })();
+</script>
+
+</body>
+</html>

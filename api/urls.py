@@ -20,5 +20,6 @@ urlpatterns = [
     path('sales/',include('api.sales_rep.urls')),
     path('serviceManager/',include('api.serviceManager.urls')),
     path('audittrail/',include('api.audittrails.urls')),
+    path('workflow/',include('api.workflow.urls')),
     path('',include('api.analyst.urls')),
 ]
