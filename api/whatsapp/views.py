@@ -717,6 +717,7 @@ def extract_message_body(message_data):
 
 
 @api_view(['GET', 'POST'])
+@schema_context(os.getenv('SCHEMA_NAME'))
 def webhook_whapi(request):
     if request.method == 'GET':
         print(request.GET)
@@ -737,6 +738,14 @@ def webhook_whapi(request):
                 "to": number,
                 "body": generated_message
             })
+        elif ChatSession.objects.filter(phone=number).exists():
+            response = query_gpt(message, number)["choices"][0]["message"]["content"]
+            make_whapi_request("POST", "/messages/text", data = {
+                "typing_time": 0,
+                "to": number,
+                "body": response
+            })
+        
         # Process the webhook data here
         # You can call your processing function or save the data to the database
         # For example:
