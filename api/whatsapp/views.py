@@ -18,8 +18,9 @@ from django.http import JsonResponse, HttpResponse
 from rest_framework.permissions import AllowAny
 
 from api.whatsapp.models import ChatSession
-from .prompts import hospital_prompt, system_prompt
+from .prompts import hospital_prompt, system_prompt,solarama_prompt
 from .tasks import send_batch_whatsapp_text
+from .constants import GROUPS_TO_REACT_TO
 
 load_dotenv()
 
@@ -307,7 +308,7 @@ def query_gpt(prompt,phone_number=None):
             chat_session.add_message("user", prompt)
         except ChatSession.DoesNotExist:
             conversation_history=[
-                    {"role": "system", "content": system_prompt},
+                    {"role": "system", "content": solarama_prompt},
                     {"role": "user", "content": prompt},
                 ]
             chat_session = ChatSession.objects.create(
@@ -644,7 +645,75 @@ class WebhookTestView(APIView):
     def post(self, request):
         result = make_whapi_request("POST", "/settings/webhook_test", data=request.data)
         return Response(result, status=result.get('status_code', 500))
+
+
+def extract_from_number(message_data):
+    """
+    Extracts the 'from' number from the first message in the provided data.
+
+    Args:
+        message_data (dict): The dictionary containing message details.
+
+    Returns:
+        str or None: The 'from' number if found, else None.
+    """
+    if 'messages' not in message_data:
+        return None
     
+    try:
+        messages = message_data['messages']
+        if messages and len(messages) > 0:
+            from_number = messages[0].get('from')
+            return from_number
+        return None
+    except (AttributeError, IndexError):
+        return None
+
+def extract_group_name(message_data):
+    """
+    Extracts the group name from the provided message data.
+
+    Args:
+        message_data (dict): The dictionary containing message details.
+
+    Returns:
+        str or None: The group name if found, else None.
+    """
+    if 'messages' not in message_data:
+        return None
+    
+    try:
+        messages = message_data['messages']
+        if messages and len(messages) > 0:
+            group_name = messages[0].get('chat_name')
+            return group_name
+        return None
+    except (AttributeError, IndexError):
+        return None
+
+
+def extract_message_body(message_data):
+    """
+    Extracts the message body from the provided message data.
+
+    Args:
+        message_data (dict): The dictionary containing message details.
+
+    Returns:
+        str or None: The message body if found, else None.
+    """
+    if 'messages' not in message_data:
+        return None
+    
+    try:
+        messages = message_data['messages']
+        if messages and len(messages) > 0:
+            message_body = messages[0].get('text', {}).get('body')
+            return message_body
+        return None
+    except (AttributeError, IndexError):
+        return None
+
 
 @api_view(['GET', 'POST'])
 def webhook_whapi(request):
@@ -653,6 +722,20 @@ def webhook_whapi(request):
         return Response({"message": "Webhook GET request received"}, status=status.HTTP_200_OK)
     elif request.method == 'POST':
         print(request.data)
+        # Example usage:
+
+        number = extract_from_number(request.data)
+        group_name = extract_group_name(request.data)
+        message = extract_message_body(request.data)
+        print("Message:", message)
+        print("From number:", number)
+        if group_name in GROUPS_TO_REACT_TO:
+            generated_message = query_gpt(message, number)["choices"][0]["message"]["content"]
+            make_whapi_request("POST", "/messages/text", data = {
+                "typing_time": 0,
+                "to": number,
+                "body": generated_message
+            })
         # Process the webhook data here
         # You can call your processing function or save the data to the database
         # For example:
