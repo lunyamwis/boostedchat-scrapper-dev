@@ -5,6 +5,7 @@ import uuid
 import logging
 import os
 import re
+import time
 import ast
 from typing import Optional, Dict, Any
 
@@ -739,6 +740,7 @@ def webhook_whapi(request):
         print("From number:", number)
         if group_name in GROUPS_TO_REACT_TO:
             generated_message = query_gpt(message, number)["choices"][0]["message"]["content"]
+            time.sleep(15)  # Simulate typing delay
             make_whapi_request("POST", "/messages/text", data = {
                 "typing_time": 0,
                 "to": number,
@@ -746,6 +748,7 @@ def webhook_whapi(request):
             })
         elif ChatSession.objects.filter(phone=number).exists():
             response = query_gpt(message, number)["choices"][0]["message"]["content"]
+            time.sleep(15)  # Simulate typing delay
             make_whapi_request("POST", "/messages/text", data = {
                 "typing_time": 0,
                 "to": number,
