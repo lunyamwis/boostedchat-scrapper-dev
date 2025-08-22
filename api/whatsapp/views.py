@@ -1,7 +1,4 @@
 import random
-from django.shortcuts import render
-
-# Create your views here.
 import json
 import requests
 import uuid
@@ -9,6 +6,7 @@ import logging
 import os
 import re
 import ast
+from typing import Optional, Dict, Any
 
 from dotenv import load_dotenv
 from django.conf import settings
@@ -20,11 +18,18 @@ from django.http import JsonResponse, HttpResponse
 from rest_framework.permissions import AllowAny
 
 from api.whatsapp.models import ChatSession
-from .prompts import hospital_prompt,system_prompt
-
+from .prompts import hospital_prompt, system_prompt
 from .tasks import send_batch_whatsapp_text
 
-# Define constants
+load_dotenv()
+
+# Whapi.cloud Configuration
+WHAPI_BASE_URL = "https://gate.whapi.cloud"
+WHAPI_TOKEN = os.getenv("WHAPI_TOKEN","test_token")  # Add this to your .env file
+WHAPI_HEADERS = {
+    "Authorization": f"Bearer {WHAPI_TOKEN}",
+    "Content-Type": "application/json"
+}
 
 
 
@@ -577,3 +582,1224 @@ def generate_test_phone_number():
     # Generate 8 random digits
     random_digits = ''.join([str(random.randint(0, 9)) for _ in range(8)])
     return f"test-2547{random_digits}"
+
+
+
+# Helper function for making Whapi requests
+def make_whapi_request(method: str, endpoint: str, data: Dict = None, files: Dict = None) -> Dict:
+    """Helper function to make requests to Whapi.cloud API"""
+    url = f"{WHAPI_BASE_URL}{endpoint}"
+    
+    try:
+        if files:
+            headers = {"Authorization": f"Bearer {WHAPI_TOKEN}"}
+            response = requests.request(method, url, headers=headers, json=data, files=files)
+        else:
+            response = requests.request(method, url, headers=WHAPI_HEADERS, json=data)
+        
+        response.raise_for_status()
+        return {"success": True, "data": response.json(), "status_code": response.status_code}
+    except requests.exceptions.RequestException as e:
+        return {"success": False, "error": str(e), "status_code": getattr(e.response, 'status_code', 500)}
+
+class ChannelHealthView(APIView):
+    """Check health & launch channel"""
+    permission_classes = [AllowAny]
+    
+    def get(self, request):
+        result = make_whapi_request("GET", "/health")
+        return Response(result, status=result.get('status_code', 500))
+
+class ChannelSettingsView(APIView):
+    """Manage channel settings"""
+    permission_classes = [AllowAny]
+    
+    def get(self, request):
+        """Get channel settings"""
+        result = make_whapi_request("GET", "/settings")
+        return Response(result, status=result.get('status_code', 500))
+    
+    def patch(self, request):
+        """Update channel settings"""
+        result = make_whapi_request("PATCH", "/settings", data=request.data)
+        return Response(result, status=result.get('status_code', 500))
+    
+    def delete(self, request):
+        """Reset channel settings"""
+        result = make_whapi_request("DELETE", "/settings")
+        return Response(result, status=result.get('status_code', 500))
+
+class ChannelEventsView(APIView):
+    """Get allowed events"""
+    permission_classes = [AllowAny]
+    
+    def get(self, request):
+        result = make_whapi_request("GET", "/settings/events")
+        return Response(result, status=result.get('status_code', 500))
+
+class WebhookTestView(APIView):
+    """Test webhook"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        result = make_whapi_request("POST", "/settings/webhook_test", data=request.data)
+        return Response(result, status=result.get('status_code', 500))
+
+class ChannelLimitsView(APIView):
+    """Get limits"""
+    permission_classes = [AllowAny]
+    
+    def get(self, request):
+        result = make_whapi_request("GET", "/limits")
+        return Response(result, status=result.get('status_code', 500))
+
+
+class UserLoginView(APIView):
+    """User login endpoints"""
+    permission_classes = [AllowAny]
+    
+    def get(self, request, phone_number=None):
+        if phone_number:
+            # Get auth code by phone number
+            endpoint = f"/users/login/{phone_number}"
+        else:
+            # Login user with QR-base64
+            endpoint = "/users/login"
+        
+        result = make_whapi_request("GET", endpoint)
+        return Response(result, status=result.get('status_code', 500))
+
+class UserLoginImageView(APIView):
+    """Login user with QR-image"""
+    permission_classes = [AllowAny]
+    
+    def get(self, request):
+        result = make_whapi_request("GET", "/users/login/image")
+        return Response(result, status=result.get('status_code', 500))
+
+class UserLoginRowdataView(APIView):
+    """Login user with QR-rowdata"""
+    permission_classes = [AllowAny]
+    
+    def get(self, request):
+        result = make_whapi_request("GET", "/users/login/rowdata")
+        return Response(result, status=result.get('status_code', 500))
+
+class UserLogoutView(APIView):
+    """Logout user"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        result = make_whapi_request("POST", "/users/logout", data=request.data)
+        return Response(result, status=result.get('status_code', 500))
+
+class UserProfileView(APIView):
+    """User profile management"""
+    permission_classes = [AllowAny]
+    
+    def get(self, request):
+        """Get user info"""
+        result = make_whapi_request("GET", "/users/profile")
+        return Response(result, status=result.get('status_code', 500))
+    
+    def patch(self, request):
+        """Update user info"""
+        result = make_whapi_request("PATCH", "/users/profile", data=request.data)
+        return Response(result, status=result.get('status_code', 500))
+
+class UserInfoView(APIView):
+    """Query account information"""
+    permission_classes = [AllowAny]
+    
+    def get(self, request):
+        result = make_whapi_request("GET", "/users/info")
+        return Response(result, status=result.get('status_code', 500))
+
+class UserGDPRView(APIView):
+    """GDPR account report"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        """Request GDPR account report"""
+        result = make_whapi_request("POST", "/users/gdpr", data=request.data)
+        return Response(result, status=result.get('status_code', 500))
+    
+    def get(self, request):
+        """Get GDPR report status"""
+        result = make_whapi_request("GET", "/users/gdpr")
+        return Response(result, status=result.get('status_code', 500))
+
+class UserStatusView(APIView):
+    """Change status text"""
+    permission_classes = [AllowAny]
+    
+    def put(self, request):
+        result = make_whapi_request("PUT", "/status", data=request.data)
+        return Response(result, status=result.get('status_code', 500))
+
+
+class MessagesListView(APIView):
+    """Get messages"""
+    permission_classes = [AllowAny]
+    
+    def get(self, request, chat_id=None):
+        if chat_id:
+            endpoint = f"/messages/list/{chat_id}"
+        else:
+            endpoint = "/messages/list"
+        
+        result = make_whapi_request("GET", endpoint)
+        return Response(result, status=result.get('status_code', 500))
+
+class SendTextMessageView(APIView):
+    """Send text message"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        result = make_whapi_request("POST", "/messages/text", data=request.data)
+        return Response(result, status=result.get('status_code', 500))
+
+class SendImageMessageView(APIView):
+    """Send media-image message"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        result = make_whapi_request("POST", "/messages/image", data=request.data)
+        return Response(result, status=result.get('status_code', 500))
+
+class SendVideoMessageView(APIView):
+    """Send media-video message"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        result = make_whapi_request("POST", "/messages/video", data=request.data)
+        return Response(result, status=result.get('status_code', 500))
+
+class SendShortVideoMessageView(APIView):
+    """Send media-short video message (PTV)"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        result = make_whapi_request("POST", "/messages/short", data=request.data)
+        return Response(result, status=result.get('status_code', 500))
+
+class SendGifMessageView(APIView):
+    """Send media-gif message"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        result = make_whapi_request("POST", "/messages/gif", data=request.data)
+        return Response(result, status=result.get('status_code', 500))
+
+class SendAudioMessageView(APIView):
+    """Send media-audio message"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        result = make_whapi_request("POST", "/messages/audio", data=request.data)
+        return Response(result, status=result.get('status_code', 500))
+
+class SendVoiceMessageView(APIView):
+    """Send media-voice message"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        result = make_whapi_request("POST", "/messages/voice", data=request.data)
+        return Response(result, status=result.get('status_code', 500))
+
+class SendDocumentMessageView(APIView):
+    """Send media-document message"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        result = make_whapi_request("POST", "/messages/document", data=request.data)
+        return Response(result, status=result.get('status_code', 500))
+
+class SendLinkPreviewMessageView(APIView):
+    """Send link preview message"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        result = make_whapi_request("POST", "/messages/link_preview", data=request.data)
+        return Response(result, status=result.get('status_code', 500))
+
+class SendLocationMessageView(APIView):
+    """Send location message"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        result = make_whapi_request("POST", "/messages/location", data=request.data)
+        return Response(result, status=result.get('status_code', 500))
+
+class SendLiveLocationMessageView(APIView):
+    """Send live location message"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        result = make_whapi_request("POST", "/messages/live_location", data=request.data)
+        return Response(result, status=result.get('status_code', 500))
+
+class SendContactMessageView(APIView):
+    """Send contact message"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        result = make_whapi_request("POST", "/messages/contact", data=request.data)
+        return Response(result, status=result.get('status_code', 500))
+
+class SendContactListMessageView(APIView):
+    """Send contact list message"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        result = make_whapi_request("POST", "/messages/contact_list", data=request.data)
+        return Response(result, status=result.get('status_code', 500))
+
+class SendPollMessageView(APIView):
+    """Send poll message"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        result = make_whapi_request("POST", "/messages/poll", data=request.data)
+        return Response(result, status=result.get('status_code', 500))
+
+class SendInteractiveMessageView(APIView):
+    """Send interactive message"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        result = make_whapi_request("POST", "/messages/interactive", data=request.data)
+        return Response(result, status=result.get('status_code', 500))
+
+class SendStickerMessageView(APIView):
+    """Send media-sticker message"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        result = make_whapi_request("POST", "/messages/sticker", data=request.data)
+        return Response(result, status=result.get('status_code', 500))
+
+# Story message endpoints
+class SendStoryMessageView(APIView):
+    """Send story message"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        result = make_whapi_request("POST", "/messages/story", data=request.data)
+        return Response(result, status=result.get('status_code', 500))
+
+class SendStoryAudioMessageView(APIView):
+    """Send story audio message"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        result = make_whapi_request("POST", "/messages/story/audio", data=request.data)
+        return Response(result, status=result.get('status_code', 500))
+
+class SendStoryMediaMessageView(APIView):
+    """Send story media message"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        result = make_whapi_request("POST", "/messages/story/media", data=request.data)
+        return Response(result, status=result.get('status_code', 500))
+
+class SendStoryTextMessageView(APIView):
+    """Send story text message"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        result = make_whapi_request("POST", "/messages/story/text", data=request.data)
+        return Response(result, status=result.get('status_code', 500))
+
+class SendMediaMessageView(APIView):
+    """Send media message"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request, media_type):
+        endpoint = f"/messages/media/{media_type}"
+        result = make_whapi_request("POST", endpoint, data=request.data)
+        return Response(result, status=result.get('status_code', 500))
+
+# Message management endpoints
+class MessageView(APIView):
+    """Message management"""
+    permission_classes = [AllowAny]
+    
+    def get(self, request, message_id):
+        """Get message"""
+        endpoint = f"/messages/{message_id}"
+        result = make_whapi_request("GET", endpoint)
+        return Response(result, status=result.get('status_code', 500))
+    
+    def post(self, request, message_id):
+        """Forward message"""
+        endpoint = f"/messages/{message_id}"
+        result = make_whapi_request("POST", endpoint, data=request.data)
+        return Response(result, status=result.get('status_code', 500))
+    
+    def put(self, request, message_id):
+        """Mark message as read"""
+        endpoint = f"/messages/{message_id}"
+        result = make_whapi_request("PUT", endpoint, data=request.data)
+        return Response(result, status=result.get('status_code', 500))
+    
+    def delete(self, request, message_id):
+        """Delete message"""
+        endpoint = f"/messages/{message_id}"
+        result = make_whapi_request("DELETE", endpoint)
+        return Response(result, status=result.get('status_code', 500))
+
+class MessageReactionView(APIView):
+    """Message reaction management"""
+    permission_classes = [AllowAny]
+    
+    def put(self, request, message_id):
+        """React to message"""
+        endpoint = f"/messages/{message_id}/reaction"
+        result = make_whapi_request("PUT", endpoint, data=request.data)
+        return Response(result, status=result.get('status_code', 500))
+    
+    def delete(self, request, message_id):
+        """Remove react from message"""
+        endpoint = f"/messages/{message_id}/reaction"
+        result = make_whapi_request("DELETE", endpoint)
+        return Response(result, status=result.get('status_code', 500))
+
+class MessageStarView(APIView):
+    """Star message"""
+    permission_classes = [AllowAny]
+    
+    def put(self, request, message_id):
+        endpoint = f"/messages/{message_id}/star"
+        result = make_whapi_request("PUT", endpoint, data=request.data)
+        return Response(result, status=result.get('status_code', 500))
+
+class MessagePinView(APIView):
+    """Pin/Unpin message"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request, message_id):
+        """Pin message"""
+        endpoint = f"/messages/{message_id}/pin"
+        result = make_whapi_request("POST", endpoint, data=request.data)
+        return Response(result, status=result.get('status_code', 500))
+    
+    def delete(self, request, message_id):
+        """Unpin message"""
+        endpoint = f"/messages/{message_id}/pin"
+        result = make_whapi_request("DELETE", endpoint)
+        return Response(result, status=result.get('status_code', 500))
+
+
+class ChatsView(APIView):
+    """Get chats"""
+    permission_classes = [AllowAny]
+    
+    def get(self, request):
+        result = make_whapi_request("GET", "/chats")
+        return Response(result, status=result.get('status_code', 500))
+
+class ChatView(APIView):
+    """Chat management"""
+    permission_classes = [AllowAny]
+    
+    def get(self, request, chat_id):
+        """Get chat"""
+        endpoint = f"/chats/{chat_id}"
+        result = make_whapi_request("GET", endpoint)
+        return Response(result, status=result.get('status_code', 500))
+    
+    def delete(self, request, chat_id):
+        """Delete chat"""
+        endpoint = f"/chats/{chat_id}"
+        result = make_whapi_request("DELETE", endpoint)
+        return Response(result, status=result.get('status_code', 500))
+    
+    def post(self, request, chat_id):
+        """Archive/Unarchive chat"""
+        endpoint = f"/chats/{chat_id}"
+        result = make_whapi_request("POST", endpoint, data=request.data)
+        return Response(result, status=result.get('status_code', 500))
+    
+    def patch(self, request, chat_id):
+        """Chat Settings Management: Pin, Mute, Read, Disappearing"""
+        endpoint = f"/chats/{chat_id}"
+        result = make_whapi_request("PATCH", endpoint, data=request.data)
+        return Response(result, status=result.get('status_code', 500))
+
+class ContactsView(APIView):
+    """Contacts management"""
+    permission_classes = [AllowAny]
+    
+    def get(self, request):
+        """Get contacts"""
+        result = make_whapi_request("GET", "/contacts")
+        return Response(result, status=result.get('status_code', 500))
+    
+    def post(self, request):
+        """Check phones"""
+        result = make_whapi_request("POST", "/contacts", data=request.data)
+        return Response(result, status=result.get('status_code', 500))
+
+class ContactView(APIView):
+    """Contact management"""
+    permission_classes = [AllowAny]
+    
+    def get(self, request, contact_id):
+        """Get contact"""
+        endpoint = f"/contacts/{contact_id}"
+        result = make_whapi_request("GET", endpoint)
+        return Response(result, status=result.get('status_code', 500))
+    
+    def post(self, request, contact_id):
+        """Send contact"""
+        endpoint = f"/contacts/{contact_id}"
+        result = make_whapi_request("POST", endpoint, data=request.data)
+        return Response(result, status=result.get('status_code', 500))
+    
+    def head(self, request, contact_id):
+        """Check exist"""
+        endpoint = f"/contacts/{contact_id}"
+        result = make_whapi_request("HEAD", endpoint)
+        return Response(result, status=result.get('status_code', 500))
+
+class ContactProfileView(APIView):
+    """Get contact profile"""
+    permission_classes = [AllowAny]
+    
+    def get(self, request, contact_id):
+        endpoint = f"/contacts/{contact_id}/profile"
+        result = make_whapi_request("GET", endpoint)
+        return Response(result, status=result.get('status_code', 500))
+
+class ContactLidsView(APIView):
+    """Get LIDs"""
+    permission_classes = [AllowAny]
+    
+    def get(self, request, contact_id=None):
+        if contact_id:
+            endpoint = f"/contacts/lids/{contact_id}"
+        else:
+            endpoint = "/contacts/lids"
+        result = make_whapi_request("GET", endpoint)
+        return Response(result, status=result.get('status_code', 500))
+
+
+
+class PresencesMeView(APIView):
+    """Send online or offline presence"""
+    permission_classes = [AllowAny]
+    
+    def put(self, request):
+        result = make_whapi_request("PUT", "/presences/me", data=request.data)
+        return Response(result, status=result.get('status_code', 500))
+
+class PresenceView(APIView):
+    """Presence management"""
+    permission_classes = [AllowAny]
+    
+    def get(self, request, entry_id):
+        """Get presence"""
+        endpoint = f"/presences/{entry_id}"
+        result = make_whapi_request("GET", endpoint)
+        return Response(result, status=result.get('status_code', 500))
+    
+    def post(self, request, entry_id):
+        """Subscribe to presence"""
+        endpoint = f"/presences/{entry_id}"
+        result = make_whapi_request("POST", endpoint, data=request.data)
+        return Response(result, status=result.get('status_code', 500))
+    
+    def put(self, request, entry_id):
+        """Send typing or recording presence"""
+        endpoint = f"/presences/{entry_id}"
+        result = make_whapi_request("PUT", endpoint, data=request.data)
+        return Response(result, status=result.get('status_code', 500))
+
+class GroupsView(APIView):
+    """Groups management"""
+    permission_classes = [AllowAny]
+    
+    def get(self, request):
+        """Get groups"""
+        result = make_whapi_request("GET", "/groups")
+        return Response(result, status=result.get('status_code', 500))
+    
+    def post(self, request):
+        """Create group"""
+        result = make_whapi_request("POST", "/groups", data=request.data)
+        return Response(result, status=result.get('status_code', 500))
+    
+    def put(self, request):
+        """Accept group invite"""
+        result = make_whapi_request("PUT", "/groups", data=request.data)
+        return Response(result, status=result.get('status_code', 500))
+
+class GroupView(APIView):
+    """Group management"""
+    permission_classes = [AllowAny]
+    
+    def get(self, request, group_id):
+        """Get group"""
+        endpoint = f"/groups/{group_id}"
+        result = make_whapi_request("GET", endpoint)
+        return Response(result, status=result.get('status_code', 500))
+    
+    def put(self, request, group_id):
+        """Update group info"""
+        endpoint = f"/groups/{group_id}"
+        result = make_whapi_request("PUT", endpoint, data=request.data)
+        return Response(result, status=result.get('status_code', 500))
+    
+    def delete(self, request, group_id):
+        """Leave group"""
+        endpoint = f"/groups/{group_id}"
+        result = make_whapi_request("DELETE", endpoint)
+        return Response(result, status=result.get('status_code', 500))
+    
+    def patch(self, request, group_id):
+        """Update group setting"""
+        endpoint = f"/groups/{group_id}"
+        result = make_whapi_request("PATCH", endpoint, data=request.data)
+        return Response(result, status=result.get('status_code', 500))
+
+class GroupInviteView(APIView):
+    """Group invite management"""
+    permission_classes = [AllowAny]
+    
+    def get(self, request, group_id):
+        """Get group invite"""
+        endpoint = f"/groups/{group_id}/invite"
+        result = make_whapi_request("GET", endpoint)
+        return Response(result, status=result.get('status_code', 500))
+    
+    def delete(self, request, group_id):
+        """Revoke group invite"""
+        endpoint = f"/groups/{group_id}/invite"
+        result = make_whapi_request("DELETE", endpoint)
+        return Response(result, status=result.get('status_code', 500))
+
+class GroupParticipantsView(APIView):
+    """Group participants management"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request, group_id):
+        """Add group participant"""
+        endpoint = f"/groups/{group_id}/participants"
+        result = make_whapi_request("POST", endpoint, data=request.data)
+        return Response(result, status=result.get('status_code', 500))
+    
+    def delete(self, request, group_id):
+        """Remove group participant"""
+        endpoint = f"/groups/{group_id}/participants"
+        result = make_whapi_request("DELETE", endpoint, data=request.data)
+        return Response(result, status=result.get('status_code', 500))
+
+class GroupIconView(APIView):
+    """Group icon management"""
+    permission_classes = [AllowAny]
+    
+    def get(self, request, group_id):
+        """Get group icon"""
+        endpoint = f"/groups/{group_id}/icon"
+        result = make_whapi_request("GET", endpoint)
+        return Response(result, status=result.get('status_code', 500))
+    
+    def put(self, request, group_id):
+        """Set group icon"""
+        endpoint = f"/groups/{group_id}/icon"
+        result = make_whapi_request("PUT", endpoint, data=request.data)
+        return Response(result, status=result.get('status_code', 500))
+    
+    def delete(self, request, group_id):
+        """Delete group icon"""
+        endpoint = f"/groups/{group_id}/icon"
+        result = make_whapi_request("DELETE", endpoint)
+        return Response(result, status=result.get('status_code', 500))
+
+class GroupAdminsView(APIView):
+    """Group admins management"""
+    permission_classes = [AllowAny]
+    
+    def delete(self, request, group_id):
+        """Demote group admin"""
+        endpoint = f"/groups/{group_id}/admins"
+        result = make_whapi_request("DELETE", endpoint, data=request.data)
+        return Response(result, status=result.get('status_code', 500))
+    
+    def patch(self, request, group_id):
+        """Promote to group admin"""
+        endpoint = f"/groups/{group_id}/admins"
+        result = make_whapi_request("PATCH", endpoint, data=request.data)
+        return Response(result, status=result.get('status_code', 500))
+
+class GroupInviteLinkView(APIView):
+    """Group invite link management"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request, invite_code):
+        """Send group invite link"""
+        endpoint = f"/groups/link/{invite_code}"
+        result = make_whapi_request("POST", endpoint, data=request.data)
+        return Response(result, status=result.get('status_code', 500))
+    
+    def get(self, request, invite_code):
+        """Get group info by invite code"""
+        endpoint = f"/groups/link/{invite_code}"
+        result = make_whapi_request("GET", endpoint)
+        return Response(result, status=result.get('status_code', 500))
+
+class GroupApplicationsView(APIView):
+    """Group applications management"""
+    permission_classes = [AllowAny]
+    
+    def get(self, request, group_id):
+        """Get list of join requests to the group"""
+        endpoint = f"/groups/{group_id}/applications"
+        result = make_whapi_request("GET", endpoint)
+        return Response(result, status=result.get('status_code', 500))
+    
+    def post(self, request, group_id):
+        """Accept group applications for listed users"""
+        endpoint = f"/groups/{group_id}/applications"
+        result = make_whapi_request("POST", endpoint, data=request.data)
+        return Response(result, status=result.get('status_code', 500))
+    
+    def delete(self, request, group_id):
+        """Reject group applications for listed users"""
+        endpoint = f"/groups/{group_id}/applications"
+        result = make_whapi_request("DELETE", endpoint, data=request.data)
+        return Response(result, status=result.get('status_code', 500))
+
+
+class StoriesView(APIView):
+    """Stories management"""
+    permission_classes = [AllowAny]
+    
+    def get(self, request):
+        """Get list of stories"""
+        result = make_whapi_request("GET", "/stories")
+        return Response(result, status=result.get('status_code', 500))
+    
+    def post(self, request):
+        """Create & publish story"""
+        result = make_whapi_request("POST", "/stories", data=request.data)
+        return Response(result, status=result.get('status_code', 500))
+
+class StoriesSendTextView(APIView):
+    """Post text story"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        result = make_whapi_request("POST", "/stories/send/text", data=request.data)
+        return Response(result, status=result.get('status_code', 500))
+
+class StoriesSendMediaView(APIView):
+    """Post media story"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        result = make_whapi_request("POST", "/stories/send/media", data=request.data)
+        return Response(result, status=result.get('status_code', 500))
+
+class StoriesSendAudioView(APIView):
+    """Post audio story"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        result = make_whapi_request("POST", "/stories/send/audio", data=request.data)
+        return Response(result, status=result.get('status_code', 500))
+
+class StoryView(APIView):
+    """Story management"""
+    permission_classes = [AllowAny]
+    
+    def get(self, request, message_id):
+        """Get story"""
+        endpoint = f"/stories/{message_id}"
+        result = make_whapi_request("GET", endpoint)
+        return Response(result, status=result.get('status_code', 500))
+    
+    def put(self, request, message_id):
+        """Copy story"""
+        endpoint = f"/stories/{message_id}"
+        result = make_whapi_request("PUT", endpoint, data=request.data)
+        return Response(result, status=result.get('status_code', 500))
+
+
+class StatusesView(APIView):
+    """Get message or story view statuses"""
+    permission_classes = [AllowAny]
+    
+    def get(self, request, message_id):
+        endpoint = f"/statuses/{message_id}"
+        result = make_whapi_request("GET", endpoint)
+        return Response(result, status=result.get('status_code', 500))
+
+class NewslettersView(APIView):
+    """Newsletters management"""
+    permission_classes = [AllowAny]
+    
+    def get(self, request):
+        """Get newsletters"""
+        result = make_whapi_request("GET", "/newsletters")
+        return Response(result, status=result.get('status_code', 500))
+    
+    def post(self, request):
+        """Create newsletter"""
+        result = make_whapi_request("POST", "/newsletters", data=request.data)
+        return Response(result, status=result.get('status_code', 500))
+
+class NewslettersFindView(APIView):
+    """Find newsletters by filters"""
+    permission_classes = [AllowAny]
+    
+    def get(self, request):
+        result = make_whapi_request("GET", "/newsletters/find")
+        return Response(result, status=result.get('status_code', 500))
+
+class NewslettersRecommendedView(APIView):
+    """Get recommended newsletters by country"""
+    permission_classes = [AllowAny]
+    
+    def get(self, request):
+        result = make_whapi_request("GET", "/newsletters/recommended")
+        return Response(result, status=result.get('status_code', 500))
+
+class NewsletterView(APIView):
+    """Newsletter management"""
+    permission_classes = [AllowAny]
+    
+    def get(self, request, newsletter_id):
+        """Get newsletter information"""
+        endpoint = f"/newsletters/{newsletter_id}"
+        result = make_whapi_request("GET", endpoint)
+        return Response(result, status=result.get('status_code', 500))
+    
+    def delete(self, request, newsletter_id):
+        """Delete newsletter"""
+        endpoint = f"/newsletters/{newsletter_id}"
+        result = make_whapi_request("DELETE", endpoint)
+        return Response(result, status=result.get('status_code', 500))
+    
+    def patch(self, request, newsletter_id):
+        """Edit newsletter"""
+        endpoint = f"/newsletters/{newsletter_id}"
+        result = make_whapi_request("PATCH", endpoint, data=request.data)
+        return Response(result, status=result.get('status_code', 500))
+
+class NewsletterSubscriptionView(APIView):
+    """Newsletter subscription management"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request, newsletter_id):
+        """Subscribe to newsletter"""
+        endpoint = f"/newsletters/{newsletter_id}/subscription"
+        result = make_whapi_request("POST", endpoint, data=request.data)
+        return Response(result, status=result.get('status_code', 500))
+    
+    def delete(self, request, newsletter_id):
+        """Unsubscribe from newsletter"""
+        endpoint = f"/newsletters/{newsletter_id}/subscription"
+        result = make_whapi_request("DELETE", endpoint)
+        return Response(result, status=result.get('status_code', 500))
+
+class NewsletterInviteSubscriptionView(APIView):
+    """Newsletter invite subscription management"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request, invite_code):
+        """Subscribe to newsletter by invite code"""
+        endpoint = f"/newsletters/invite/{invite_code}/subscription"
+        result = make_whapi_request("POST", endpoint, data=request.data)
+        return Response(result, status=result.get('status_code', 500))
+    
+    def delete(self, request, invite_code):
+        """Unsubscribe from newsletter by invite code"""
+        endpoint = f"/newsletters/invite/{invite_code}/subscription"
+        result = make_whapi_request("DELETE", endpoint)
+        return Response(result, status=result.get('status_code', 500))
+
+class NewsletterTrackingView(APIView):
+    """Subscribe to newsletter updates"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request, newsletter_id):
+        endpoint = f"/newsletters/{newsletter_id}/tracking"
+        result = make_whapi_request("POST", endpoint, data=request.data)
+        return Response(result, status=result.get('status_code', 500))
+
+class NewsletterMessagesView(APIView):
+    """Get newsletter messages"""
+    permission_classes = [AllowAny]
+    
+    def get(self, request, newsletter_id):
+        endpoint = f"/newsletters/{newsletter_id}/messages"
+        result = make_whapi_request("GET", endpoint)
+        return Response(result, status=result.get('status_code', 500))
+
+class NewsletterInviteView(APIView):
+    """Newsletter admin invite management"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request, newsletter_id, contact_id):
+        """Create Newsletter admin-invite"""
+        endpoint = f"/newsletters/{newsletter_id}/invite/{contact_id}"
+        result = make_whapi_request("POST", endpoint, data=request.data)
+        return Response(result, status=result.get('status_code', 500))
+    
+    def delete(self, request, newsletter_id, contact_id):
+        """Revoke Newsletter admin-invite"""
+        endpoint = f"/newsletters/{newsletter_id}/invite/{contact_id}"
+        result = make_whapi_request("DELETE", endpoint)
+        return Response(result, status=result.get('status_code', 500))
+
+class NewsletterAdminsView(APIView):
+    """Newsletter admins management"""
+    permission_classes = [AllowAny]
+    
+    def put(self, request, newsletter_id, contact_id):
+        """Accept Newsletter admin-request"""
+        endpoint = f"/newsletters/{newsletter_id}/admins/{contact_id}"
+        result = make_whapi_request("PUT", endpoint, data=request.data)
+        return Response(result, status=result.get('status_code', 500))
+    
+    def delete(self, request, newsletter_id, contact_id):
+        """Demote Newsletter admin"""
+        endpoint = f"/newsletters/{newsletter_id}/admins/{contact_id}"
+        result = make_whapi_request("DELETE", endpoint)
+        return Response(result, status=result.get('status_code', 500))
+
+class NewsletterLinkView(APIView):
+    """Newsletter link management"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request, invite_code):
+        """Send newsletter invite link"""
+        endpoint = f"/newsletters/link/{invite_code}"
+        result = make_whapi_request("POST", endpoint, data=request.data)
+        return Response(result, status=result.get('status_code', 500))
+    
+    def get(self, request, invite_code):
+        """Get newsletter info by invite code"""
+        endpoint = f"/newsletters/link/{invite_code}"
+        result = make_whapi_request("GET", endpoint)
+        return Response(result, status=result.get('status_code', 500))
+
+
+class MediaView(APIView):
+    """Media management"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        """Upload media"""
+        result = make_whapi_request("POST", "/media", data=request.data)
+        return Response(result, status=result.get('status_code', 500))
+    
+    def get(self, request, media_id=None):
+        if media_id:
+            """Get media"""
+            endpoint = f"/media/{media_id}"
+        else:
+            """Get media files"""
+            endpoint = "/media"
+        result = make_whapi_request("GET", endpoint)
+        return Response(result, status=result.get('status_code', 500))
+    
+    def delete(self, request, media_id):
+        """Delete media"""
+        endpoint = f"/media/{media_id}"
+        result = make_whapi_request("DELETE", endpoint)
+        return Response(result, status=result.get('status_code', 500))
+
+
+class BusinessView(APIView):
+    """Business profile management"""
+    permission_classes = [AllowAny]
+    
+    def get(self, request):
+        """Get business profile"""
+        result = make_whapi_request("GET", "/business")
+        return Response(result, status=result.get('status_code', 500))
+    
+    def post(self, request):
+        """Edit your Business Profile"""
+        result = make_whapi_request("POST", "/business", data=request.data)
+        return Response(result, status=result.get('status_code', 500))
+
+class BusinessProductsView(APIView):
+    """Business products management"""
+    permission_classes = [AllowAny]
+    
+    def get(self, request, contact_id=None):
+        if contact_id:
+            """Get products by Contact ID"""
+            endpoint = f"/business/{contact_id}/products"
+        else:
+            """Get products"""
+            endpoint = "/business/products"
+        result = make_whapi_request("GET", endpoint)
+        return Response(result, status=result.get('status_code', 500))
+    
+    def post(self, request):
+        """Create product"""
+        result = make_whapi_request("POST", "/business/products", data=request.data)
+        return Response(result, status=result.get('status_code', 500))
+
+class BusinessProductView(APIView):
+    """Business product management"""
+    permission_classes = [AllowAny]
+    
+    def get(self, request, product_id):
+        """Get product"""
+        endpoint = f"/business/products/{product_id}"
+        result = make_whapi_request("GET", endpoint)
+        return Response(result, status=result.get('status_code', 500))
+    
+    def post(self, request, product_id):
+        """Send product"""
+        endpoint = f"/business/products/{product_id}"
+        result = make_whapi_request("POST", endpoint, data=request.data)
+        return Response(result, status=result.get('status_code', 500))
+    
+    def patch(self, request, product_id):
+        """Update product"""
+        endpoint = f"/business/products/{product_id}"
+        result = make_whapi_request("PATCH", endpoint, data=request.data)
+        return Response(result, status=result.get('status_code', 500))
+    
+    def delete(self, request, product_id):
+        """Delete product"""
+        endpoint = f"/business/products/{product_id}"
+        result = make_whapi_request("DELETE", endpoint)
+        return Response(result, status=result.get('status_code', 500))
+
+class BusinessOrdersView(APIView):
+    """Business orders management"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        """Create order"""
+        result = make_whapi_request("POST", "/business/orders", data=request.data)
+        return Response(result, status=result.get('status_code', 500))
+
+class BusinessOrderView(APIView):
+    """Get order items"""
+    permission_classes = [AllowAny]
+    
+    def get(self, request, order_id):
+        endpoint = f"/business/orders/{order_id}"
+        result = make_whapi_request("GET", endpoint)
+        return Response(result, status=result.get('status_code', 500))
+
+class BusinessCartView(APIView):
+    """Business cart management"""
+    permission_classes = [AllowAny]
+    
+    def put(self, request):
+        """Refresh cart"""
+        result = make_whapi_request("PUT", "/business/cart", data=request.data)
+        return Response(result, status=result.get('status_code', 500))
+
+class BusinessCartEnabledView(APIView):
+    """Enable or disable cart"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        result = make_whapi_request("POST", "/business/cart/enabled", data=request.data)
+        return Response(result, status=result.get('status_code', 500))
+
+class BusinessCatalogView(APIView):
+    """Send catalog by Contact ID"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request, contact_id):
+        endpoint = f"/business/catalogs/{contact_id}"
+        result = make_whapi_request("POST", endpoint, data=request.data)
+        return Response(result, status=result.get('status_code', 500))
+
+
+class LabelsView(APIView):
+    """Labels management"""
+    permission_classes = [AllowAny]
+    
+    def get(self, request):
+        """Get labels"""
+        result = make_whapi_request("GET", "/labels")
+        return Response(result, status=result.get('status_code', 500))
+    
+    def post(self, request):
+        """Create label"""
+        result = make_whapi_request("POST", "/labels", data=request.data)
+        return Response(result, status=result.get('status_code', 500))
+
+class LabelView(APIView):
+    """Label management"""
+    permission_classes = [AllowAny]
+    
+    def get(self, request, label_id):
+        """Get objects associated with label"""
+        endpoint = f"/labels/{label_id}"
+        result = make_whapi_request("GET", endpoint)
+        return Response(result, status=result.get('status_code', 500))
+
+class LabelAssociationView(APIView):
+    """Label association management"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request, label_id, association_id):
+        """Add label association"""
+        endpoint = f"/labels/{label_id}/{association_id}"
+        result = make_whapi_request("POST", endpoint, data=request.data)
+        return Response(result, status=result.get('status_code', 500))
+    
+    def delete(self, request, label_id, association_id):
+        """Delete label association"""
+        endpoint = f"/labels/{label_id}/{association_id}"
+        result = make_whapi_request("DELETE", endpoint)
+        return Response(result, status=result.get('status_code', 500))
+
+
+class BlacklistView(APIView):
+    """Blacklist management"""
+    permission_classes = [AllowAny]
+    
+    def get(self, request):
+        """Get blacklist"""
+        result = make_whapi_request("GET", "/blacklist")
+        return Response(result, status=result.get('status_code', 500))
+
+class BlacklistContactView(APIView):
+    """Blacklist contact management"""
+    permission_classes = [AllowAny]
+    
+    def put(self, request, contact_id):
+        """Add contact to blacklist"""
+        endpoint = f"/blacklist/{contact_id}"
+        result = make_whapi_request("PUT", endpoint, data=request.data)
+        return Response(result, status=result.get('status_code', 500))
+    
+    def delete(self, request, contact_id):
+        """Remove contact from blacklist"""
+        endpoint = f"/blacklist/{contact_id}"
+        result = make_whapi_request("DELETE", endpoint)
+        return Response(result, status=result.get('status_code', 500))
+
+
+class CommunitiesView(APIView):
+    """Communities management"""
+    permission_classes = [AllowAny]
+    
+    def get(self, request):
+        """Get communities"""
+        result = make_whapi_request("GET", "/communities")
+        return Response(result, status=result.get('status_code', 500))
+    
+    def post(self, request):
+        """Create community"""
+        result = make_whapi_request("POST", "/communities", data=request.data)
+        return Response(result, status=result.get('status_code', 500))
+
+class CommunityView(APIView):
+    """Community management"""
+    permission_classes = [AllowAny]
+    
+    def get(self, request, community_id):
+        """Get community"""
+        endpoint = f"/communities/{community_id}"
+        result = make_whapi_request("GET", endpoint)
+        return Response(result, status=result.get('status_code', 500))
+    
+    def post(self, request, community_id):
+        """Create group in community"""
+        endpoint = f"/communities/{community_id}"
+        result = make_whapi_request("POST", endpoint, data=request.data)
+        return Response(result, status=result.get('status_code', 500))
+    
+    def delete(self, request, community_id):
+        """Deactivate community"""
+        endpoint = f"/communities/{community_id}"
+        result = make_whapi_request("DELETE", endpoint)
+        return Response(result, status=result.get('status_code', 500))
+
+class CommunityLinkView(APIView):
+    """Revoke community invite code"""
+    permission_classes = [AllowAny]
+    
+    def delete(self, request, community_id):
+        endpoint = f"/communities/{community_id}/link"
+        result = make_whapi_request("DELETE", endpoint)
+        return Response(result, status=result.get('status_code', 500))
+
+class CommunityGroupView(APIView):
+    """Community group management"""
+    permission_classes = [AllowAny]
+    
+    def put(self, request, community_id, group_id):
+        """Link group to community"""
+        endpoint = f"/communities/{community_id}/{group_id}"
+        result = make_whapi_request("PUT", endpoint, data=request.data)
+        return Response(result, status=result.get('status_code', 500))
+    
+    def delete(self, request, community_id, group_id):
+        """Unlink group from community"""
+        endpoint = f"/communities/{community_id}/{group_id}"
+        result = make_whapi_request("DELETE", endpoint)
+        return Response(result, status=result.get('status_code', 500))
+
+class CommunityGroupJoinView(APIView):
+    """Join in community group"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request, community_id, group_id):
+        endpoint = f"/communities/{community_id}/{group_id}/join"
+        result = make_whapi_request("POST", endpoint, data=request.data)
+        return Response(result, status=result.get('status_code', 500))
+
+
+class BotsView(APIView):
+    """Get bots"""
+    permission_classes = [AllowAny]
+    
+    def get(self, request):
+        result = make_whapi_request("GET", "/bots")
+        return Response(result, status=result.get('status_code', 500))
+
+
+class CallsView(APIView):
+    """Calls management"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        """Create call event"""
+        result = make_whapi_request("POST", "/calls", data=request.data)
+        return Response(result, status=result.get('status_code', 500))
+
+class CallView(APIView):
+    """Call management"""
+    permission_classes = [AllowAny]
+    
+    def delete(self, request, call_id):
+        """Reject call"""
+        endpoint = f"/calls/{call_id}"
+        result = make_whapi_request("DELETE", endpoint)
+        return Response(result, status=result.get('status_code', 500))
+
+class CallRejectView(APIView):
+    """Reject call"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request, call_id):
+        endpoint = f"/calls/{call_id}/reject"
+        result = make_whapi_request("POST", endpoint, data=request.data)
+        return Response(result, status=result.get('status_code', 500))
+
+class CallsGroupLinkView(APIView):
+    """Create group video call link"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        result = make_whapi_request("POST", "/calls/group_link", data=request.data)
+        return Response(result, status=result.get('status_code', 500))
+
