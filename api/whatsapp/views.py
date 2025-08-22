@@ -14,6 +14,7 @@ from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
+from django_tenants.utils import schema_context
 from django.http import JsonResponse, HttpResponse
 from rest_framework.permissions import AllowAny
 
@@ -297,7 +298,7 @@ def user_message_processor(message, phonenumber, name):
     #     else:
     #         send_message(message, phonenumber, "CHATBOT", name)
     
-
+@schema_context(os.getenv('SCHEMA_NAME'))
 def query_gpt(prompt,phone_number=None):
     # declare chat_session variable
     chat_session= None
