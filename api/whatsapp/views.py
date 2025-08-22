@@ -305,7 +305,13 @@ def query_gpt(prompt,phone_number=None):
     if phone_number is not None:
         try:
             # Check if session exists
+            conversation_history=[
+                {"role": "system", "content": solarama_prompt},
+                {"role": "user", "content": prompt},
+            ]
             chat_session = ChatSession.objects.get(phone=phone_number)
+            chat_session.conversation_history = conversation_history
+            chat_session.save()
             chat_session.add_message("user", prompt)
         except ChatSession.DoesNotExist:
             conversation_history=[
