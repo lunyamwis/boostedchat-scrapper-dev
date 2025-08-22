@@ -644,6 +644,22 @@ class WebhookTestView(APIView):
     def post(self, request):
         result = make_whapi_request("POST", "/settings/webhook_test", data=request.data)
         return Response(result, status=result.get('status_code', 500))
+    
+
+@api_view(['GET', 'POST'])
+def webhook_whapi(request):
+    if request.method == 'GET':
+        print(request.GET)
+        return Response({"message": "Webhook GET request received"}, status=status.HTTP_200_OK)
+    elif request.method == 'POST':
+        print(request.data)
+        # Process the webhook data here
+        # You can call your processing function or save the data to the database
+        # For example:
+        # process_webhook_data(request.data)
+        return Response({"message": "Webhook POST request received"}, status=status.HTTP_200_OK)
+    return Response({"message": "Method not allowed"}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
 
 class ChannelLimitsView(APIView):
     """Get limits"""
