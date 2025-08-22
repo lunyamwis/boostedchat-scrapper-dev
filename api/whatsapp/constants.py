@@ -1,1 +1,1 @@
-GROUPS_TO_REACT_TO = ["Machakos Airbnb Hosts","Airbnb's machakos","The Bironga's"]
+GROUPS_TO_REACT_TO = ["Machakos Airbnb Hosts","Airbnb's machakos"]
