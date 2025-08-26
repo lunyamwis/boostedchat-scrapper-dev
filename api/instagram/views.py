@@ -5758,7 +5758,7 @@ class DMViewset(viewsets.ModelViewSet):
         }, status=status.HTTP_200_OK)
 
 
-    @schema_context(os.getenv('SCHEMA_NAME'))
+    @schema_context(os.getenv('SCHEMA_NAME')) 
     def generate_response_v2(self, request, *args, **kwargs):
         req = request.data
         query = req.get("message")
