@@ -21,5 +21,6 @@ urlpatterns = [
     path('serviceManager/',include('api.serviceManager.urls')),
     path('audittrail/',include('api.audittrails.urls')),
     path('workflow/',include('api.workflow.urls')),
+    path('twitter/',include('api.twitter.urls')),
     path('',include('api.analyst.urls')),
 ]
