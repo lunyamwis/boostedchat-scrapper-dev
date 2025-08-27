@@ -1145,7 +1145,8 @@ class HikerMediaLikersV1(APIView):
             if max_id:
                 likers = cl.media_likers_v1(media_id, count=count, max_id=max_id)
             else:
-                likers = cl.media_likers_v1(media_id, count=count)
+                # likers = cl.media_likers_v1(media_id, count=count)
+                likers = cl.media_likers_v1(media_id)
             return Response({"likers": likers}, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -1167,7 +1168,8 @@ class HikerMediaLikersV2(APIView):
             if max_id:
                 likers = cl.media_likers_v2(media_id, count=count, max_id=max_id)
             else:
-                likers = cl.media_likers_v2(media_id, count=count)
+                # likers = cl.media_likers_v2(media_id, count=count)
+                likers = cl.media_likers_v2(media_id)
             return Response({"likers": likers}, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
