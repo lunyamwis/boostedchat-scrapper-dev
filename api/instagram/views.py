@@ -961,6 +961,7 @@ class HikerMediaComments(APIView):
             return Response({"error": "Media ID is required."}, status=status.HTTP_400_BAD_REQUEST)
 
         cl = initialize_hikerapi_client()
+        
         try:
             if max_id:
                 comments = cl.media_comments(media_id, count=count, max_id=max_id)

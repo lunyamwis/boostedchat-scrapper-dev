@@ -475,7 +475,7 @@ h11==0.14.0
     #   wsproto
 h2==4.1.0
     # via httpx
-hikerapi==1.6.6
+hikerapi==1.7.2
     # via -r requirements.in
 hpack==4.0.0
     # via h2
