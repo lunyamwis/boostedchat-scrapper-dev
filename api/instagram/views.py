@@ -3910,7 +3910,28 @@ class AccountViewSet(viewsets.ModelViewSet):
         })
 
     
-    
+    @schema_context(os.getenv('SCHEMA_NAME'))    
+    @action(detail=False, methods=['get'], url_path="check-account-reached-out")
+    def check_account_reached_out(self,request,*args,**kwargs):
+        igname = request.query_params.get('username') 
+        
+        if not igname:
+           return Response({"error": "username query param is required"}, status=400)
+        
+        # Check UnwantedAccount first
+        if UnwantedAccount.objects.filter(username=igname).exists():
+            return Response({"reached_out": True})
+        
+        # Then check Account
+        account = Account.objects.filter(igname = igname)
+        if account.exists():
+            latest_account = account.latest('created_at')
+            if latest_account.outreach_success or (
+                 latest_account.status and latest_account.status.name == "sent_compliment"
+            ):
+                return Response({"reached_out":True})
+        return Response({"reached_out":False})
+        
     @schema_context(os.getenv('SCHEMA_NAME'))
     @action(detail=True, methods=['post'], url_path="clear-convo")
     def clear_convo(self, request, **kwargs):
