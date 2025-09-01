@@ -45,33 +45,33 @@ jobs:
         push: true
         tags: lunyamwimages/scrapper-dev:latest
 
-    - name: Set up ssh agent
-      uses: webfactory/ssh-agent@v0.9.0
-      with:
-        ssh-private-key: ${{ secrets.STAGING_DEPLOY_SSH_PRIVATE_KEY }}
+    # - name: Set up ssh agent
+    #   uses: webfactory/ssh-agent@v0.9.0
+    #   with:
+    #     ssh-private-key: ${{ secrets.STAGING_DEPLOY_SSH_PRIVATE_KEY }}
 
-    - name: Add server to known_hosts
-      run: |
-        ssh-keyscan -H 84.247.184.136 >> ~/.ssh/known_hosts
+    # - name: Add server to known_hosts
+    #   run: |
+    #     ssh-keyscan -H 84.247.184.136 >> ~/.ssh/known_hosts
 
-    - name: Test SSH connection
-      run: |
-        ssh -v ubuntu@84.247.184.136 'echo "I AM IN THE SERVER"'
-      env:
-        SSH_PRIVATE_KEY: ${{ secrets.STAGING_DEPLOY_SSH_PRIVATE_KEY }}
+    # - name: Test SSH connection
+    #   run: |
+    #     ssh -v ubuntu@84.247.184.136 'echo "I AM IN THE SERVER"'
+    #   env:
+    #     SSH_PRIVATE_KEY: ${{ secrets.STAGING_DEPLOY_SSH_PRIVATE_KEY }}
   
-    - name: Pull staging image and builde docker on staging server
-      run: |
-       ssh ubuntu@84.247.184.136 '
-          cd /home/ubuntu/booksy-boostedchat-deployment/boostedchat-site && \
-          docker pull lunyamwimages/scrapper-dev:latest && \
-          if [ "$(docker ps -a -q -f name=boostedchat-site-web-1)" ]; then \
-            docker stop boostedchat-site-web-1 && docker rm boostedchat-site-web-1 && \
-            unset DOCKER_HOST && docker compose --env-file .env -f docker-compose.airflow.yaml up --build -d web; \
-          else \
-            echo "No such container: boostedchat-site-web-1, starting web service" && docker compose -f docker-compose.airflow.yaml --env-file .env up -d web; \
-          fi  
-        '
+    # - name: Pull staging image and builde docker on staging server
+    #   run: |
+    #    ssh ubuntu@84.247.184.136 '
+    #       cd /home/ubuntu/booksy-boostedchat-deployment/boostedchat-site && \
+    #       docker pull lunyamwimages/scrapper-dev:latest && \
+    #       if [ "$(docker ps -a -q -f name=boostedchat-site-web-1)" ]; then \
+    #         docker stop boostedchat-site-web-1 && docker rm boostedchat-site-web-1 && \
+    #         unset DOCKER_HOST && docker compose --env-file .env -f docker-compose.airflow.yaml up --build -d web; \
+    #       else \
+    #         echo "No such container: boostedchat-site-web-1, starting web service" && docker compose -f docker-compose.airflow.yaml --env-file .env up -d web; \
+    #       fi  
+    #     '
 
-      env:
-        SSH_PRIVATE_KEY: ${{ secrets.STAGING_DEPLOY_SSH_PRIVATE_KEY }} 
+    #   env:
+    #     SSH_PRIVATE_KEY: ${{ secrets.STAGING_DEPLOY_SSH_PRIVATE_KEY }} 
