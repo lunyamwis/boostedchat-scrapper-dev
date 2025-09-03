@@ -22,5 +22,6 @@ urlpatterns = [
     path('audittrail/',include('api.audittrails.urls')),
     path('workflow/',include('api.workflow.urls')),
     path('twitter/',include('api.twitter.urls')),
+    path('linkedin/',include('api.linkedin.urls')),
     path('',include('api.analyst.urls')),
 ]
