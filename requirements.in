@@ -148,6 +148,7 @@ tomlkit
 traitlets
 trio
 trio-websocket
+tweepy
 Twisted
 typing_extensions
 tzdata
