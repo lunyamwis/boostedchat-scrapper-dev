@@ -23,5 +23,6 @@ urlpatterns = [
     path('workflow/',include('api.workflow.urls')),
     path('twitter/',include('api.twitter.urls')),
     path('linkedin/',include('api.linkedin.urls')),
+    path('gmail/',include('api.gmail.urls')),
     path('',include('api.analyst.urls')),
 ]

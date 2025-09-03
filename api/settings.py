@@ -121,7 +121,7 @@ SHARED_APPS = [
 
 TENANT_APPS = ['api.instagram','api.scout', 'api.helpers','api.prompt',
                'api.analyst','api.sales_rep','api.whatsapp','api.outreaches',
-               'api.facebook','api.workflow','api.twitter','api.linkedin']
+               'api.facebook','api.workflow','api.twitter','api.linkedin','api.gmail']
 INSTALLED_APPS = SHARED_APPS + [app for app in TENANT_APPS if app not in SHARED_APPS]
 TENANT_MODEL = "boostedchatScrapper.Client"
 TENANT_DOMAIN_MODEL = "boostedchatScrapper.Domain"
