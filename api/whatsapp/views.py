@@ -27,7 +27,7 @@ from .constants import GROUPS_TO_REACT_TO
 load_dotenv()
 
 # Whapi.cloud Configuration
-WHAPI_BASE_URL = "https://gate.whapi.cloud"
+WHAPI_BASE_URL = os.getenv("WHAPI_BASE_URL", "https://example.com")
 WHAPI_TOKEN = os.getenv("WHAPI_TOKEN","test_token")  # Add this to your .env file
 WHAPI_HEADERS = {
     "Authorization": f"Bearer {WHAPI_TOKEN}",
