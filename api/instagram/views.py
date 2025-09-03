@@ -19,6 +19,7 @@ import random
 import pytz
 from requests.auth import HTTPBasicAuth
 from rest_framework import generics
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.decorators import action
@@ -4224,7 +4225,7 @@ class AccountViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=["get"], url_path="extract-action-button", url_name="extract_action_button")
     def extract_action_bution(self, request):
         status_code = 0
-        external_urls = []
+        urls = []
         cl = login_user()
 
         for _, account in enumerate(self.queryset):
@@ -4233,18 +4234,18 @@ class AccountViewSet(viewsets.ModelViewSet):
             except UserNotFound as err:
                 logging.warning(err)
 
-            account.competitor = urlparse(url_info.external_url).netloc
+            account.competitor = urlparse(url_info.url).netloc
             account.save()
-            external_url_info = {
-                "external_url": url_info.external_url,
+            url_info = {
+                "url": url_info.url,
                 "category": url_info.category,
                 "competitor": account.competitor,
             }
-            external_urls.append(external_url_info)
+            urls.append(url_info)
             status_code = status.HTTP_200_OK
             logging.warning(f"extracting info from => {account.igname}")
 
-        response = {"actions": external_urls, "status_code": status_code}
+        response = {"actions": urls, "status_code": status_code}
         return Response(response)
 
     @schema_context(os.getenv('SCHEMA_NAME'))
@@ -5980,7 +5981,7 @@ class DMViewset(viewsets.ModelViewSet):
     
     @schema_context(os.getenv('SCHEMA_NAME'))
     @action(detail=False, methods=["post"], url_path="save-external-messages")
-    def save_external_messages(self, request, pk=None):
+    def save_messages(self, request, pk=None):
         
         account = None
         thread = None
@@ -7636,3 +7637,1347 @@ class UpdatePassword(APIView):
             return Response({"success":True, "password": scout.password_update}, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+
+
+INSTAGRAM_BASE_URL = os.getenv("INSTAGRAM_BASE_URL", "http://localhost:5000")
+
+def make_instagram_request(endpoint: str, payload: dict) -> dict:
+    """Helper function to make requests to external Instagram API"""
+    url = f"{INSTAGRAM_BASE_URL}{endpoint}"
+    
+    try:
+        response = requests.post(url, json=payload, timeout=30)
+        return {
+            "success": response.ok,
+            "data": response.json() if response.content else {},
+            "status_code": response.status_code
+        }
+    except requests.exceptions.RequestException as e:
+        return {
+            "success": False,
+            "error": str(e),
+            "status_code": 500
+        }
+
+
+class InstagramLogoutView(APIView):
+    """Logout from Instagram account"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        payload = {
+            "igname": request.data.get("igname")
+        }
+        
+        result = make_instagram_request("/accounts/logout", payload)
+        return Response(result, status=result.get('status_code', 500))
+
+class InstagramDisconnectView(APIView):
+    """Disconnect Instagram account"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        payload = {
+            "igname": request.data.get("igname")
+        }
+        
+        result = make_instagram_request("/accounts/disconnect", payload)
+        return Response(result, status=result.get('status_code', 500))
+
+class InstagramIsLoggedInView(APIView):
+    """Check if Instagram account is logged in"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        payload = {
+            "igname": request.data.get("igname")
+        }
+        
+        result = make_instagram_request("/accounts/isloggedin", payload)
+        return Response(result, status=result.get('status_code', 500))
+
+class InstagramIsConnectedView(APIView):
+    """Check if Instagram account is connected"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        payload = {
+            "igname": request.data.get("igname")
+        }
+        
+        result = make_instagram_request("/accounts/isconnected", payload)
+        return Response(result, status=result.get('status_code', 500))
+
+class InstagramIsDisconnectedView(APIView):
+    """Check if Instagram account is disconnected"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        payload = {
+            "igname": request.data.get("igname")
+        }
+        
+        result = make_instagram_request("/accounts/isdisconnected", payload)
+        return Response(result, status=result.get('status_code', 500))
+
+
+class InstagramLoginView(APIView):
+    """Login to Instagram account"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        payload = {
+            "igname": request.data.get("igname")
+        }
+        
+        result = make_instagram_request("/login", payload)
+        return Response(result, status=result.get('status_code', 500))
+
+
+class InstagramSendMessageView(APIView):
+    """Send direct message"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        payload = {
+            "message": request.data.get("message"),
+            "username_from": request.data.get("username_from"),
+            "username_to": request.data.get("username_to")
+        }
+        
+        result = make_instagram_request("/send-message", payload)
+        return Response(result, status=result.get('status_code', 500))
+
+class InstagramSendFirstMediaMessageView(APIView):
+    """Send first media message"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        payload = {
+            "message": request.data.get("message"),
+            "username_from": request.data.get("username_from"),
+            "username_to": request.data.get("username_to"),
+            "links": request.data.get("links"),
+            "mediaId": request.data.get("mediaId")
+        }
+        
+        result = make_instagram_request("/send-first-media-message", payload)
+        return Response(result, status=result.get('status_code', 500))
+
+
+class InstagramPostMediaView(APIView):
+    """Post media to Instagram"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        payload = {
+            "imageURL": request.data.get("imageURL"),
+            "caption": request.data.get("caption"),
+            "username_from": request.data.get("username_from")
+        }
+        
+        result = make_instagram_request("/post-media", payload)
+        return Response(result, status=result.get('status_code', 500))
+
+class InstagramLikeView(APIView):
+    """Like media"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        payload = {
+            "mediaId": request.data.get("mediaId"),
+            "username_from": request.data.get("username_from")
+        }
+        
+        result = make_instagram_request("/like", payload)
+        return Response(result, status=result.get('status_code', 500))
+
+class InstagramCommentView(APIView):
+    """Comment on media"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        comments = request.data.get("comments", [])
+        if not isinstance(comments, list):
+            comments = [{
+                "mediaId": request.data.get("mediaId"),
+                "comment": request.data.get("comment"),
+                "username_from": request.data.get("username_from")
+            }]
+        
+        result = make_instagram_request("/comment", comments)
+        return Response(result, status=result.get('status_code', 500))
+
+class InstagramUnfollowView(APIView):
+    """Unfollow users"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        users = request.data.get("users", [])
+        if not isinstance(users, list):
+            users = [{
+                "usernames_to": request.data.get("usernames_to"),
+                "username_from": request.data.get("username_from")
+            }]
+        
+        result = make_instagram_request("/unfollow", users)
+        return Response(result, status=result.get('status_code', 500))
+
+class InstagramFollowView(APIView):
+    """Follow users"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        users = request.data.get("users", [])
+        if not isinstance(users, list):
+            users = [{
+                "usernames_to": request.data.get("usernames_to"),
+                "username_from": request.data.get("username_from")
+            }]
+        
+        result = make_instagram_request("/follow", users)
+        return Response(result, status=result.get('status_code', 500))
+
+
+class InstagramFetchDirectInboxView(APIView):
+    """Fetch direct inbox"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        payload = {
+            "username_from": request.data.get("username_from")
+        }
+        
+        result = make_instagram_request("/fetchDirectInbox", payload)
+        return Response(result, status=result.get('status_code', 500))
+
+class InstagramFetchPendingInboxView(APIView):
+    """Fetch pending inbox"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        payload = {
+            "username_from": request.data.get("username_from")
+        }
+        
+        result = make_instagram_request("/fetchPendingInbox", payload)
+        return Response(result, status=result.get('status_code', 500))
+
+class InstagramApproveView(APIView):
+    """Approve message request"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        payload = {
+            "username_from": request.data.get("username_from"),
+            "thread_id": request.data.get("thread_id")
+        }
+        
+        result = make_instagram_request("/approve", payload)
+        return Response(result, status=result.get('status_code', 500))
+
+
+class InstagramViewStoryView(APIView):
+    """View user stories"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        users = request.data.get("users", [])
+        if not isinstance(users, list):
+            users = [{
+                "usernames_to": request.data.get("usernames_to"),
+                "username_from": request.data.get("username_from")
+            }]
+        
+        result = make_instagram_request("/viewStory", users)
+        return Response(result, status=result.get('status_code', 500))
+
+class InstagramReactToStoryView(APIView):
+    """React to user stories"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        users = request.data.get("users", [])
+        if not isinstance(users, list):
+            users = [{
+                "usernames_to": request.data.get("usernames_to"),
+                "username_from": request.data.get("username_from")
+            }]
+        
+        result = make_instagram_request("/reactToStory", users)
+        return Response(result, status=result.get('status_code', 500))
+
+
+class InstagramCheckIfUserExistsView(APIView):
+    """Check if user exists"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        payload = {
+            "username_from": request.data.get("username_from"),
+            "username_to": request.data.get("username_to")
+        }
+        
+        result = make_instagram_request("/checkIfUserExists", payload)
+        return Response(result, status=result.get('status_code', 500))
+
+class InstagramGetUserInfoView(APIView):
+    """Get user information by ID"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        payload = {
+            "username_from": request.data.get("username_from"),
+            "user_id": request.data.get("user_id")
+        }
+        
+        result = make_instagram_request("/getUserInfo", payload)
+        return Response(result, status=result.get('status_code', 500))
+
+class InstagramGetUsernameInfoView(APIView):
+    """Get user information by username"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        payload = {
+            "username_from": request.data.get("username_from"),
+            "username": request.data.get("username")
+        }
+        
+        result = make_instagram_request("/getUsernameInfo", payload)
+        return Response(result, status=result.get('status_code', 500))
+
+class InstagramSearchUsersView(APIView):
+    """Search users"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        payload = {
+            "username_from": request.data.get("username_from"),
+            "query": request.data.get("query")
+        }
+        
+        result = make_instagram_request("/searchUsers", payload)
+        return Response(result, status=result.get('status_code', 500))
+
+
+class InstagramGetMediaInfoView(APIView):
+    """Get media information"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        payload = {
+            "username_from": request.data.get("username_from"),
+            "media_id": request.data.get("media_id")
+        }
+        
+        result = make_instagram_request("/getMediaInfo", payload)
+        return Response(result, status=result.get('status_code', 500))
+
+class InstagramEditMediaView(APIView):
+    """Edit media caption"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        payload = {
+            "username_from": request.data.get("username_from"),
+            "media_id": request.data.get("media_id"),
+            "caption": request.data.get("caption")
+        }
+        
+        result = make_instagram_request("/editMedia", payload)
+        return Response(result, status=result.get('status_code', 500))
+
+class InstagramDeleteMediaView(APIView):
+    """Delete media"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        payload = {
+            "username_from": request.data.get("username_from"),
+            "media_id": request.data.get("media_id"),
+            "media_type": request.data.get("media_type", "PHOTO")
+        }
+        
+        result = make_instagram_request("/deleteMedia", payload)
+        return Response(result, status=result.get('status_code', 500))
+
+class InstagramLikeCommentView(APIView):
+    """Like comment"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        payload = {
+            "username_from": request.data.get("username_from"),
+            "comment_id": request.data.get("comment_id")
+        }
+        
+        result = make_instagram_request("/likeComment", payload)
+        return Response(result, status=result.get('status_code', 500))
+
+class InstagramUnlikeCommentView(APIView):
+    """Unlike comment"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        payload = {
+            "username_from": request.data.get("username_from"),
+            "comment_id": request.data.get("comment_id")
+        }
+        
+        result = make_instagram_request("/unlikeComment", payload)
+        return Response(result, status=result.get('status_code', 500))
+
+class InstagramGetMediaLikersView(APIView):
+    """Get media likers"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        payload = {
+            "username_from": request.data.get("username_from"),
+            "media_id": request.data.get("media_id")
+        }
+        
+        result = make_instagram_request("/getMediaLikers", payload)
+        return Response(result, status=result.get('status_code', 500))
+
+
+class InstagramGetFriendshipStatusView(APIView):
+    """Get friendship status"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        payload = {
+            "username_from": request.data.get("username_from"),
+            "user_id": request.data.get("user_id")
+        }
+        
+        result = make_instagram_request("/getFriendshipStatus", payload)
+        return Response(result, status=result.get('status_code', 500))
+
+class InstagramBlockUserView(APIView):
+    """Block user"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        payload = {
+            "username_from": request.data.get("username_from"),
+            "user_id": request.data.get("user_id")
+        }
+        
+        result = make_instagram_request("/blockUser", payload)
+        return Response(result, status=result.get('status_code', 500))
+
+class InstagramUnblockUserView(APIView):
+    """Unblock user"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        payload = {
+            "username_from": request.data.get("username_from"),
+            "user_id": request.data.get("user_id")
+        }
+        
+        result = make_instagram_request("/unblockUser", payload)
+        return Response(result, status=result.get('status_code', 500))
+
+class InstagramRemoveFollowerView(APIView):
+    """Remove follower"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        payload = {
+            "username_from": request.data.get("username_from"),
+            "user_id": request.data.get("user_id")
+        }
+        
+        result = make_instagram_request("/removeFollower", payload)
+        return Response(result, status=result.get('status_code', 500))
+
+
+class InstagramGetAccountFollowersView(APIView):
+    """Get account followers"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        payload = {
+            "username_from": request.data.get("username_from"),
+            "user_id": request.data.get("user_id")
+        }
+        
+        result = make_instagram_request("/getAccountFollowers", payload)
+        return Response(result, status=result.get('status_code', 500))
+
+class InstagramGetAccountFollowingView(APIView):
+    """Get account following"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        payload = {
+            "username_from": request.data.get("username_from"),
+            "user_id": request.data.get("user_id")
+        }
+        
+        result = make_instagram_request("/getAccountFollowing", payload)
+        return Response(result, status=result.get('status_code', 500))
+
+class InstagramGetUserFeedView(APIView):
+    """Get user feed"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        payload = {
+            "username_from": request.data.get("username_from"),
+            "user_id": request.data.get("user_id")
+        }
+        
+        result = make_instagram_request("/getUserFeed", payload)
+        return Response(result, status=result.get('status_code', 500))
+
+class InstagramGetTimelineView(APIView):
+    """Get timeline"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        payload = {
+            "username_from": request.data.get("username_from")
+        }
+        
+        result = make_instagram_request("/getTimeline", payload)
+        return Response(result, status=result.get('status_code', 500))
+
+class InstagramGetReelsMediaFeedView(APIView):
+    """Get reels media feed"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        payload = {
+            "username_from": request.data.get("username_from"),
+            "user_ids": request.data.get("user_ids", [])
+        }
+        
+        result = make_instagram_request("/getReelsMediaFeed", payload)
+        return Response(result, status=result.get('status_code', 500))
+
+class InstagramGetReelsTrayView(APIView):
+    """Get reels tray"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        payload = {
+            "username_from": request.data.get("username_from")
+        }
+        
+        result = make_instagram_request("/getReelsTray", payload)
+        return Response(result, status=result.get('status_code', 500))
+
+
+class InstagramGetHighlightsTrayView(APIView):
+    """Get highlights tray"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        payload = {
+            "username_from": request.data.get("username_from"),
+            "user_id": request.data.get("user_id")
+        }
+        
+        result = make_instagram_request("/getHighlightsTray", payload)
+        return Response(result, status=result.get('status_code', 500))
+
+class InstagramCreateHighlightReelView(APIView):
+    """Create highlight reel"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        payload = {
+            "username_from": request.data.get("username_from"),
+            "title": request.data.get("title"),
+            "media_ids": request.data.get("media_ids", []),
+            "cover_id": request.data.get("cover_id"),
+            "source": request.data.get("source")
+        }
+        
+        result = make_instagram_request("/createHighlightReel", payload)
+        return Response(result, status=result.get('status_code', 500))
+
+
+class InstagramSearchBlendedView(APIView):
+    """Search blended results"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        payload = {
+            "username_from": request.data.get("username_from"),
+            "query": request.data.get("query")
+        }
+        
+        result = make_instagram_request("/searchBlended", payload)
+        return Response(result, status=result.get('status_code', 500))
+
+class InstagramSearchTagsView(APIView):
+    """Search tags"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        payload = {
+            "username_from": request.data.get("username_from"),
+            "query": request.data.get("query")
+        }
+        
+        result = make_instagram_request("/searchTags", payload)
+        return Response(result, status=result.get('status_code', 500))
+
+class InstagramSearchPlacesView(APIView):
+    """Search places"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        payload = {
+            "username_from": request.data.get("username_from"),
+            "query": request.data.get("query")
+        }
+        
+        result = make_instagram_request("/searchPlaces", payload)
+        return Response(result, status=result.get('status_code', 500))
+
+class InstagramSearchLocationView(APIView):
+    """Search location"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        payload = {
+            "username_from": request.data.get("username_from"),
+            "latitude": request.data.get("latitude"),
+            "longitude": request.data.get("longitude"),
+            "query": request.data.get("query")
+        }
+        
+        result = make_instagram_request("/searchLocation", payload)
+        return Response(result, status=result.get('status_code', 500))
+
+
+class InstagramGetDiscoverChainingView(APIView):
+    """Get discover chaining"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        payload = {
+            "username_from": request.data.get("username_from"),
+            "target_id": request.data.get("target_id")
+        }
+        
+        result = make_instagram_request("/getDiscoverChaining", payload)
+        return Response(result, status=result.get('status_code', 500))
+
+class InstagramGetTopicalExploreView(APIView):
+    """Get topical explore"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        payload = {
+            "username_from": request.data.get("username_from")
+        }
+        
+        result = make_instagram_request("/getTopicalExplore", payload)
+        return Response(result, status=result.get('status_code', 500))
+
+
+class InstagramGetTagFeedView(APIView):
+    """Get tag feed"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        payload = {
+            "username_from": request.data.get("username_from"),
+            "tag": request.data.get("tag")
+        }
+        
+        result = make_instagram_request("/getTagFeed", payload)
+        return Response(result, status=result.get('status_code', 500))
+
+class InstagramSearchTagView(APIView):
+    """Search tag"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        payload = {
+            "username_from": request.data.get("username_from"),
+            "tag": request.data.get("tag")
+        }
+        
+        result = make_instagram_request("/searchTag", payload)
+        return Response(result, status=result.get('status_code', 500))
+
+
+class InstagramGetNewsFeedView(APIView):
+    """Get news feed"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        payload = {
+            "username_from": request.data.get("username_from")
+        }
+        
+        result = make_instagram_request("/getNewsFeed", payload)
+        return Response(result, status=result.get('status_code', 500))
+
+
+class InstagramGetPendingFriendshipsView(APIView):
+    """Get pending friendships"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        payload = {
+            "username_from": request.data.get("username_from")
+        }
+        
+        result = make_instagram_request("/getPendingFriendships", payload)
+        return Response(result, status=result.get('status_code', 500))
+
+
+class InstagramGetBlockedUsersView(APIView):
+    """Get blocked users"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        payload = {
+            "username_from": request.data.get("username_from")
+        }
+        
+        result = make_instagram_request("/getBlockedUsers", payload)
+        return Response(result, status=result.get('status_code', 500))
+
+
+class InstagramGetMediaCommentsView(APIView):
+    """Get media comments"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        payload = {
+            "username_from": request.data.get("username_from"),
+            "media_id": request.data.get("media_id")
+        }
+        
+        result = make_instagram_request("/getMediaComments", payload)
+        return Response(result, status=result.get('status_code', 500))
+
+
+class InstagramGetLocationFeedView(APIView):
+    """Get location feed"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        payload = {
+            "username_from": request.data.get("username_from"),
+            "location_id": request.data.get("location_id"),
+            "tab": request.data.get("tab", "recent")
+        }
+        
+        result = make_instagram_request("/getLocationFeed", payload)
+        return Response(result, status=result.get('status_code', 500))
+
+
+class InstagramGetMusicMoodsView(APIView):
+    """Get music moods"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        payload = {
+            "username_from": request.data.get("username_from")
+        }
+        
+        result = make_instagram_request("/getMusicMoods", payload)
+        return Response(result, status=result.get('status_code', 500))
+
+class InstagramGetMusicGenresView(APIView):
+    """Get music genres"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        payload = {
+            "username_from": request.data.get("username_from")
+        }
+        
+        result = make_instagram_request("/getMusicGenres", payload)
+        return Response(result, status=result.get('status_code', 500))
+
+class InstagramGetMusicLyricsView(APIView):
+    """Get music lyrics"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        payload = {
+            "username_from": request.data.get("username_from"),
+            "track_id": request.data.get("track_id")
+        }
+        
+        result = make_instagram_request("/getMusicLyrics", payload)
+        return Response(result, status=result.get('status_code', 500))
+
+
+class InstagramSaveMediaView(APIView):
+    """Save media"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        payload = {
+            "username_from": request.data.get("username_from"),
+            "media_id": request.data.get("media_id")
+        }
+        
+        result = make_instagram_request("/saveMedia", payload)
+        return Response(result, status=result.get('status_code', 500))
+
+class InstagramUnsaveMediaView(APIView):
+    """Unsave media"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        payload = {
+            "username_from": request.data.get("username_from"),
+            "media_id": request.data.get("media_id")
+        }
+        
+        result = make_instagram_request("/unsaveMedia", payload)
+        return Response(result, status=result.get('status_code', 500))
+
+
+class InstagramGetSavedFeedView(APIView):
+    """Get saved feed"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        payload = {
+            "username_from": request.data.get("username_from")
+        }
+        
+        result = make_instagram_request("/getSavedFeed", payload)
+        return Response(result, status=result.get('status_code', 500))
+
+
+class InstagramGetUsertagsFeedView(APIView):
+    """Get user tags feed"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        payload = {
+            "username_from": request.data.get("username_from"),
+            "user_id": request.data.get("user_id")
+        }
+        
+        result = make_instagram_request("/getUsertagsFeed", payload)
+        return Response(result, status=result.get('status_code', 500))
+
+
+class InstagramGetAccountDetailsView(APIView):
+    """Get account details"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        payload = {
+            "username_from": request.data.get("username_from"),
+            "user_id": request.data.get("user_id")
+        }
+        
+        result = make_instagram_request("/getAccountDetails", payload)
+        return Response(result, status=result.get('status_code', 500))
+
+class InstagramGetSharedFollowersView(APIView):
+    """Get shared followers"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        payload = {
+            "username_from": request.data.get("username_from"),
+            "user_id": request.data.get("user_id")
+        }
+        
+        result = make_instagram_request("/getSharedFollowers", payload)
+        return Response(result, status=result.get('status_code', 500))
+
+
+class InstagramPublishPhotoView(APIView):
+    """Publish photo"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        payload = {
+            "username_from": request.data.get("username_from"),
+            "file_buffer": request.data.get("file_buffer"),
+            "caption": request.data.get("caption"),
+            "location": request.data.get("location", {}),
+            "usertags": request.data.get("usertags", [])
+        }
+        
+        result = make_instagram_request("/publishPhoto", payload)
+        return Response(result, status=result.get('status_code', 500))
+
+class InstagramPublishVideoView(APIView):
+    """Publish video"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        payload = {
+            "username_from": request.data.get("username_from"),
+            "video_buffer": request.data.get("video_buffer"),
+            "coverImage": request.data.get("coverImage"),
+            "caption": request.data.get("caption"),
+            "location": request.data.get("location", {}),
+            "usertags": request.data.get("usertags", [])
+        }
+        
+        result = make_instagram_request("/publishVideo", payload)
+        return Response(result, status=result.get('status_code', 500))
+
+class InstagramPublishAlbumView(APIView):
+    """Publish album"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        payload = {
+            "username_from": request.data.get("username_from"),
+            "items": request.data.get("items", []),
+            "caption": request.data.get("caption"),
+            "location": request.data.get("location", {})
+        }
+        
+        result = make_instagram_request("/publishAlbum", payload)
+        return Response(result, status=result.get('status_code', 500))
+
+class InstagramPublishStoryView(APIView):
+    """Publish story"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        payload = {
+            "username_from": request.data.get("username_from"),
+            "file": request.data.get("file"),
+            "caption": request.data.get("caption"),
+            "stickerConfig": request.data.get("stickerConfig", {})
+        }
+        
+        result = make_instagram_request("/publishStory", payload)
+        return Response(result, status=result.get('status_code', 500))
+
+class InstagramPublishIgtvVideoView(APIView):
+    """Publish IGTV video"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        payload = {
+            "username_from": request.data.get("username_from"),
+            "video": request.data.get("video"),
+            "coverFrame": request.data.get("coverFrame"),
+            "title": request.data.get("title"),
+            "caption": request.data.get("caption"),
+            "seriesId": request.data.get("seriesId")
+        }
+        
+        result = make_instagram_request("/publishIgtvVideo", payload)
+        return Response(result, status=result.get('status_code', 500))
+
+
+class InstagramUploadPhotoView(APIView):
+    """Upload photo"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        payload = {
+            "username_from": request.data.get("username_from"),
+            "file": request.data.get("file"),
+            "uploadId": request.data.get("uploadId")
+        }
+        
+        result = make_instagram_request("/uploadPhoto", payload)
+        return Response(result, status=result.get('status_code', 500))
+
+class InstagramUploadVideoView(APIView):
+    """Upload video"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        payload = {
+            "username_from": request.data.get("username_from"),
+            "video": request.data.get("video"),
+            "uploadId": request.data.get("uploadId"),
+            "duration": request.data.get("duration", 60)
+        }
+        
+        result = make_instagram_request("/uploadVideo", payload)
+        return Response(result, status=result.get('status_code', 500))
+
+
+class InstagramSearchIgtvView(APIView):
+    """Search IGTV"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        payload = {
+            "username_from": request.data.get("username_from"),
+            "query": request.data.get("query")
+        }
+        
+        result = make_instagram_request("/searchIgtv", payload)
+        return Response(result, status=result.get('status_code', 500))
+
+class InstagramCreateIgtvSeriesView(APIView):
+    """Create IGTV series"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        payload = {
+            "username_from": request.data.get("username_from"),
+            "title": request.data.get("title"),
+            "description": request.data.get("description")
+        }
+        
+        result = make_instagram_request("/createIgtvSeries", payload)
+        return Response(result, status=result.get('status_code', 500))
+
+class InstagramAddIgtvEpisodeView(APIView):
+    """Add IGTV episode"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        payload = {
+            "username_from": request.data.get("username_from"),
+            "series_id": request.data.get("series_id"),
+            "media_id": request.data.get("media_id")
+        }
+        
+        result = make_instagram_request("/addIgtvEpisode", payload)
+        return Response(result, status=result.get('status_code', 500))
+
+class InstagramGetUserIgtvSeriesView(APIView):
+    """Get user IGTV series"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        payload = {
+            "username_from": request.data.get("username_from"),
+            "user_id": request.data.get("user_id")
+        }
+        
+        result = make_instagram_request("/getUserIgtvSeries", payload)
+        return Response(result, status=result.get('status_code', 500))
+
+
+class InstagramApproveThreadView(APIView):
+    """Approve thread"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        payload = {
+            "username_from": request.data.get("username_from"),
+            "thread_id": request.data.get("thread_id")
+        }
+        
+        result = make_instagram_request("/approveThread", payload)
+        return Response(result, status=result.get('status_code', 500))
+
+class InstagramDeclineThreadView(APIView):
+    """Decline thread"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        payload = {
+            "username_from": request.data.get("username_from"),
+            "thread_id": request.data.get("thread_id")
+        }
+        
+        result = make_instagram_request("/declineThread", payload)
+        return Response(result, status=result.get('status_code', 500))
+
+class InstagramMuteThreadView(APIView):
+    """Mute thread"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        payload = {
+            "username_from": request.data.get("username_from"),
+            "thread_id": request.data.get("thread_id")
+        }
+        
+        result = make_instagram_request("/muteThread", payload)
+        return Response(result, status=result.get('status_code', 500))
+
+class InstagramUnmuteThreadView(APIView):
+    """Unmute thread"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        payload = {
+            "username_from": request.data.get("username_from"),
+            "thread_id": request.data.get("thread_id")
+        }
+        
+        result = make_instagram_request("/unmuteThread", payload)
+        return Response(result, status=result.get('status_code', 500))
+
+class InstagramLeaveThreadView(APIView):
+    """Leave thread"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        payload = {
+            "username_from": request.data.get("username_from"),
+            "thread_id": request.data.get("thread_id")
+        }
+        
+        result = make_instagram_request("/leaveThread", payload)
+        return Response(result, status=result.get('status_code', 500))
+
+class InstagramHideThreadView(APIView):
+    """Hide thread"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        payload = {
+            "username_from": request.data.get("username_from"),
+            "thread_id": request.data.get("thread_id")
+        }
+        
+        result = make_instagram_request("/hideThread", payload)
+        return Response(result, status=result.get('status_code', 500))
+
+class InstagramAddUserToThreadView(APIView):
+    """Add user to thread"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        payload = {
+            "username_from": request.data.get("username_from"),
+            "thread_id": request.data.get("thread_id"),
+            "user_ids": request.data.get("user_ids", [])
+        }
+        
+        result = make_instagram_request("/addUserToThread", payload)
+        return Response(result, status=result.get('status_code', 500))
+
+class InstagramUpdateThreadTitleView(APIView):
+    """Update thread title"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        payload = {
+            "username_from": request.data.get("username_from"),
+            "thread_id": request.data.get("thread_id"),
+            "title": request.data.get("title")
+        }
+        
+        result = make_instagram_request("/updateThreadTitle", payload)
+        return Response(result, status=result.get('status_code', 500))
+
+class InstagramDeleteThreadItemView(APIView):
+    """Delete thread item"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        payload = {
+            "username_from": request.data.get("username_from"),
+            "thread_id": request.data.get("thread_id"),
+            "item_id": request.data.get("item_id")
+        }
+        
+        result = make_instagram_request("/deleteThreadItem", payload)
+        return Response(result, status=result.get('status_code', 500))
+
+
+class InstagramDisableMediaCommentsView(APIView):
+    """Disable media comments"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        payload = {
+            "username_from": request.data.get("username_from"),
+            "media_id": request.data.get("media_id")
+        }
+        
+        result = make_instagram_request("/disableMediaComments", payload)
+        return Response(result, status=result.get('status_code', 500))
+
+class InstagramEnableMediaCommentsView(APIView):
+    """Enable media comments"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        payload = {
+            "username_from": request.data.get("username_from"),
+            "media_id": request.data.get("media_id")
+        }
+        
+        result = make_instagram_request("/enableMediaComments", payload)
+        return Response(result, status=result.get('status_code', 500))
+
+class InstagramDeleteCommentView(APIView):
+    """Delete comment"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        payload = {
+            "username_from": request.data.get("username_from"),
+            "media_id": request.data.get("media_id"),
+            "comment_ids": request.data.get("comment_ids", [])
+        }
+        
+        result = make_instagram_request("/deleteComment", payload)
+        return Response(result, status=result.get('status_code', 500))
+
+
+class InstagramCreateLiveBroadcastView(APIView):
+    """Create live broadcast"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        payload = {
+            "username_from": request.data.get("username_from"),
+            "message": request.data.get("message")
+        }
+        
+        result = make_instagram_request("/createLiveBroadcast", payload)
+        return Response(result, status=result.get('status_code', 500))
+
+class InstagramStartLiveBroadcastView(APIView):
+    """Start live broadcast"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        payload = {
+            "username_from": request.data.get("username_from"),
+            "broadcast_id": request.data.get("broadcast_id"),
+            "send_notifications": request.data.get("send_notifications", True)
+        }
+        
+        result = make_instagram_request("/startLiveBroadcast", payload)
+        return Response(result, status=result.get('status_code', 500))
+
+class InstagramEndLiveBroadcastView(APIView):
+    """End live broadcast"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        payload = {
+            "username_from": request.data.get("username_from"),
+            "broadcast_id": request.data.get("broadcast_id")
+        }
+        
+        result = make_instagram_request("/endLiveBroadcast", payload)
+        return Response(result, status=result.get('status_code', 500))
+
+class InstagramGetLiveCommentsView(APIView):
+    """Get live comments"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        payload = {
+            "username_from": request.data.get("username_from"),
+            "broadcast_id": request.data.get("broadcast_id"),
+            "last_comment_ts": request.data.get("last_comment_ts")
+        }
+        
+        result = make_instagram_request("/getLiveComments", payload)
+        return Response(result, status=result.get('status_code', 500))
+
+class InstagramGetLiveBroadcastInfoView(APIView):
+    """Get live broadcast info"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        payload = {
+            "username_from": request.data.get("username_from"),
+            "broadcast_id": request.data.get("broadcast_id")
+        }
+        
+        result = make_instagram_request("/getLiveBroadcastInfo", payload)
+        return Response(result, status=result.get('status_code', 500))
+
+
+class InstagramGetLocationInfoView(APIView):
+    """Get location info"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        payload = {
+            "username_from": request.data.get("username_from"),
+            "location_id": request.data.get("location_id")
+        }
+        
+        result = make_instagram_request("/getLocationInfo", payload)
+        return Response(result, status=result.get('status_code', 500))
+
+
+class InstagramMarkStoryAsSeenView(APIView):
+    """Mark story as seen"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        payload = {
+            "username_from": request.data.get("username_from"),
+            "story_items": request.data.get("story_items", []),
+            "source_id": request.data.get("source_id")
+        }
+        
+        result = make_instagram_request("/markStoryAsSeen", payload)
+        return Response(result, status=result.get('status_code', 500))
+
+
+class InstagramTriggerDisconnectView(APIView):
+    """Trigger disconnect"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        payload = {
+            "username_from": request.data.get("username_from")
+        }
+        
+        result = make_instagram_request("/trigger-disconnect", payload)
+        return Response(result, status=result.get('status_code', 500))
+
+class InstagramTriggerReconnectView(APIView):
+    """Trigger reconnect"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        payload = {
+            "username_from": request.data.get("username_from")
+        }
+        
+        result = make_instagram_request("/trigger-reconnect", payload)
+        return Response(result, status=result.get('status_code', 500))
+
+
+class InstagramFetchCommentsView(APIView):
+    """Fetch comments"""
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        payload = {
+            "username_from": request.data.get("username_from")
+        }
+        
+        result = make_instagram_request("/fetchComments", payload)
+        return Response(result, status=result.get('status_code', 500))
+
+
+class InstagramHealthView(APIView):
+    """Health check"""
+    permission_classes = [AllowAny]
+    
+    def get(self, request):
+        try:
+            response = requests.get(f"{INSTAGRAM_BASE_URL}/health", timeout=10)
+            return Response({
+                "success": response.ok,
+                "data": response.json() if response.content else {},
+                "status_code": response.status_code
+            }, status=response.status_code)
+        except requests.exceptions.RequestException as e:
+            return Response({
+                "success": False,
+                "error": str(e),
+                "status_code": 500
+            }, status=500)
