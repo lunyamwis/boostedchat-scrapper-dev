@@ -1390,9 +1390,6 @@ class LinkedInLiveVideoView(APIView):
         result = make_lunyamwi_linkedin_request("DELETE", f"/accounts/{account_id}/live-video/{video_id}/end")
         return Response(result, status=result.get('status_code', 500))
 
-# ===============================
-# WEBHOOKS ENDPOINTS
-# ===============================
 
 class LinkedInWebhooksView(APIView):
     """LinkedIn Webhooks management"""
