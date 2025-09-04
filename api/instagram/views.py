@@ -1647,27 +1647,6 @@ class HikerUserByUsernameV2(APIView):
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-# User Clips HikerAPI Views
-class HikerUserClips(APIView):
-    """Get user clips."""
-    
-    def post(self, request, *args, **kwargs):
-        user_id = request.data.get('user_id')
-        count = request.data.get('count', 12)
-        page_id = request.data.get('page_id')
-        
-        if not user_id:
-            return Response({"error": "User ID is required."}, status=status.HTTP_400_BAD_REQUEST)
-
-        cl = initialize_hikerapi_client()
-        try:
-            if page_id:
-                clips = cl.user_clips(user_id, count=count, page_id=page_id)
-            else:
-                clips = cl.user_clips(user_id, count=count)
-            return Response({"clips": clips}, status=status.HTTP_200_OK)
-        except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class HikerUserClipsChunkV1(APIView):
@@ -1719,40 +1698,18 @@ class HikerUserExploreBusinessesByIdV2(APIView):
     
     def post(self, request, *args, **kwargs):
         user_id = request.data.get('user_id')
-        count = request.data.get('count', 12)
         
         if not user_id:
             return Response({"error": "User ID is required."}, status=status.HTTP_400_BAD_REQUEST)
 
         cl = initialize_hikerapi_client()
         try:
-            businesses = cl.user_explore_businesses_by_id_v2(user_id, count=count)
+            businesses = cl.user_explore_businesses_by_id_v2(user_id)
             return Response({"businesses": businesses}, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-# User Followers HikerAPI Views
-class HikerUserFollowers(APIView):
-    """Get user followers."""
-    
-    def post(self, request, *args, **kwargs):
-        user_id = request.data.get('user_id')
-        count = request.data.get('count', 20)
-        page_id = request.data.get('page_id')
-        
-        if not user_id:
-            return Response({"error": "User ID is required."}, status=status.HTTP_400_BAD_REQUEST)
-
-        cl = initialize_hikerapi_client()
-        try:
-            if page_id:
-                followers = cl.user_followers(user_id, count=count, page_id=page_id)
-            else:
-                followers = cl.user_followers(user_id, count=count)
-            return Response({"followers": followers}, status=status.HTTP_200_OK)
-        except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class HikerUserFollowersChunkGql(APIView):
@@ -1924,21 +1881,6 @@ class HikerUserHighlights(APIView):
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-class HikerUserHighlightsByUsername(APIView):
-    """Get user highlights by username."""
-    
-    def post(self, request, *args, **kwargs):
-        username = request.data.get('username')
-        
-        if not username:
-            return Response({"error": "Username is required."}, status=status.HTTP_400_BAD_REQUEST)
-
-        cl = initialize_hikerapi_client()
-        try:
-            highlights = cl.user_highlights_by_username(username)
-            return Response({"highlights": highlights}, status=status.HTTP_200_OK)
-        except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class HikerUserHighlightsByUsernameV1(APIView):
@@ -2037,18 +1979,17 @@ class HikerUserMediasChunkV1(APIView):
     
     def post(self, request, *args, **kwargs):
         user_id = request.data.get('user_id')
-        max_id = request.data.get('max_id')
-        count = request.data.get('count', 12)
+        end_cursor = request.data.get('end_cursor')
         
         if not user_id:
             return Response({"error": "User ID is required."}, status=status.HTTP_400_BAD_REQUEST)
 
         cl = initialize_hikerapi_client()
         try:
-            if max_id:
-                medias = cl.user_medias_chunk_v1(user_id, max_id=max_id, count=count)
+            if end_cursor:
+                medias = cl.user_medias_chunk_v1(user_id, end_cursor=end_cursor)
             else:
-                medias = cl.user_medias_chunk_v1(user_id, count=count)
+                medias = cl.user_medias_chunk_v1(user_id)
             return Response({"medias": medias}, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -2223,28 +2164,6 @@ class HikerUserStoriesV2(APIView):
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-# User Tag Medias HikerAPI Views
-class HikerUserTagMedias(APIView):
-    """Get user tag medias."""
-    
-    def post(self, request, *args, **kwargs):
-        user_id = request.data.get('user_id')
-        count = request.data.get('count', 12)
-        page_id = request.data.get('page_id')
-        
-        if not user_id:
-            return Response({"error": "User ID is required."}, status=status.HTTP_400_BAD_REQUEST)
-
-        cl = initialize_hikerapi_client()
-        try:
-            if page_id:
-                tag_medias = cl.user_tag_medias(user_id, count=count, page_id=page_id)
-            else:
-                tag_medias = cl.user_tag_medias(user_id)
-            return Response({"tag_medias": tag_medias}, status=status.HTTP_200_OK)
-        except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
 
 class HikerUserTagMediasChunkV1(APIView):
     """Get user tag medias in chunks v1."""
@@ -2273,18 +2192,17 @@ class HikerUserTagMediasV2(APIView):
     
     def post(self, request, *args, **kwargs):
         user_id = request.data.get('user_id')
-        count = request.data.get('count', 12)
-        max_id = request.data.get('max_id')
+        page_id = request.data.get('page_id')
         
         if not user_id:
             return Response({"error": "User ID is required."}, status=status.HTTP_400_BAD_REQUEST)
 
         cl = initialize_hikerapi_client()
         try:
-            if max_id:
-                tag_medias = cl.user_tag_medias_v2(user_id, count=count, max_id=max_id)
+            if page_id:
+                tag_medias = cl.user_tag_medias_v2(user_id, page_id=page_id)
             else:
-                tag_medias = cl.user_tag_medias_v2(user_id, count=count)
+                tag_medias = cl.user_tag_medias_v2(user_id)
             return Response({"tag_medias": tag_medias}, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
