@@ -187,7 +187,12 @@ LUNYAMWI_INSTAGRAM_API_KEY = os.getenv("LUNYAMWI_INSTAGRAM_API_KEY", "")
 class HikerCommentLikersChunkGql(APIView):
     """Get comment likers using GraphQL chunk method."""
     
-    def post(self, request, *args, **kwargs):
+    def post(self, request, *args, **kwargs):   
+        """
+        payload = {
+            "comment_id": "18069481925141410"
+        }
+        """
         comment_id = request.data.get('comment_id')
         max_id = request.data.get('max_id')
         count = request.data.get('count', 12)
@@ -198,9 +203,9 @@ class HikerCommentLikersChunkGql(APIView):
         cl = initialize_hikerapi_client()
         try:
             if max_id:
-                likers = cl.comment_likers_chunk_gql(comment_id, max_id=max_id, count=count)
+                likers = cl.comment_likers_chunk_gql(comment_id, end_cursor=max_id)
             else:
-                likers = cl.comment_likers_chunk_gql(comment_id, count=count)
+                likers = cl.comment_likers_chunk_gql(comment_id)
             return Response({"likers": likers}, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -210,9 +215,13 @@ class HikerCommentsChunkGql(APIView):
     """Get comments using GraphQL chunk method."""
     
     def post(self, request, *args, **kwargs):
+        """
+        payload = {
+            "media_id": "321801234567
+        }
+        """
         media_id = request.data.get('media_id')
         max_id = request.data.get('max_id')
-        count = request.data.get('count', 12)
         
         if not media_id:
             return Response({"error": "Media ID is required."}, status=status.HTTP_400_BAD_REQUEST)
@@ -220,9 +229,9 @@ class HikerCommentsChunkGql(APIView):
         cl = initialize_hikerapi_client()
         try:
             if max_id:
-                comments = cl.comments_chunk_gql(media_id, max_id=max_id, count=count)
+                comments = cl.comments_chunk_gql(media_id, end_cursor=max_id)
             else:
-                comments = cl.comments_chunk_gql(media_id, count=count)
+                comments = cl.comments_chunk_gql(media_id)
             return Response({"comments": comments}, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -233,8 +242,8 @@ class HikerCommentsThreadedChunkGql(APIView):
     
     def post(self, request, *args, **kwargs):
         media_id = request.data.get('media_id')
+        comment_id = request.data.get('comment_id')
         max_id = request.data.get('max_id')
-        count = request.data.get('count', 12)
         
         if not media_id:
             return Response({"error": "Media ID is required."}, status=status.HTTP_400_BAD_REQUEST)
@@ -242,12 +251,13 @@ class HikerCommentsThreadedChunkGql(APIView):
         cl = initialize_hikerapi_client()
         try:
             if max_id:
-                comments = cl.comments_threaded_chunk_gql(media_id, max_id=max_id, count=count)
+                comments = cl.comments_threaded_chunk_gql(media_id, end_cursor=max_id)
             else:
-                comments = cl.comments_threaded_chunk_gql(media_id, count=count)
+                comments = cl.comments_threaded_chunk_gql(comment_id=comment_id, media_id=media_id)
             return Response({"comments": comments}, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
 
 
 # Facebook Search HikerAPI Views
@@ -256,14 +266,13 @@ class HikerFbsearchAccountsV2(APIView):
     
     def post(self, request, *args, **kwargs):
         query = request.data.get('query')
-        count = request.data.get('count', 12)
         
         if not query:
             return Response({"error": "Search query is required."}, status=status.HTTP_400_BAD_REQUEST)
 
         cl = initialize_hikerapi_client()
         try:
-            accounts = cl.fbsearch_accounts_v2(query, count=count)
+            accounts = cl.fbsearch_accounts_v2(query)
             return Response({"accounts": accounts}, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -274,14 +283,14 @@ class HikerFbsearchPlacesV1(APIView):
     
     def post(self, request, *args, **kwargs):
         query = request.data.get('query')
-        count = request.data.get('count', 12)
+        
         
         if not query:
             return Response({"error": "Search query is required."}, status=status.HTTP_400_BAD_REQUEST)
 
         cl = initialize_hikerapi_client()
         try:
-            places = cl.fbsearch_places_v1(query, count=count)
+            places = cl.fbsearch_places_v1(query)
             return Response({"places": places}, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -292,15 +301,31 @@ class HikerFbsearchPlacesV2(APIView):
     
     def post(self, request, *args, **kwargs):
         query = request.data.get('query')
-        count = request.data.get('count', 12)
         
         if not query:
             return Response({"error": "Search query is required."}, status=status.HTTP_400_BAD_REQUEST)
 
         cl = initialize_hikerapi_client()
         try:
-            places = cl.fbsearch_places_v2(query, count=count)
+            places = cl.fbsearch_places_v2(query)
             return Response({"places": places}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class HikerFbsearchReelsV1(APIView):
+    """Search reels using Facebook search v1."""
+
+    def post(self, request, *args, **kwargs):
+        query = request.data.get('query')
+
+        if not query:
+            return Response({"error": "Search query is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        cl = initialize_hikerapi_client()
+        try:
+            reels = cl.fbsearch_reels_v1(query)
+            return Response({"reels": reels}, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
@@ -310,14 +335,13 @@ class HikerFbsearchReelsV2(APIView):
     
     def post(self, request, *args, **kwargs):
         query = request.data.get('query')
-        count = request.data.get('count', 12)
         
         if not query:
             return Response({"error": "Search query is required."}, status=status.HTTP_400_BAD_REQUEST)
 
         cl = initialize_hikerapi_client()
         try:
-            reels = cl.fbsearch_reels_v2(query, count=count)
+            reels = cl.fbsearch_reels_v2(query)
             return Response({"reels": reels}, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -328,14 +352,13 @@ class HikerFbsearchTopsearchHashtagsV1(APIView):
     
     def post(self, request, *args, **kwargs):
         query = request.data.get('query')
-        count = request.data.get('count', 12)
         
         if not query:
             return Response({"error": "Search query is required."}, status=status.HTTP_400_BAD_REQUEST)
 
         cl = initialize_hikerapi_client()
         try:
-            hashtags = cl.fbsearch_topsearch_hashtags_v1(query, count=count)
+            hashtags = cl.fbsearch_topsearch_hashtags_v1(query)
             return Response({"hashtags": hashtags}, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -346,14 +369,13 @@ class HikerFbsearchTopsearchV1(APIView):
     
     def post(self, request, *args, **kwargs):
         query = request.data.get('query')
-        count = request.data.get('count', 12)
         
         if not query:
             return Response({"error": "Search query is required."}, status=status.HTTP_400_BAD_REQUEST)
 
         cl = initialize_hikerapi_client()
         try:
-            results = cl.fbsearch_topsearch_v1(query, count=count)
+            results = cl.fbsearch_topsearch_v1(query)
             return Response({"results": results}, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -364,14 +386,13 @@ class HikerFbsearchTopsearchV2(APIView):
     
     def post(self, request, *args, **kwargs):
         query = request.data.get('query')
-        count = request.data.get('count', 12)
         
         if not query:
             return Response({"error": "Search query is required."}, status=status.HTTP_400_BAD_REQUEST)
 
         cl = initialize_hikerapi_client()
         try:
-            results = cl.fbsearch_topsearch_v2(query, count=count)
+            results = cl.fbsearch_topsearch_v2(query)
             return Response({"results": results}, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -412,27 +433,6 @@ class HikerHashtagByNameV2(APIView):
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-class HikerHashtagMediasClips(APIView):
-    """Get hashtag clips media."""
-    
-    def post(self, request, *args, **kwargs):
-        hashtag_name = request.data.get('hashtag_name')
-        count = request.data.get('count', 12)
-        max_id = request.data.get('max_id')
-        
-        if not hashtag_name:
-            return Response({"error": "Hashtag name is required."}, status=status.HTTP_400_BAD_REQUEST)
-
-        cl = initialize_hikerapi_client()
-        try:
-            if max_id:
-                clips = cl.hashtag_medias_clips(hashtag_name, count=count, max_id=max_id)
-            else:
-                clips = cl.hashtag_medias_clips(hashtag_name, count=count)
-            return Response({"clips": clips}, status=status.HTTP_200_OK)
-        except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
 
 class HikerHashtagMediasClipsChunkV1(APIView):
     """Get hashtag clips media in chunks v1."""
@@ -440,7 +440,6 @@ class HikerHashtagMediasClipsChunkV1(APIView):
     def post(self, request, *args, **kwargs):
         hashtag_name = request.data.get('hashtag_name')
         max_id = request.data.get('max_id')
-        count = request.data.get('count', 12)
         
         if not hashtag_name:
             return Response({"error": "Hashtag name is required."}, status=status.HTTP_400_BAD_REQUEST)
@@ -448,9 +447,9 @@ class HikerHashtagMediasClipsChunkV1(APIView):
         cl = initialize_hikerapi_client()
         try:
             if max_id:
-                clips = cl.hashtag_medias_clips_chunk_v1(hashtag_name, max_id=max_id, count=count)
+                clips = cl.hashtag_medias_clips_chunk_v1(hashtag_name, max_id=max_id)
             else:
-                clips = cl.hashtag_medias_clips_chunk_v1(hashtag_name, count=count)
+                clips = cl.hashtag_medias_clips_chunk_v1(hashtag_name)
             return Response({"clips": clips}, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -461,18 +460,17 @@ class HikerHashtagMediasClipsV1(APIView):
     
     def post(self, request, *args, **kwargs):
         hashtag_name = request.data.get('hashtag_name')
-        count = request.data.get('count', 12)
-        max_id = request.data.get('max_id')
+        amount = request.data.get('amount', 12)
         
         if not hashtag_name:
             return Response({"error": "Hashtag name is required."}, status=status.HTTP_400_BAD_REQUEST)
 
         cl = initialize_hikerapi_client()
         try:
-            if max_id:
-                clips = cl.hashtag_medias_clips_v1(hashtag_name, count=count, max_id=max_id)
+            if amount:
+                clips = cl.hashtag_medias_clips_v1(hashtag_name, amount=amount)
             else:
-                clips = cl.hashtag_medias_clips_v1(hashtag_name, count=count)
+                clips = cl.hashtag_medias_clips_v1(hashtag_name)
             return Response({"clips": clips}, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -483,43 +481,21 @@ class HikerHashtagMediasClipsV2(APIView):
     
     def post(self, request, *args, **kwargs):
         hashtag_name = request.data.get('hashtag_name')
-        count = request.data.get('count', 12)
-        max_id = request.data.get('max_id')
+        page_id = request.data.get('page_id')
         
         if not hashtag_name:
             return Response({"error": "Hashtag name is required."}, status=status.HTTP_400_BAD_REQUEST)
 
         cl = initialize_hikerapi_client()
         try:
-            if max_id:
-                clips = cl.hashtag_medias_clips_v2(hashtag_name, count=count, max_id=max_id)
+            if page_id:
+                clips = cl.hashtag_medias_clips_v2(hashtag_name, page_id=page_id)
             else:
-                clips = cl.hashtag_medias_clips_v2(hashtag_name, count=count)
+                clips = cl.hashtag_medias_clips_v2(hashtag_name)
             return Response({"clips": clips}, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-
-class HikerHashtagMediasRecent(APIView):
-    """Get hashtag recent media."""
-    
-    def post(self, request, *args, **kwargs):
-        hashtag_name = request.data.get('hashtag_name')
-        count = request.data.get('count', 12)
-        max_id = request.data.get('max_id')
-        
-        if not hashtag_name:
-            return Response({"error": "Hashtag name is required."}, status=status.HTTP_400_BAD_REQUEST)
-
-        cl = initialize_hikerapi_client()
-        try:
-            if max_id:
-                medias = cl.hashtag_medias_recent(hashtag_name, count=count, max_id=max_id)
-            else:
-                medias = cl.hashtag_medias_recent(hashtag_name, count=count)
-            return Response({"medias": medias}, status=status.HTTP_200_OK)
-        except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class HikerHashtagMediasRecentV2(APIView):
@@ -527,43 +503,22 @@ class HikerHashtagMediasRecentV2(APIView):
     
     def post(self, request, *args, **kwargs):
         hashtag_name = request.data.get('hashtag_name')
-        count = request.data.get('count', 12)
-        max_id = request.data.get('max_id')
+        page_id = request.data.get('page_id')
         
         if not hashtag_name:
             return Response({"error": "Hashtag name is required."}, status=status.HTTP_400_BAD_REQUEST)
 
         cl = initialize_hikerapi_client()
         try:
-            if max_id:
-                medias = cl.hashtag_medias_recent_v2(hashtag_name, count=count, max_id=max_id)
+            if page_id:
+                medias = cl.hashtag_medias_recent_v2(hashtag_name, page_id=page_id)
             else:
-                medias = cl.hashtag_medias_recent_v2(hashtag_name, count=count)
+                medias = cl.hashtag_medias_recent_v2(hashtag_name)
             return Response({"medias": medias}, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-class HikerHashtagMediasTop(APIView):
-    """Get hashtag top media."""
-    
-    def post(self, request, *args, **kwargs):
-        hashtag_name = request.data.get('hashtag_name')
-        count = request.data.get('count', 12)
-        max_id = request.data.get('max_id')
-        
-        if not hashtag_name:
-            return Response({"error": "Hashtag name is required."}, status=status.HTTP_400_BAD_REQUEST)
-
-        cl = initialize_hikerapi_client()
-        try:
-            if max_id:
-                medias = cl.hashtag_medias_top(hashtag_name, count=count, max_id=max_id)
-            else:
-                medias = cl.hashtag_medias_top(hashtag_name, count=count)
-            return Response({"medias": medias}, status=status.HTTP_200_OK)
-        except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class HikerHashtagMediasTopChunkV1(APIView):
@@ -572,7 +527,6 @@ class HikerHashtagMediasTopChunkV1(APIView):
     def post(self, request, *args, **kwargs):
         hashtag_name = request.data.get('hashtag_name')
         max_id = request.data.get('max_id')
-        count = request.data.get('count', 12)
         
         if not hashtag_name:
             return Response({"error": "Hashtag name is required."}, status=status.HTTP_400_BAD_REQUEST)
@@ -580,9 +534,9 @@ class HikerHashtagMediasTopChunkV1(APIView):
         cl = initialize_hikerapi_client()
         try:
             if max_id:
-                medias = cl.hashtag_medias_top_chunk_v1(hashtag_name, max_id=max_id, count=count)
+                medias = cl.hashtag_medias_top_chunk_v1(hashtag_name, max_id=max_id)
             else:
-                medias = cl.hashtag_medias_top_chunk_v1(hashtag_name, count=count)
+                medias = cl.hashtag_medias_top_chunk_v1(hashtag_name)
             return Response({"medias": medias}, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -594,7 +548,6 @@ class HikerHashtagMediasTopRecentChunkV1(APIView):
     def post(self, request, *args, **kwargs):
         hashtag_name = request.data.get('hashtag_name')
         max_id = request.data.get('max_id')
-        count = request.data.get('count', 12)
         
         if not hashtag_name:
             return Response({"error": "Hashtag name is required."}, status=status.HTTP_400_BAD_REQUEST)
@@ -602,9 +555,9 @@ class HikerHashtagMediasTopRecentChunkV1(APIView):
         cl = initialize_hikerapi_client()
         try:
             if max_id:
-                medias = cl.hashtag_medias_top_recent_chunk_v1(hashtag_name, max_id=max_id, count=count)
+                medias = cl.hashtag_medias_top_recent_chunk_v1(hashtag_name, max_id=max_id)
             else:
-                medias = cl.hashtag_medias_top_recent_chunk_v1(hashtag_name, count=count)
+                medias = cl.hashtag_medias_top_recent_chunk_v1(hashtag_name)
             return Response({"medias": medias}, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -615,18 +568,17 @@ class HikerHashtagMediasTopV1(APIView):
     
     def post(self, request, *args, **kwargs):
         hashtag_name = request.data.get('hashtag_name')
-        count = request.data.get('count', 12)
-        max_id = request.data.get('max_id')
+        amount = request.data.get('amount', 12)
         
         if not hashtag_name:
             return Response({"error": "Hashtag name is required."}, status=status.HTTP_400_BAD_REQUEST)
 
         cl = initialize_hikerapi_client()
         try:
-            if max_id:
-                medias = cl.hashtag_medias_top_v1(hashtag_name, count=count, max_id=max_id)
+            if amount:
+                medias = cl.hashtag_medias_top_v1(hashtag_name, amount=amount)
             else:
-                medias = cl.hashtag_medias_top_v1(hashtag_name, count=count)
+                medias = cl.hashtag_medias_top_v1(hashtag_name)
             return Response({"medias": medias}, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -637,38 +589,21 @@ class HikerHashtagMediasTopV2(APIView):
     
     def post(self, request, *args, **kwargs):
         hashtag_name = request.data.get('hashtag_name')
-        count = request.data.get('count', 12)
-        max_id = request.data.get('max_id')
+        page_id = request.data.get('page_id')
         
         if not hashtag_name:
             return Response({"error": "Hashtag name is required."}, status=status.HTTP_400_BAD_REQUEST)
 
         cl = initialize_hikerapi_client()
         try:
-            if max_id:
-                medias = cl.hashtag_medias_top_v2(hashtag_name, count=count, max_id=max_id)
+            if page_id:
+                medias = cl.hashtag_medias_top_v2(hashtag_name, page_id=page_id)
             else:
-                medias = cl.hashtag_medias_top_v2(hashtag_name, count=count)
+                medias = cl.hashtag_medias_top_v2(hashtag_name)
             return Response({"medias": medias}, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-# Highlight HikerAPI Views
-class HikerHighlightById(APIView):
-    """Get highlight information by ID."""
-    
-    def post(self, request, *args, **kwargs):
-        highlight_id = request.data.get('highlight_id')
-        
-        if not highlight_id:
-            return Response({"error": "Highlight ID is required."}, status=status.HTTP_400_BAD_REQUEST)
-
-        cl = initialize_hikerapi_client()
-        try:
-            highlight_info = cl.highlight_by_id(highlight_id)
-            return Response({"highlight_info": highlight_info}, status=status.HTTP_200_OK)
-        except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class HikerHighlightByIdV2(APIView):
@@ -728,18 +663,15 @@ class HikerLocationGuidesV1(APIView):
     
     def post(self, request, *args, **kwargs):
         location_id = request.data.get('location_id')
-        count = request.data.get('count', 12)
-        max_id = request.data.get('max_id')
         
         if not location_id:
             return Response({"error": "Location ID is required."}, status=status.HTTP_400_BAD_REQUEST)
 
         cl = initialize_hikerapi_client()
         try:
-            if max_id:
-                guides = cl.location_guides_v1(location_id, count=count, max_id=max_id)
-            else:
-                guides = cl.location_guides_v1(location_id, count=count)
+            if location_id:
+                guides = cl.location_guides_v1(location_id)
+            
             return Response({"guides": guides}, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -751,7 +683,6 @@ class HikerLocationMediasRecentChunkV1(APIView):
     def post(self, request, *args, **kwargs):
         location_id = request.data.get('location_id')
         max_id = request.data.get('max_id')
-        count = request.data.get('count', 12)
         
         if not location_id:
             return Response({"error": "Location ID is required."}, status=status.HTTP_400_BAD_REQUEST)
@@ -759,9 +690,9 @@ class HikerLocationMediasRecentChunkV1(APIView):
         cl = initialize_hikerapi_client()
         try:
             if max_id:
-                medias = cl.location_medias_recent_chunk_v1(location_id, max_id=max_id, count=count)
+                medias = cl.location_medias_recent_chunk_v1(location_id, max_id=max_id)
             else:
-                medias = cl.location_medias_recent_chunk_v1(location_id, count=count)
+                medias = cl.location_medias_recent_chunk_v1(location_id)
             return Response({"medias": medias}, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -772,18 +703,17 @@ class HikerLocationMediasRecentV1(APIView):
     
     def post(self, request, *args, **kwargs):
         location_id = request.data.get('location_id')
-        count = request.data.get('count', 12)
-        max_id = request.data.get('max_id')
-        
+        amount = request.data.get('amount', 12)
+
         if not location_id:
             return Response({"error": "Location ID is required."}, status=status.HTTP_400_BAD_REQUEST)
 
         cl = initialize_hikerapi_client()
         try:
-            if max_id:
-                medias = cl.location_medias_recent_v1(location_id, count=count, max_id=max_id)
+            if amount:
+                medias = cl.location_medias_recent_v1(location_id, amount=amount)
             else:
-                medias = cl.location_medias_recent_v1(location_id, count=count)
+                medias = cl.location_medias_recent_v1(location_id)
             return Response({"medias": medias}, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -795,7 +725,6 @@ class HikerLocationMediasTopChunkV1(APIView):
     def post(self, request, *args, **kwargs):
         location_id = request.data.get('location_id')
         max_id = request.data.get('max_id')
-        count = request.data.get('count', 12)
         
         if not location_id:
             return Response({"error": "Location ID is required."}, status=status.HTTP_400_BAD_REQUEST)
@@ -803,9 +732,9 @@ class HikerLocationMediasTopChunkV1(APIView):
         cl = initialize_hikerapi_client()
         try:
             if max_id:
-                medias = cl.location_medias_top_chunk_v1(location_id, max_id=max_id, count=count)
+                medias = cl.location_medias_top_chunk_v1(location_id, max_id=max_id)
             else:
-                medias = cl.location_medias_top_chunk_v1(location_id, count=count)
+                medias = cl.location_medias_top_chunk_v1(location_id)
             return Response({"medias": medias}, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -816,18 +745,17 @@ class HikerLocationMediasTopV1(APIView):
     
     def post(self, request, *args, **kwargs):
         location_id = request.data.get('location_id')
-        count = request.data.get('count', 12)
-        max_id = request.data.get('max_id')
+        amount = request.data.get('amount', 12)
         
         if not location_id:
             return Response({"error": "Location ID is required."}, status=status.HTTP_400_BAD_REQUEST)
 
         cl = initialize_hikerapi_client()
         try:
-            if max_id:
-                medias = cl.location_medias_top_v1(location_id, count=count, max_id=max_id)
+            if amount:
+                medias = cl.location_medias_top_v1(location_id, amount=amount)
             else:
-                medias = cl.location_medias_top_v1(location_id, count=count)
+                medias = cl.location_medias_top_v1(location_id)
             return Response({"medias": medias}, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -837,15 +765,15 @@ class HikerLocationSearchV1(APIView):
     """Search locations v1."""
     
     def post(self, request, *args, **kwargs):
-        query = request.data.get('query')
-        count = request.data.get('count', 12)
+        lat = request.data.get('lat')
+        lng = request.data.get('lng')
         
-        if not query:
+        if lat is None or lng is None:
             return Response({"error": "Search query is required."}, status=status.HTTP_400_BAD_REQUEST)
 
         cl = initialize_hikerapi_client()
         try:
-            locations = cl.location_search_v1(query, count=count)
+            locations = cl.location_search_v1(lat=lat, lng=lng)
             return Response({"locations": locations}, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
