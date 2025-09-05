@@ -85,7 +85,7 @@ class LinkedInAccountsView(APIView):
         params = {
             'limit': request.query_params.get('limit', 50),
             'cursor': request.query_params.get('cursor'),
-            'provider': 'linkedin'
+            'provider': 'LINKEDIN'
         }
         params = {k: v for k, v in params.items() if v is not None}
         
@@ -96,14 +96,38 @@ class LinkedInAccountsView(APIView):
     def post(self, request):
         """Add LinkedIn account"""
         payload = {
-            "provider": "linkedin",
+            "provider": "LINKEDIN",
             "name": request.data.get("name"),
             "username": request.data.get("username"),
             "password": request.data.get("password"),
-            "proxy": request.data.get("proxy")
+            "country": request.data.get("country", "US"),
+            "city": request.data.get("city", ""),
+            "proxy": {
+                "protocol": "https",
+                "host": "gate.decodo.com",
+                "port": 10001,
+                "username": f"user-{os.getenv("PROXY_USERNAME", "")}-country-{request.data.get("country", "")}-city-{request.data.get("city", "")}",
+                "password": os.getenv("PROXY_PASSWORD", "")
+            }
         }
         
         result = make_lunyamwi_linkedin_request("POST", "/accounts", data=payload)
+            
+        return Response(result, status=result.get('status_code', 500))
+
+class LinkedInSolveCheckpointView(APIView):
+    """Solve LinkedIn checkpoint (2FA)"""
+    permission_classes = [AllowAny]
+    
+    @handle_lunyamwi_linkedin_error
+    def post(self, request):
+        """Submit 2FA code to solve checkpoint"""
+        payload = {
+            "provider": "LINKEDIN",
+            "account_id": request.data.get("account_id", ""),
+            "code": request.data.get("code", "")
+        }
+        result = make_lunyamwi_linkedin_request("POST", "/accounts/checkpoint", data=payload)
         return Response(result, status=result.get('status_code', 500))
 
 class LinkedInAccountView(APIView):
@@ -117,36 +141,34 @@ class LinkedInAccountView(APIView):
         return Response(result, status=result.get('status_code', 500))
     
     @handle_lunyamwi_linkedin_error
-    def put(self, request, account_id):
-        """Update LinkedIn account"""
-        result = make_lunyamwi_linkedin_request("PUT", f"/accounts/{account_id}", data=request.data)
+    def post(self, request, account_id):
+        """Update LinkedIn account details"""
+        payload = {
+            "provider": "LINKEDIN",
+            "name": request.data.get("name", ""),
+            "username": request.data.get("username", ""),
+            "password": request.data.get("password", ""),
+            "country": request.data.get("country", ""),
+            "city": request.data.get("city", ""),
+            "proxy": {
+                "protocol": "https",
+                "host": "gate.decodo.com",
+                "port": 10001,
+                "username": f"user-{os.getenv("PROXY_USERNAME", "")}-country-{request.data.get("country", "")}-city-{request.data.get("city", "")}",
+                "password": os.getenv("PROXY_PASSWORD", "")
+            }
+        }
+        payload = {k: v for k, v in payload.items() if v is not None}
+        
+        result = make_lunyamwi_linkedin_request("POST", f"/accounts/{account_id}", data=payload)
         return Response(result, status=result.get('status_code', 500))
-    
+
     @handle_lunyamwi_linkedin_error
     def delete(self, request, account_id):
         """Delete LinkedIn account"""
         result = make_lunyamwi_linkedin_request("DELETE", f"/accounts/{account_id}")
         return Response(result, status=result.get('status_code', 500))
 
-class LinkedInAccountConnectView(APIView):
-    """Connect LinkedIn account"""
-    permission_classes = [AllowAny]
-    
-    @handle_lunyamwi_linkedin_error
-    def post(self, request, account_id):
-        """Connect to LinkedIn account"""
-        result = make_lunyamwi_linkedin_request("POST", f"/accounts/{account_id}/connect", data=request.data)
-        return Response(result, status=result.get('status_code', 500))
-
-class LinkedInAccountDisconnectView(APIView):
-    """Disconnect LinkedIn account"""
-    permission_classes = [AllowAny]
-    
-    @handle_lunyamwi_linkedin_error
-    def post(self, request, account_id):
-        """Disconnect LinkedIn account"""
-        result = make_lunyamwi_linkedin_request("POST", f"/accounts/{account_id}/disconnect")
-        return Response(result, status=result.get('status_code', 500))
 
 class LinkedInChatsView(APIView):
     """LinkedIn Chats/Conversations"""
@@ -156,26 +178,24 @@ class LinkedInChatsView(APIView):
     def get(self, request, account_id):
         """Get LinkedIn chats/conversations"""
         params = {
-            'limit': request.query_params.get('limit', 50),
-            'cursor': request.query_params.get('cursor'),
-            'unread_only': request.query_params.get('unread_only'),
-            'search': request.query_params.get('search')
+            'account_type': 'LINKEDIN',
+            'account_id': account_id
         }
         params = {k: v for k, v in params.items() if v is not None}
-        
-        result = make_lunyamwi_linkedin_request("GET", f"/accounts/{account_id}/chats", params=params)
+
+        result = make_lunyamwi_linkedin_request("GET", f"/chats", params=params)
         return Response(result, status=result.get('status_code', 500))
     
     @handle_lunyamwi_linkedin_error
     def post(self, request, account_id):
         """Create new LinkedIn chat"""
         payload = {
-            "participants": request.data.get("participants"),  # List of LinkedIn user IDs
-            "name": request.data.get("name"),  # Optional chat name
-            "is_group": request.data.get("is_group", False)
+            "text": request.data.get("text"),
+            "attendees_ids": request.data.get("attendees_ids"),  # List of LinkedIn user IDs
+            "account_id": account_id,  # Optional chat name
         }
         
-        result = make_lunyamwi_linkedin_request("POST", f"/accounts/{account_id}/chats", data=payload)
+        result = make_lunyamwi_linkedin_request("POST", f"/chats", data=payload)
         return Response(result, status=result.get('status_code', 500))
 
 class LinkedInChatView(APIView):
@@ -185,21 +205,14 @@ class LinkedInChatView(APIView):
     @handle_lunyamwi_linkedin_error
     def get(self, request, account_id, chat_id):
         """Get specific LinkedIn chat"""
-        result = make_lunyamwi_linkedin_request("GET", f"/accounts/{account_id}/chats/{chat_id}")
+        params = {
+            'account_id': account_id
+        }
+        result = make_lunyamwi_linkedin_request("GET", f"/chats/{chat_id}", params=params)
         return Response(result, status=result.get('status_code', 500))
     
-    @handle_lunyamwi_linkedin_error
-    def put(self, request, account_id, chat_id):
-        """Update chat settings"""
-        result = make_lunyamwi_linkedin_request("PUT", f"/accounts/{account_id}/chats/{chat_id}", data=request.data)
-        return Response(result, status=result.get('status_code', 500))
     
-    @handle_lunyamwi_linkedin_error
-    def delete(self, request, account_id, chat_id):
-        """Delete/Leave chat"""
-        result = make_lunyamwi_linkedin_request("DELETE", f"/accounts/{account_id}/chats/{chat_id}")
-        return Response(result, status=result.get('status_code', 500))
-
+    
 class LinkedInMessagesView(APIView):
     """LinkedIn Messages management"""
     permission_classes = [AllowAny]
