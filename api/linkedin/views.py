@@ -229,13 +229,14 @@ class LinkedInMessagesView(APIView):
         }
         params = {k: v for k, v in params.items() if v is not None}
         
-        result = make_lunyamwi_linkedin_request("GET", f"/accounts/{account_id}/chats/{chat_id}/messages", params=params)
+        result = make_lunyamwi_linkedin_request("GET", f"/chats/{chat_id}/messages", params=params)
         return Response(result, status=result.get('status_code', 500))
     
     @handle_lunyamwi_linkedin_error
     def post(self, request, account_id, chat_id):
         """Send message to LinkedIn chat"""
         payload = {
+            "account_id": account_id,
             "text": request.data.get("text"),
             "attachments": request.data.get("attachments", []),
             "reply_to": request.data.get("reply_to"),  # Message ID to reply to
@@ -243,9 +244,84 @@ class LinkedInMessagesView(APIView):
             "scheduled_at": request.data.get("scheduled_at")  # ISO datetime string
         }
         
-        result = make_lunyamwi_linkedin_request("POST", f"/accounts/{account_id}/chats/{chat_id}/messages", data=payload)
+        result = make_lunyamwi_linkedin_request("POST", f"/chats/{chat_id}/messages", data=payload)
         return Response(result, status=result.get('status_code', 500))
 
+class LinkedInListAttendeesChatView(APIView):
+    """List attendees of a LinkedIn chat"""
+    permission_classes = [AllowAny]
+    
+    @handle_lunyamwi_linkedin_error
+    def get(self, request, account_id, chat_id):
+        """Get attendees of a LinkedIn chat"""
+        params = {
+            'account_id': account_id
+        }
+        result = make_lunyamwi_linkedin_request("GET", f"/chats/{chat_id}/attendees", params=params)
+        return Response(result, status=result.get('status_code', 500))
+
+class LinkedInChatSyncView(APIView):
+    """Manage attendees of a LinkedIn chat"""
+    permission_classes = [AllowAny]
+
+    @handle_lunyamwi_linkedin_error
+    def get(self, request, account_id, chat_id):
+        """Get Chat to be synced"""
+        params = {
+            'account_id': account_id
+        }
+        result = make_lunyamwi_linkedin_request("GET", f"/chats/{chat_id}/sync", params=params)
+        return Response(result, status=result.get('status_code', 500))
+
+class LinkedinChatAttendeesView(APIView):
+    """Manage attendees of a LinkedIn chat"""
+    permission_classes = [AllowAny]
+    
+    @handle_lunyamwi_linkedin_error
+    def get(self, request):
+        """Get attendees of LinkedIn chat"""
+        result = make_lunyamwi_linkedin_request("GET", f"/chat_attendees")
+        return Response(result, status=result.get('status_code', 500))
+
+class LinkedInChatAttendeeView(APIView):
+    """Add/Remove attendee from LinkedIn chat"""
+    permission_classes = [AllowAny]
+    
+    @handle_lunyamwi_linkedin_error
+    def get(self, request, attendee_id):
+        """Get attendee details from LinkedIn chat"""
+        result = make_lunyamwi_linkedin_request("GET", f"/chat_attendees/{attendee_id}")
+        return Response(result, status=result.get('status_code', 500))
+
+class LinkedInChatAttendeeChatView(APIView):
+    """Get LinkedIn chat details for a specific attendee"""
+    permission_classes = [AllowAny]
+    
+    @handle_lunyamwi_linkedin_error
+    def get(self, request, attendee_id):
+        """Get attendee chat details"""
+        result = make_lunyamwi_linkedin_request("GET", f"/chat_attendees/{attendee_id}/chats")
+        return Response(result, status=result.get('status_code', 500))
+   
+class LinkedInChatAttendeeMessagesView(APIView):
+    """Get messages for a specific attendee in a LinkedIn chat"""
+    permission_classes = [AllowAny]
+    
+    @handle_lunyamwi_linkedin_error
+    def get(self, request, sender_id):
+        """Get attendee messages"""
+        params = {
+            'limit': request.query_params.get('limit', 50),
+            'cursor': request.query_params.get('cursor'),
+            'since': request.query_params.get('since'),
+            'until': request.query_params.get('until'),
+            'search': request.query_params.get('search')
+        }
+        params = {k: v for k, v in params.items() if v is not None}
+        
+        result = make_lunyamwi_linkedin_request("GET", f"/chat_attendees/{sender_id}/messages", params=params)
+        return Response(result, status=result.get('status_code', 500))
+    
 class LinkedInMessageView(APIView):
     """Single LinkedIn Message management"""
     permission_classes = [AllowAny]
@@ -253,60 +329,18 @@ class LinkedInMessageView(APIView):
     @handle_lunyamwi_linkedin_error
     def get(self, request, account_id, message_id):
         """Get specific LinkedIn message"""
-        result = make_lunyamwi_linkedin_request("GET", f"/accounts/{account_id}/messages/{message_id}")
+        result = make_lunyamwi_linkedin_request("GET", f"/messages/{message_id}")
         return Response(result, status=result.get('status_code', 500))
     
-    @handle_lunyamwi_linkedin_error
-    def put(self, request, account_id, message_id):
-        """Update LinkedIn message (edit)"""
-        payload = {
-            "text": request.data.get("text"),
-            "attachments": request.data.get("attachments", [])
-        }
-        
-        result = make_lunyamwi_linkedin_request("PUT", f"/accounts/{account_id}/messages/{message_id}", data=payload)
-        return Response(result, status=result.get('status_code', 500))
     
-    @handle_lunyamwi_linkedin_error
-    def delete(self, request, account_id, message_id):
-        """Delete LinkedIn message"""
-        result = make_lunyamwi_linkedin_request("DELETE", f"/accounts/{account_id}/messages/{message_id}")
-        return Response(result, status=result.get('status_code', 500))
-
-class LinkedInMessageReactionView(APIView):
-    """LinkedIn Message reactions"""
+class LinkedinRetrieveAttachmentView(APIView):
+    """Retrieve LinkedIn message attachment"""
     permission_classes = [AllowAny]
     
     @handle_lunyamwi_linkedin_error
-    def post(self, request, account_id, message_id):
-        """Add reaction to message"""
-        payload = {
-            "emoji": request.data.get("emoji", "👍")
-        }
-        
-        result = make_lunyamwi_linkedin_request("POST", f"/accounts/{account_id}/messages/{message_id}/reactions", data=payload)
-        return Response(result, status=result.get('status_code', 500))
-    
-    @handle_lunyamwi_linkedin_error
-    def delete(self, request, account_id, message_id):
-        """Remove reaction from message"""
-        result = make_lunyamwi_linkedin_request("DELETE", f"/accounts/{account_id}/messages/{message_id}/reactions")
-        return Response(result, status=result.get('status_code', 500))
-
-class LinkedInBulkMessagesView(APIView):
-    """Send bulk messages on LinkedIn"""
-    permission_classes = [AllowAny]
-    
-    @handle_lunyamwi_linkedin_error
-    def post(self, request, account_id):
-        """Send bulk messages"""
-        payload = {
-            "messages": request.data.get("messages"),  # List of message objects
-            "delay_between_messages": request.data.get("delay_between_messages", 1),  # Seconds
-            "personalize": request.data.get("personalize", True)
-        }
-        
-        result = make_lunyamwi_linkedin_request("POST", f"/accounts/{account_id}/messages/bulk", data=payload)
+    def get(self, request, account_id, message_id, attachment_id):
+        """Get message attachment"""
+        result = make_lunyamwi_linkedin_request("GET", f"/messages/{message_id}/attachments/{attachment_id}")
         return Response(result, status=result.get('status_code', 500))
 
 class LinkedInPostsView(APIView):
