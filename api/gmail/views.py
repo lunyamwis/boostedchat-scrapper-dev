@@ -83,75 +83,20 @@ def handle_lunyamwi_gmail_error(func):
     return wrapper
 
 
-class GmailAccountsView(APIView):
-    """Gmail Accounts management"""
-    permission_classes = [AllowAny]
-    
-    @handle_lunyamwi_gmail_error
-    def get(self, request):
-        """Get all Gmail accounts"""
-        params = {
-            'limit': request.query_params.get('limit', 50),
-            'cursor': request.query_params.get('cursor'),
-            'provider': 'gmail'
-        }
-        params = {k: v for k, v in params.items() if v is not None}
-        
-        result = make_lunyamwi_gmail_request("GET", "/accounts", params=params)
-        return Response(result, status=result.get('status_code', 500))
-    
-    @handle_lunyamwi_gmail_error
-    def post(self, request):
-        """Add Gmail account"""
-        payload = {
-            "provider": "gmail",
-            "name": request.data.get("name"),
-            "email": request.data.get("email"),
-            "password": request.data.get("password"),
-            "app_password": request.data.get("app_password"),  # For 2FA accounts
-            "oauth_token": request.data.get("oauth_token"),
-            "oauth_refresh_token": request.data.get("oauth_refresh_token"),
-            "settings": request.data.get("settings", {})
-        }
-        
-        result = make_lunyamwi_gmail_request("POST", "/accounts", data=payload)
-        return Response(result, status=result.get('status_code', 500))
-
-class GmailAccountView(APIView):
-    """Single Gmail Account management"""
-    permission_classes = [AllowAny]
-    
-    @handle_lunyamwi_gmail_error
-    def get(self, request, account_id):
-        """Get Gmail account details"""
-        result = make_lunyamwi_gmail_request("GET", f"/accounts/{account_id}")
-        return Response(result, status=result.get('status_code', 500))
-    
-    @handle_lunyamwi_gmail_error
-    def put(self, request, account_id):
-        """Update Gmail account"""
-        result = make_lunyamwi_gmail_request("PUT", f"/accounts/{account_id}", data=request.data)
-        return Response(result, status=result.get('status_code', 500))
-    
-    @handle_lunyamwi_gmail_error
-    def delete(self, request, account_id):
-        """Delete Gmail account"""
-        result = make_lunyamwi_gmail_request("DELETE", f"/accounts/{account_id}")
-        return Response(result, status=result.get('status_code', 500))
-
 class GmailAccountConnectView(APIView):
     """Connect Gmail account"""
     permission_classes = [AllowAny]
-    
+
     @handle_lunyamwi_gmail_error
-    def post(self, request, account_id):
+    def post(self, request):
         """Connect to Gmail account"""
         payload = {
-            "oauth_code": request.data.get("oauth_code"),
-            "redirect_uri": request.data.get("redirect_uri")
+            "provider": "GOOGLE_OAUTH",
+            "refresh_token": request.data.get("refresh_token", ""),
+            "access_token": request.data.get("access_token", "")
         }
-        
-        result = make_lunyamwi_gmail_request("POST", f"/accounts/{account_id}/connect", data=payload)
+    
+        result = make_lunyamwi_gmail_request("POST", "/accounts", data=payload)
         return Response(result, status=result.get('status_code', 500))
 
 class GmailAccountDisconnectView(APIView):
