@@ -4,9 +4,8 @@ from instagrapi import *
 from .facebook import facebook_client
 from .whatsapp import whatsapp_client
 from .gmail import gmail_client
-from .instagram import instagram_client
 from .instagram_data import instagram_data_client
 
 __all__ = ['get_agent','setup_agent','setup_workflow','setup_agent_workflow',
            'facebook_client', 'whatsapp_client', 'gmail_client',
-           'instagram_client', 'instagram_data_client']
+           'instagram_data_client']

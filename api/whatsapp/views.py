@@ -789,6 +789,49 @@ def webhook_whapi(request):
     return Response({"message": "Method not allowed"}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
 
+
+class WhatsAppAuthURLView(APIView):
+    def get(self, request):
+        # Construct WhatsApp OAuth URL with required parameters
+        client_id = os.getenv("WHATSAPP_CLIENT_ID")
+        redirect_uri = os.getenv("WHATSAPP_REDIRECT_URI")
+        scope = "whatsapp_business_management"
+        auth_url = (
+            f"https://api.whatsapp.com/oauth/authorize?"
+            f"client_id={client_id}&"
+            f"redirect_uri={redirect_uri}&"
+            f"scope={scope}&"
+            f"response_type=code"
+        )
+        return Response({"auth_url": auth_url})
+
+class WhatsAppOAuthCallbackView(APIView):
+    def get(self, request):
+        code = request.query_params.get("code")
+        if not code:
+            return Response({"error": "Missing code parameter"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Exchange code for an access token
+        token_url = "https://api.whatsapp.com/oauth/access_token"
+        data = {
+            "client_id": os.getenv("WHATSAPP_CLIENT_ID"),
+            "client_secret": os.getenv("WHATSAPP_CLIENT_SECRET"),
+            "code": code,
+            "redirect_uri": os.getenv("WHATSAPP_REDIRECT_URI"),
+            "grant_type": "authorization_code",
+        }
+        response = requests.post(token_url, data=data)
+        if response.status_code != 200:
+            return Response({"error": "Failed to get access token"}, status=response.status_code)
+
+        token_data = response.json()
+        access_token = token_data.get("access_token")
+
+        # Here you should save the access_token and associate it with the user
+
+        return Response({"access_token": access_token})
+
+
 class ChannelLimitsView(APIView):
     """Get limits"""
     permission_classes = [AllowAny]

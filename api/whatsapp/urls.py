@@ -3,6 +3,8 @@ from . import views
 
 
 urlpatterns = [
+    path('auth/', views.WhatsAppAuthURLView.as_view(), name='whatsapp_auth'),
+    path('oauth/callback/', views.WhatsappOAuthCallbackView.as_view(), name='oauth_callback'),
     path('create-flow/', views.CreateFlowView.as_view(), name='create_flow'),
     path('webhook/', views.webhook, name='webhook'),
     path('send-message/',views.SendBatchWhatsAppView.as_view(), name='send_message'),

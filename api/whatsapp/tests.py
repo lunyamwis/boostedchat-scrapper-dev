@@ -9,6 +9,28 @@ logger = logging.getLogger(__name__)
 class WhatsAppAPITests(TestCase):
     url = os.getenv("API_URL", "")
 
+    def test_authurl(self):
+        """Test WhatsApp auth URL"""
+        response = requests.get(f"{self.url}/whatsapp/auth/")
+        if response.status_code != 200:
+            self.fail(f"Error getting auth URL: {response.status_code} - {response.json()}")
+        self.assertEqual(response.status_code, 200)
+        logger.info(f"Auth URL Response: {response.json()}")
+
+    def test_oauth_callback(self):
+        """Test WhatsApp OAuth callback"""
+        code = input("Enter the OAuth code from the redirect URL: ").strip()
+        if not code:
+            self.skipTest("No OAuth code provided. Skipping OAuth callback test.")
+        
+        params = {"code": code}
+        response = requests.get(f"{self.url}/whatsapp/oauth/callback/", params=params)
+        if response.status_code != 200:
+            self.fail(f"Error in OAuth callback: {response.status_code} - {response.json()}")
+        self.assertEqual(response.status_code, 200)
+        logger.info(f"OAuth Callback Response: {response.json()}")
+
+
     def test_user_login(self):
         """Test WhatsApp user login"""
         test_login = input("Do you want to test WhatsApp user login? (yes/no): ").strip().lower()
