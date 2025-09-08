@@ -119,7 +119,7 @@ SHARED_APPS = [
     # "django_extensions"
     'api.instagram','api.scout', 'api.helpers','api.prompt',
     'api.analyst','api.sales_rep','api.whatsapp','api.outreaches',
-    'api.facebook','api.workflow','api.twitter','api.linkedin','api.gmail'
+    'api.facebook','api.workflow','api.linkedin','api.gmail'
 ]
 
 TENANT_APPS = [
