@@ -15,6 +15,52 @@ class WhatsAppAPIClient:
         if not self.base_url:
             raise ValueError("API_URL must be provided either as parameter or environment variable")
     
+
+    def get_auth_url(self) -> Dict[str, Any]:
+        """Get WhatsApp authentication URL"""
+        try:
+            response = requests.get(f"{self.base_url}/whatsapp/auth/")
+            response.raise_for_status()
+            
+            result = response.json()
+            logger.info(f"Auth URL Response: {result}")
+            return {
+                "success": True,
+                "data": result
+            }
+        except requests.RequestException as e:
+            logger.error(f"Error getting auth URL: {e}")
+            return {
+                "success": False,
+                "error": str(e),
+                "status_code": getattr(e.response, 'status_code', None)
+            }
+        
+    def oauth_callback(self, code: str) -> Dict[str, Any]:
+        """Handle OAuth callback with authorization code"""
+        payload = {"code": code}
+        
+        try:
+            response = requests.post(f"{self.base_url}/whatsapp/oauth/callback/", json=payload)
+            response.raise_for_status()
+            
+            result = response.json()
+            logger.info(f"OAuth Callback Response: {result}")
+            return {
+                "success": True,
+                "data": result
+            }
+        except requests.RequestException as e:
+            logger.error(f"Error in OAuth callback: {e}")
+            return {
+                "success": False,
+                "error": str(e),
+                "status_code": getattr(e.response, 'status_code', None)
+            }
+        finally:
+            # Clean up any resources if needed
+            pass
+
     # Flow and Webhook Management
     def create_flow(self, flow_data: Dict[str, Any]) -> Dict[str, Any]:
         """Create a new WhatsApp flow"""
