@@ -1,6 +1,7 @@
 from django.urls import path
 from . import views
 
+
 urlpatterns = [
     path('create-flow/', views.CreateFlowView.as_view(), name='create_flow'),
     path('webhook/', views.webhook, name='webhook'),
@@ -17,13 +18,10 @@ urlpatterns = [
     path('whapi/settings/webhook_test/', views.WebhookTestView.as_view(), name='webhook_test'),
     path('whapi/limits/', views.ChannelLimitsView.as_view(), name='channel_limits'),
     path('whapi/users/login/', views.UserLoginView.as_view(), name='user_login'),
-    path('whapi/users/login/<str:phone_number>/', views.UserLoginView.as_view(), name='user_login_phone'),
-    path('whapi/users/login/image/', views.UserLoginImageView.as_view(), name='user_login_image'),
-    path('whapi/users/login/rowdata/', views.UserLoginRowdataView.as_view(), name='user_login_rowdata'),
     path('whapi/users/logout/', views.UserLogoutView.as_view(), name='user_logout'),
     path('whapi/users/profile/', views.UserProfileView.as_view(), name='user_profile'),
     path('whapi/users/info/', views.UserInfoView.as_view(), name='user_info'),
-    path('whapi/users/gdpr/', views.UserGDPRView.as_view(), name='user_gdpr'),
+    # path('whapi/users/gdpr/', views.UserGDPRView.as_view(), name='user_gdpr'),
     path('whapi/status/', views.UserStatusView.as_view(), name='user_status'),
     path('whapi/messages/list/', views.MessagesListView.as_view(), name='messages_list'),
     path('whapi/messages/list/<str:chat_id>/', views.MessagesListView.as_view(), name='messages_list_by_chat'),

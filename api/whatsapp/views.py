@@ -3,6 +3,7 @@ import json
 import requests
 import uuid
 import logging
+
 import os
 import re
 import time
@@ -30,6 +31,7 @@ load_dotenv()
 WHAPI_BASE_URL = os.getenv("WHAPI_BASE_URL", "https://example.com")
 WHAPI_TOKEN = os.getenv("WHAPI_TOKEN","test_token")  # Add this to your .env file
 WHAPI_HEADERS = {
+    "accept": "application/json",
     "Authorization": f"Bearer {WHAPI_TOKEN}",
     "Content-Type": "application/json"
 }
@@ -595,21 +597,45 @@ def generate_test_phone_number():
 
 
 # Helper function for making Whapi requests
-def make_whapi_request(method: str, endpoint: str, data: Dict = None, files: Dict = None) -> Dict:
-    """Helper function to make requests to Whapi.cloud API"""
+
+def make_whapi_request(method: str, endpoint: str, params: Dict = None, data: Dict = None, headers: Dict = None) -> Dict:
+    """Helper function to make requests to Unipile API"""
     url = f"{WHAPI_BASE_URL}{endpoint}"
+    # print(url)
+
+    request_headers = WHAPI_HEADERS.copy()
+    if headers:
+        request_headers.update(headers)
     
     try:
-        if files:
-            headers = {"Authorization": f"Bearer {WHAPI_TOKEN}"}
-            response = requests.request(method, url, headers=headers, json=data, files=files)
+        if method.upper() == 'GET':
+            response = requests.get(url, headers=request_headers, params=params)
+        elif method.upper() == 'POST':
+            response = requests.post(url, headers=request_headers, params=params, json=data)
+        elif method.upper() == 'PUT':
+            response = requests.put(url, headers=request_headers, params=params, json=data)
+        elif method.upper() == 'DELETE':
+            response = requests.delete(url, headers=request_headers, params=params)
+        elif method.upper() == 'PATCH':
+            response = requests.patch(url, headers=request_headers, params=params, json=data)
         else:
-            response = requests.request(method, url, headers=WHAPI_HEADERS, json=data)
+            return {"success": False, "error": "Unsupported HTTP method", "status_code": 400}
         
-        response.raise_for_status()
-        return {"success": True, "data": response.json(), "status_code": response.status_code}
+        return {
+            "success": response.ok,
+            "data": response.json() if response.content else {},
+            "status_code": response.status_code,
+            "headers": dict(response.headers)
+        }
     except requests.exceptions.RequestException as e:
-        return {"success": False, "error": str(e), "status_code": getattr(e.response, 'status_code', 500)}
+        return {
+            "success": False,
+            "error": str(e),
+            "status_code": getattr(e.response, 'status_code', 500) if hasattr(e, 'response') else 500
+        }
+    except Exception as e:
+        return {"success": False, "error": str(e), "status_code": 500}
+
 
 class ChannelHealthView(APIView):
     """Check health & launch channel"""
@@ -787,22 +813,6 @@ class UserLoginView(APIView):
         result = make_whapi_request("GET", endpoint)
         return Response(result, status=result.get('status_code', 500))
 
-class UserLoginImageView(APIView):
-    """Login user with QR-image"""
-    permission_classes = [AllowAny]
-    
-    def get(self, request):
-        result = make_whapi_request("GET", "/users/login/image")
-        return Response(result, status=result.get('status_code', 500))
-
-class UserLoginRowdataView(APIView):
-    """Login user with QR-rowdata"""
-    permission_classes = [AllowAny]
-    
-    def get(self, request):
-        result = make_whapi_request("GET", "/users/login/rowdata")
-        return Response(result, status=result.get('status_code', 500))
-
 class UserLogoutView(APIView):
     """Logout user"""
     permission_classes = [AllowAny]
@@ -829,23 +839,27 @@ class UserInfoView(APIView):
     """Query account information"""
     permission_classes = [AllowAny]
     
-    def get(self, request):
-        result = make_whapi_request("GET", "/users/info")
+    def post(self, request):
+        contact_id = request.data.get('contact_id')
+        if not contact_id:
+            return Response({"error": "contact_id query parameter is required"}, status=400)
+
+        result = make_whapi_request("GET", f"/contacts/{contact_id}/profile")
         return Response(result, status=result.get('status_code', 500))
 
-class UserGDPRView(APIView):
-    """GDPR account report"""
-    permission_classes = [AllowAny]
+# class UserGDPRView(APIView):
+#     """GDPR account report"""
+#     permission_classes = [AllowAny]
     
-    def post(self, request):
-        """Request GDPR account report"""
-        result = make_whapi_request("POST", "/users/gdpr", data=request.data)
-        return Response(result, status=result.get('status_code', 500))
+#     def post(self, request):
+#         """Request GDPR account report"""
+#         result = make_whapi_request("POST", "/users/gdpr", data=request.data)
+#         return Response(result, status=result.get('status_code', 500))
     
-    def get(self, request):
-        """Get GDPR report status"""
-        result = make_whapi_request("GET", "/users/gdpr")
-        return Response(result, status=result.get('status_code', 500))
+#     def get(self, request):
+#         """Get GDPR report status"""
+#         result = make_whapi_request("GET", "/users/gdpr")
+#         return Response(result, status=result.get('status_code', 500))
 
 class UserStatusView(APIView):
     """Change status text"""
