@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="utf-8") as f:
 
 setup(
     name="lunyamwi",
-    version="1.0.18",
+    version="1.0.19",
     author="Martin Luther Bironga",
     description="Lunyamwi is a social media management and automation tool.",
     long_description=long_description,
