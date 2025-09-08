@@ -209,6 +209,58 @@ def send_first_message_view(request):
     return render(request, 'facebook/send_first_message.html', {'form': form})
 
 
+class FacebookAuthURLView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        facebook_auth_url = (
+            f"https://www.facebook.com/v12.0/dialog/oauth?"
+            f"client_id={os.getenv('FACEBOOK_APP_ID')}"
+            f"&redirect_uri={os.getenv('FACEBOOK_REDIRECT_URI')}"
+            f"&state=some_random_state"
+            f"&scope=email"
+        )
+        return Response({"auth_url": facebook_auth_url})
+
+
+class FacebookAuthCallbackView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        code = request.GET.get('code')
+        if not code:
+            return Response({"error": "No code provided"}, status=400)
+
+        # Exchange code for access token
+        token_url = (
+            f"https://graph.facebook.com/v12.0/oauth/access_token?"
+            f"client_id={os.getenv('FACEBOOK_APP_ID')}"
+            f"&redirect_uri={os.getenv('FACEBOOK_REDIRECT_URI')}"
+            f"&client_secret={os.getenv('FACEBOOK_APP_SECRET')}"
+            f"&code={code}"
+        )
+        token_response = requests.get(token_url)
+        token_data = token_response.json()
+        access_token = token_data.get("access_token")
+
+        if not access_token:
+            return Response({"error": "Failed to get access token", "details": token_data}, status=400)
+
+        # Get user profile info
+        profile_url = (
+            f"https://graph.facebook.com/me?"
+            f"fields=id,name"
+            f"&access_token={access_token}"
+        )
+        profile_response = requests.get(profile_url)
+        profile_data = profile_response.json()
+
+        # Here you would typically create or get the user and issue your own JWT token or session
+        return Response({
+            "facebook_profile": profile_data,
+            "facebook_access_token": access_token
+        })
+
 class FacebookUserView(APIView):
     """Facebook User management"""
     permission_classes = [AllowAny]

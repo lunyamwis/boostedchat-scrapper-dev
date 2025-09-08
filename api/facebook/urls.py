@@ -2,6 +2,8 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
+    path('auth/', views.FacebookAuthURLView.as_view(), name='facebook_auth'),
+    path('auth/callback/', views.FacebookAuthCallbackView.as_view(), name='facebook_auth_callback'),
     path('webhook/', views.webhook, name='facebook_webhook'),
     path('scrap-group-members/', views.scrap_facebook_group_members_api, name='scrap_group_members_api'),
     path('send-first-message/', views.send_first_message_api, name='send_first_message_api'),

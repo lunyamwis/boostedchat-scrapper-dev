@@ -9,7 +9,27 @@ logger = logging.getLogger(__name__)
 class FacebookAPITests(TestCase):
     url = os.getenv("API_URL", "")
 
-    
+    def test_facebook_auth_url(self):
+        """Test Facebook auth URL endpoint"""
+        response = requests.get(f"{self.url}/facebook/auth/")
+        if response.status_code != 200:
+            self.fail(f"Error getting auth URL: {response.status_code} - {response.json()}")
+        self.assertEqual(response.status_code, 200)
+        print(f"Visit this URL to authenticate: {response.json().get('auth_url')}")
+        logger.info(f"Facebook Auth URL Response: {response.json()}")
+
+    def test_facebook_auth_callback(self):
+        """Test Facebook auth callback endpoint"""
+        code = input("Enter the Facebook auth code from the URL after login: ").strip()
+        if not code:
+            self.skipTest("No auth code provided.")
+        
+        response = requests.get(f"{self.url}/facebook/auth/callback/", params={"code": code})
+        if response.status_code != 200:
+            self.fail(f"Error in auth callback: {response.status_code} - {response.json()}")
+        self.assertEqual(response.status_code, 200)
+        logger.info(f"Facebook Auth Callback Response: {response.json()}")
+
     def test_facebook_messenger_profile(self):
         """Test Facebook messenger profile endpoint"""
         response = requests.get(f"{self.url}/facebook/messenger-profile/")
