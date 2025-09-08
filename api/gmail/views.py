@@ -17,6 +17,7 @@ from dotenv import load_dotenv
 import base64
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from urllib.parse import unquote
 from email.mime.base import MIMEBase
 from email import encoders
 
@@ -121,7 +122,7 @@ class GmailOAuthCallbackView(APIView):
     @handle_lunyamwi_gmail_error
     def get(self, request):
         """Handle OAuth callback"""
-        code = request.query_params.get("code", "")
+        code = unquote(request.query_params.get("code", ""))
         redirect_uri = os.getenv("GMAIL_REDIRECT_URI", "http://localhost:8000/auth/callback")
         client_id = os.getenv("GMAIL_CLIENT_ID", "")
         client_secret = os.getenv("GMAIL_CLIENT_SECRET", "")
@@ -158,45 +159,7 @@ class GmailOAuthCallbackView(APIView):
         tokens = response.json()
         return Response(tokens, status=status.HTTP_200_OK)
 
-    @handle_lunyamwi_gmail_error
-    def post(self, request):
-        """Exchange authorization code for tokens"""
-        code = request.data.get("code", "")
-        redirect_uri = os.getenv("GMAIL_REDIRECT_URI", "http://localhost:8000/auth/callback")
-        client_id = os.getenv("GMAIL_CLIENT_ID", "")
-        client_secret = os.getenv("GMAIL_CLIENT_SECRET", "")
-        
-        if not code:
-            return Response({
-                "error": "Authorization code is required",
-                "error_code": "invalid_request"
-            }, status=status.HTTP_400_BAD_REQUEST)
-        
-        if not client_id or not client_secret:
-            return Response({
-                "error": "GMAIL_CLIENT_ID or GMAIL_CLIENT_SECRET not configured",
-                "error_code": "config_error"
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        
-        token_url = "https://oauth2.googleapis.com/token"
-        data = {
-            "code": code,
-            "client_id": client_id,
-            "client_secret": client_secret,
-            "redirect_uri": redirect_uri,
-            "grant_type": "authorization_code"
-        }
-        
-        response = requests.post(token_url, data=data)
-        if response.status_code != 200:
-            return Response({
-                "error": "Failed to exchange code for tokens",
-                "details": response.json(),
-                "error_code": "token_exchange_failed"
-            }, status=response.status_code)
-        
-        tokens = response.json()
-        return Response(tokens, status=status.HTTP_200_OK)
+    
 
 class GmailAccountConnectView(APIView):
     """Connect Gmail account"""
@@ -222,6 +185,7 @@ class GmailAccountReconnectView(APIView):
     def post(self, request, account_id):
         """Reconnect Gmail account"""
         payload = {
+            "provider": "GOOGLE_OAUTH",
             "account_id": account_id,
             "refresh_token": request.data.get("refresh_token", ""),
             "access_token": request.data.get("access_token", "")
@@ -265,14 +229,23 @@ class GmailEmailsView(APIView):
         """Send email via Gmail"""
         payload = {
             "account_id": account_id,
-            "to": request.data.get("to"),
-            "cc": request.data.get("cc", []),
-            "bcc": request.data.get("bcc", []),
+            "to": [
+                {"display_name": name, "identifier": email}
+                for name, email in request.data.get("to", [])
+            ],
+            "cc": [
+                {"display_name": name, "identifier": email}
+                for name, email in request.data.get("cc", [])
+            ],
+            "bcc": [
+                {"display_name": name, "identifier": email}
+                for name, email in request.data.get("bcc", [])
+            ],
             "subject": request.data.get("subject"),
             "body": request.data.get("body"),
             "body_type": request.data.get("body_type", "html"),  # html, plain
             "attachments": request.data.get("attachments", []),
-            "reply_to": request.data.get("reply_to"),
+            # "reply_to": request.data.get("reply_to"),
             "in_reply_to": request.data.get("in_reply_to"),  # Message ID for replies
             "references": request.data.get("references"),  # For threading
             "scheduled_at": request.data.get("scheduled_at"),  # ISO datetime string
@@ -393,10 +366,6 @@ class GmailCreateDraftView(APIView):
         """Create draft email"""
         payload = {
             "account_id": account_id,
-            "from": {
-                "display_name": request.data.get("from_name", ""),
-                "identifier": request.data.get("from_email", "")
-            },
             "to": [
                 {
                     "display_name": request.data.get("to_name", ""),

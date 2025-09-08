@@ -75,42 +75,13 @@ class GmailTests(TestCase):
         refresh_token = response_data.get('refresh_token')
         
         print(f"\nTokens received:")
-        print(f"Access Token: {access_token[:20]}...")
+        print(f"Access Token: {access_token}")
         if refresh_token:
-            print(f"Refresh Token: {refresh_token[:20]}...")
-        
+            print(f"Refresh Token: {refresh_token}")
+
         return response_data
 
-    def test_gmail_oauth_callback_post(self):
-        """Test Gmail OAuth callback POST method"""
-        test_callback_post = input("Do you want to test Gmail OAuth callback (POST)? (yes/no): ").strip().lower()
-        if test_callback_post != 'yes':
-            self.skipTest("Skipping Gmail OAuth callback POST test.")
-        
-        # Get authorization code from user
-        auth_code = input("Enter authorization code for POST callback: ").strip()
-        if not auth_code:
-            self.skipTest("No authorization code provided. Skipping Gmail OAuth callback POST test.")
-        
-        payload = {'code': auth_code}
-        
-        response = requests.post(f"{self.url}/gmail/auth/callback/", json=payload)
-        if response.status_code != 200:
-            try:
-                error_details = response.json()
-                self.fail(f"Error in Gmail OAuth callback POST: {response.status_code} - {error_details}")
-            except:
-                self.fail(f"Error in Gmail OAuth callback POST: {response.status_code} - {response.text}")
-        
-        self.assertEqual(response.status_code, 200)
-        response_data = response.json()
-        
-        # Validate response contains tokens
-        self.assertIn('access_token', response_data)
-        logger.info(f"Gmail OAuth Callback POST Response: {response_data}")
-        
-        return response_data
-
+    
     def test_gmail_account_connect(self):
         """Test connecting Gmail account"""
         connect_account = input("Do you want to test Gmail account connection? (yes/no): ").strip().lower()
@@ -429,7 +400,7 @@ class GmailTests(TestCase):
             body = "This is a test email sent via the Gmail API."
         
         payload = {
-            "to": to_email,
+            "to": eval(to_email),
             "subject": subject,
             "body": body,
             "body_type": "html"
