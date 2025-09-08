@@ -20,6 +20,7 @@ from .forms import ScrapFacebookGroupForm, SendFirstMessageForm
 from .models import ChatSession
 from .prompts import system_prompt
 
+
 PAGE_ACCESS_TOKEN = os.getenv('PAGE_ACCESS_TOKEN')
 VERIFY_TOKEN = os.getenv("TOKEN")
 APP_ID = os.getenv('FACEBOOK_APP_ID')
@@ -214,7 +215,7 @@ class FacebookUserView(APIView):
     
     def get(self, request, user_id="me"):
         """Get user profile"""
-        fields = request.query_params.get('fields', 'id,name,email,first_name,last_name,picture')
+        fields = request.query_params.get('fields', 'id,name')
         access_token = request.query_params.get('access_token', PAGE_ACCESS_TOKEN)
         
         result = make_facebook_request(
@@ -296,7 +297,7 @@ class FacebookPageInsightsView(APIView):
     
     def get(self, request, page_id):
         """Get page insights"""
-        metric = request.query_params.get('metric', 'page_fans,page_impressions,page_engaged_users')
+        metric = request.query_params.get('metric', 'page_fans')
         period = request.query_params.get('period', 'day')
         since = request.query_params.get('since')
         until = request.query_params.get('until')
@@ -604,39 +605,6 @@ class FacebookMessengerProfileView(APIView):
         
         return Response(result, status=result.get('status_code', 500))
 
-class FacebookBroadcastMessagesView(APIView):
-    """Broadcast messages"""
-    permission_classes = [AllowAny]
-    
-    def post(self, request):
-        """Send broadcast message"""
-        access_token = request.query_params.get('access_token', PAGE_ACCESS_TOKEN)
-        
-        # First create message creative
-        creative_result = make_facebook_request(
-            "POST",
-            "/me/message_creatives",
-            data=request.data.get('message_creative'),
-            access_token=access_token
-        )
-        
-        if not creative_result['success']:
-            return Response(creative_result, status=creative_result.get('status_code', 500))
-        
-        # Then send broadcast
-        broadcast_data = {
-            'message_creative_id': creative_result['data']['message_creative_id'],
-            'custom_label_id': request.data.get('custom_label_id')
-        }
-        
-        result = make_facebook_request(
-            "POST",
-            "/me/broadcast_messages",
-            data=broadcast_data,
-            access_token=access_token
-        )
-        
-        return Response(result, status=result.get('status_code', 500))
 
 class FacebookPhotosView(APIView):
     """Photos management"""
@@ -731,161 +699,6 @@ class FacebookAlbumsView(APIView):
         
         return Response(result, status=result.get('status_code', 500))
 
-class FacebookAdAccountsView(APIView):
-    """Ad Accounts management"""
-    permission_classes = [AllowAny]
-    
-    def get(self, request):
-        """Get ad accounts"""
-        access_token = request.query_params.get('access_token', PAGE_ACCESS_TOKEN)
-        fields = request.query_params.get('fields', 'id,name,account_status,currency,timezone_name')
-        
-        result = make_facebook_request(
-            "GET",
-            "/me/adaccounts",
-            params={'fields': fields},
-            access_token=access_token
-        )
-        
-        return Response(result, status=result.get('status_code', 500))
-
-class FacebookAdAccountView(APIView):
-    """Single Ad Account management"""
-    permission_classes = [AllowAny]
-    
-    def get(self, request, ad_account_id):
-        """Get ad account details"""
-        access_token = request.query_params.get('access_token', PAGE_ACCESS_TOKEN)
-        fields = request.query_params.get('fields', 'id,name,account_status,currency,timezone_name,balance')
-        
-        result = make_facebook_request(
-            "GET",
-            f"/act_{ad_account_id}",
-            params={'fields': fields},
-            access_token=access_token
-        )
-        
-        return Response(result, status=result.get('status_code', 500))
-
-class FacebookCampaignsView(APIView):
-    """Campaigns management"""
-    permission_classes = [AllowAny]
-    
-    def get(self, request, ad_account_id):
-        """Get campaigns"""
-        access_token = request.query_params.get('access_token', PAGE_ACCESS_TOKEN)
-        fields = request.query_params.get('fields', 'id,name,status,objective,spend_cap')
-        
-        result = make_facebook_request(
-            "GET",
-            f"/act_{ad_account_id}/campaigns",
-            params={'fields': fields},
-            access_token=access_token
-        )
-        
-        return Response(result, status=result.get('status_code', 500))
-    
-    def post(self, request, ad_account_id):
-        """Create campaign"""
-        access_token = request.query_params.get('access_token', PAGE_ACCESS_TOKEN)
-        
-        result = make_facebook_request(
-            "POST",
-            f"/act_{ad_account_id}/campaigns",
-            data=request.data,
-            access_token=access_token
-        )
-        
-        return Response(result, status=result.get('status_code', 500))
-
-class FacebookAdSetsView(APIView):
-    """Ad Sets management"""
-    permission_classes = [AllowAny]
-    
-    def get(self, request, ad_account_id):
-        """Get ad sets"""
-        access_token = request.query_params.get('access_token', PAGE_ACCESS_TOKEN)
-        fields = request.query_params.get('fields', 'id,name,status,daily_budget,bid_amount,targeting')
-        
-        result = make_facebook_request(
-            "GET",
-            f"/act_{ad_account_id}/adsets",
-            params={'fields': fields},
-            access_token=access_token
-        )
-        
-        return Response(result, status=result.get('status_code', 500))
-    
-    def post(self, request, ad_account_id):
-        """Create ad set"""
-        access_token = request.query_params.get('access_token', PAGE_ACCESS_TOKEN)
-        
-        result = make_facebook_request(
-            "POST",
-            f"/act_{ad_account_id}/adsets",
-            data=request.data,
-            access_token=access_token
-        )
-        
-        return Response(result, status=result.get('status_code', 500))
-
-class FacebookAdsView(APIView):
-    """Ads management"""
-    permission_classes = [AllowAny]
-    
-    def get(self, request, ad_account_id):
-        """Get ads"""
-        access_token = request.query_params.get('access_token', PAGE_ACCESS_TOKEN)
-        fields = request.query_params.get('fields', 'id,name,status,creative')
-        
-        result = make_facebook_request(
-            "GET",
-            f"/act_{ad_account_id}/ads",
-            params={'fields': fields},
-            access_token=access_token
-        )
-        
-        return Response(result, status=result.get('status_code', 500))
-    
-    def post(self, request, ad_account_id):
-        """Create ad"""
-        access_token = request.query_params.get('access_token', PAGE_ACCESS_TOKEN)
-        
-        result = make_facebook_request(
-            "POST",
-            f"/act_{ad_account_id}/ads",
-            data=request.data,
-            access_token=access_token
-        )
-        
-        return Response(result, status=result.get('status_code', 500))
-
-class FacebookAdInsightsView(APIView):
-    """Ad Insights/Analytics"""
-    permission_classes = [AllowAny]
-    
-    def get(self, request, ad_account_id):
-        """Get ad insights"""
-        access_token = request.query_params.get('access_token', PAGE_ACCESS_TOKEN)
-        fields = request.query_params.get('fields', 'impressions,clicks,spend,cpm,cpc,ctr,reach,frequency')
-        level = request.query_params.get('level', 'account')
-        date_preset = request.query_params.get('date_preset', 'last_7_days')
-        
-        params = {
-            'fields': fields,
-            'level': level,
-            'date_preset': date_preset
-        }
-        
-        result = make_facebook_request(
-            "GET",
-            f"/act_{ad_account_id}/insights",
-            params=params,
-            access_token=access_token
-        )
-        
-        return Response(result, status=result.get('status_code', 500))
-
 class FacebookEventsView(APIView):
     """Events management"""
     permission_classes = [AllowAny]
@@ -930,22 +743,6 @@ class FacebookEventView(APIView):
             "GET",
             f"/{event_id}",
             params={'fields': fields},
-            access_token=access_token
-        )
-        
-        return Response(result, status=result.get('status_code', 500))
-
-class FacebookGroupsView(APIView):
-    """Groups management"""
-    permission_classes = [AllowAny]
-    
-    def get(self, request):
-        """Get user's groups"""
-        access_token = request.query_params.get('access_token', PAGE_ACCESS_TOKEN)
-        
-        result = make_facebook_request(
-            "GET",
-            "/me/groups",
             access_token=access_token
         )
         
@@ -1127,21 +924,6 @@ class FacebookDebugTokenView(APIView):
         
         return Response(result, status=result.get('status_code', 500))
 
-class FacebookAppView(APIView):
-    """App information"""
-    permission_classes = [AllowAny]
-    
-    def get(self, request):
-        """Get app information"""
-        access_token = f"{APP_ID}|{APP_SECRET}"
-        
-        result = make_facebook_request(
-            "GET",
-            f"/{APP_ID}",
-            access_token=access_token
-        )
-        
-        return Response(result, status=result.get('status_code', 500))
 
 class FacebookBatchRequestView(APIView):
     """Batch requests"""
