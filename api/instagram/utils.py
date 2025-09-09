@@ -20,6 +20,24 @@ from rest_framework import status
 from hikerapi import Client, AsyncClient
 from datetime import datetime, timedelta
 from celery import shared_task
+from instagrapi import Client as InstaClient, exceptions
+
+def login_user(username=None, password=None):
+    cl = InstaClient()
+    try:
+        cl.login(username, password)
+        return cl
+    except exceptions.BadPassword as e:
+        logging.error(f"Bad password for {username}: {e}")
+    except exceptions.ChallengeRequired as e:
+        logging.error(f"Challenge required for {username}: {e}")
+    except exceptions.TwoFactorRequired as e:
+        logging.error(f"Two-factor authentication required for {username}: {e}")
+    except exceptions.ClientError as e:
+        logging.error(f"Client error for {username}: {e}")
+    except Exception as e:
+        logging.error(f"Unexpected error for {username}: {e}")
+    return None
 
 @schema_context(os.getenv('SCHEMA_NAME'))
 def assign_salesrep(account):

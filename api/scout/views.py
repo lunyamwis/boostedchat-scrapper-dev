@@ -7,7 +7,7 @@ from rest_framework import viewsets, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django_tenants.utils import schema_context
-from boostedchatScrapper.spiders.helpers.instagram_login_helper import login_user
+from api.instagram.utils import login_user
 
 class TestAccount(APIView):
     def post(self, request):
@@ -15,7 +15,7 @@ class TestAccount(APIView):
             scouts = Scout.objects.all()
             for scout in scouts:
                 try:
-                    client = login_user(scout)
+                    client = login_user()
                     scout.available = True
                     scout.save()
                 except Exception as e:

@@ -69,7 +69,6 @@ from api.instagram.utils import assign_salesrep, initialize_hikerapi_client
 from django.contrib import messages
 from django.views.generic import ListView,DeleteView,DetailView,View
 
-from boostedchatScrapper.spiders.helpers.instagram_login_helper import login_user
 
 # views.py
 from .serializers import (
@@ -133,10 +132,9 @@ from api.dialogflow.helpers.get_prompt_responses import get_gpt_response
 
 from django_celery_beat.models import CrontabSchedule, PeriodicTask
 from api.dialogflow.helpers.intents import detect_intent
-from boostedchatScrapper.spiders.helpers.instagram_login_helper import login_user
 from api.sales_rep.models import SalesRep
 
-from .utils import generate_time_slots
+from .utils import generate_time_slots,login_user
 
 from api.workflow.tasks import send_first_compliment,generate_response_automatic,reschedule, run_scheduler, delete_accounts,prequalify_task
 from api.instagram.helpers.init_db import init_db
@@ -148,6 +146,7 @@ from django.db.models import Count, Case, When, IntegerField
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+
 
 
 LUNYAMWI_INSTAGRAM_BASE_URL = os.getenv("LUNYAMWI_INSTAGRAM_BASE_URL", "")
@@ -5919,7 +5918,7 @@ class MediaViewSet(viewsets.ModelViewSet):
 
             try:
                 # Handle authentication failures
-                client = login_user(latest_available_scout)
+                client =  login_user()
             except Exception as e:
                 return Response(
                     {"error": f"Authentication failed: {str(e)}", "message": f"Authentication failed: {str(e)}"},
