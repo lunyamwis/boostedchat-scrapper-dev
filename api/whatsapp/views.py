@@ -792,12 +792,12 @@ def webhook_whapi(request):
 
 class WhatsAppAuthURLView(APIView):
     def get(self, request):
-        # Construct WhatsApp OAuth URL with required parameters
         client_id = os.getenv("WHATSAPP_CLIENT_ID")
         redirect_uri = os.getenv("WHATSAPP_REDIRECT_URI")
         scope = "whatsapp_business_management"
+
         auth_url = (
-            f"https://api.whatsapp.com/oauth/authorize?"
+            f"https://www.facebook.com/v20.0/dialog/oauth?"
             f"client_id={client_id}&"
             f"redirect_uri={redirect_uri}&"
             f"scope={scope}&"
@@ -809,26 +809,30 @@ class WhatsAppOAuthCallbackView(APIView):
     def get(self, request):
         code = request.query_params.get("code")
         if not code:
-            return Response({"error": "Missing code parameter"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"error": "Missing code parameter"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
-        # Exchange code for an access token
-        token_url = "https://api.whatsapp.com/oauth/access_token"
+        token_url = "https://graph.facebook.com/v20.0/oauth/access_token"
         data = {
             "client_id": os.getenv("WHATSAPP_CLIENT_ID"),
             "client_secret": os.getenv("WHATSAPP_CLIENT_SECRET"),
             "code": code,
             "redirect_uri": os.getenv("WHATSAPP_REDIRECT_URI"),
-            "grant_type": "authorization_code",
         }
-        response = requests.post(token_url, data=data)
+
+        response = requests.get(token_url, params=data)  # <-- Graph API expects GET, not POST
         if response.status_code != 200:
-            return Response({"error": "Failed to get access token"}, status=response.status_code)
+            return Response(
+                {"error": response.json()},
+                status=response.status_code
+            )
 
         token_data = response.json()
         access_token = token_data.get("access_token")
 
-        # Here you should save the access_token and associate it with the user
-
+        # TODO: Save token in DB associated with the user
         return Response({"access_token": access_token})
 
 
