@@ -82,7 +82,7 @@ jmespath
 jupyter
 kombu
 lxml
-lunyamwi==1.0.15
+lunyamwi==1.0.21
 mailchimp-marketing
 matplotlib-inline
 nodeenv
