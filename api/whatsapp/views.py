@@ -792,7 +792,7 @@ def webhook_whapi(request):
 
 class WhatsAppAuthURLView(APIView):
     def get(self, request):
-        client_id = os.getenv("WHATSAPP_CLIENT_ID")
+        client_id = os.getenv("FACEBOOK_APP_ID"),
         redirect_uri = os.getenv("WHATSAPP_REDIRECT_URI")
         scope = "whatsapp_business_management"
 
@@ -816,10 +816,10 @@ class WhatsAppOAuthCallbackView(APIView):
 
         token_url = "https://graph.facebook.com/v20.0/oauth/access_token"
         data = {
-            "client_id": os.getenv("WHATSAPP_CLIENT_ID"),
-            "client_secret": os.getenv("WHATSAPP_CLIENT_SECRET"),
+            "client_id": os.getenv("FACEBOOK_APP_ID"),
+            "client_secret": os.getenv("FACEBOOK_APP_SECRET"),
             "code": code,
-            "redirect_uri": os.getenv("WHATSAPP_REDIRECT_URI"),
+            "redirect_uri": os.getenv("FACEBOOK_REDIRECT_URI"),
         }
 
         response = requests.get(token_url, params=data)  # <-- Graph API expects GET, not POST

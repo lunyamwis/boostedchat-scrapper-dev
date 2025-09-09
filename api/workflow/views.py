@@ -9,6 +9,7 @@ from django.shortcuts import redirect
 from django_tenants.utils import schema_context
 from django.forms import inlineformset_factory
 from django import forms
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import render
 from requests.auth import HTTPBasicAuth
 from rest_framework import generics,viewsets
@@ -38,7 +39,7 @@ from api.workflow.forms import (
 
 # Create your views here.
 
-class PaginationClass(PageNumberPagination):
+class PaginationClass(LoginRequiredMixin, PageNumberPagination):
     page_size = 200  # Set the number of items per page
     page_size_query_param = 'page_size'
     max_page_size = 200
@@ -46,80 +47,80 @@ class PaginationClass(PageNumberPagination):
 
 
 
-class CustomFieldListCreateView(generics.ListCreateAPIView):
+class CustomFieldListCreateView(LoginRequiredMixin, generics.ListCreateAPIView):
     queryset = CustomField.objects.all()
     serializer_class = CustomFieldSerializer
 
-class CustomFieldRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
+class CustomFieldRetrieveUpdateDestroyView(LoginRequiredMixin, generics.RetrieveUpdateDestroyAPIView):
     queryset = CustomField.objects.all()
     serializer_class = CustomFieldSerializer
 
 # Custom Field Value API Views
-class CustomFieldValueListCreateView(generics.ListCreateAPIView):
+class CustomFieldValueListCreateView(LoginRequiredMixin, generics.ListCreateAPIView):
     queryset = CustomFieldValue.objects.all()
     serializer_class = CustomFieldValueSerializer
 
-class CustomFieldValueRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
+class CustomFieldValueRetrieveUpdateDestroyView(LoginRequiredMixin, generics.RetrieveUpdateDestroyAPIView):
     queryset = CustomFieldValue.objects.all()
     serializer_class = CustomFieldValueSerializer
 
 # Endpoint API Views
-class EndpointListCreateView(generics.ListCreateAPIView):
+class EndpointListCreateView(LoginRequiredMixin, generics.ListCreateAPIView):
     queryset = Endpoint.objects.all()
     serializer_class = EndpointSerializer
 
-class EndpointRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
+class EndpointRetrieveUpdateDestroyView(LoginRequiredMixin, generics.RetrieveUpdateDestroyAPIView):
     queryset = Endpoint.objects.all()
     serializer_class = EndpointSerializer
 
 # Connection API Views
-class ConnectionListCreateView(generics.ListCreateAPIView):
+class ConnectionListCreateView(LoginRequiredMixin, generics.ListCreateAPIView):
     queryset = HttpOperatorConnectionModel.objects.all()
     serializer_class = HttpOperatorConnectionModelSerializer
 
-class ConnectionRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
+class ConnectionRetrieveUpdateDestroyView(LoginRequiredMixin, generics.RetrieveUpdateDestroyAPIView):
     queryset = HttpOperatorConnectionModel.objects.all()
     serializer_class = HttpOperatorConnectionModelSerializer
 
 # Workflow API Views
-class WorkflowListCreateView(generics.ListCreateAPIView):
+class WorkflowListCreateView(LoginRequiredMixin, generics.ListCreateAPIView):
     queryset = WorkflowModel.objects.all()
     serializer_class = WorkflowModelSerializer
 
-class WorkflowRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
+class WorkflowRetrieveUpdateDestroyView(LoginRequiredMixin, generics.RetrieveUpdateDestroyAPIView):
     queryset = WorkflowModel.objects.all()
     serializer_class = WorkflowModelSerializer
 
-class WorkflowViewSet(viewsets.ModelViewSet):
+class WorkflowViewSet(LoginRequiredMixin, viewsets.ModelViewSet):
     queryset = WorkflowModel.objects.all()
     serializer_class = WorkflowModelSerializer
     pagination_class = PaginationClass
 
 
-class CustomFieldCreateView(CreateView):
+class CustomFieldCreateView(LoginRequiredMixin, CreateView):
     model = CustomField
     form_class = CustomFieldForm
     template_name = 'workflows/custom_field_form.html'
     success_url = reverse_lazy('custom_field_list')  # Redirect after creation
 
 
-class CustomFieldUpdateView(UpdateView):
+class CustomFieldUpdateView(LoginRequiredMixin, UpdateView):
     model = CustomField
     form_class = CustomFieldForm
     template_name = 'workflows/custom_field_form.html'
     success_url = reverse_lazy('custom_field_list')  # Redirect after creation
 
-class CustomFieldDeleteView(DeleteView):
+class CustomFieldDeleteView(LoginRequiredMixin, DeleteView):
     model = CustomField
     template_name = 'workflows/custom_field_confirm_delete.html'
     success_url = reverse_lazy('custom_field_list')  # Redirect after deletion
 
-class CustomFieldListView(ListView):
+class CustomFieldListView(LoginRequiredMixin, ListView):
     model = CustomField
     template_name = 'workflows/custom_field_list.html'
     context_object_name = 'custom_fields'
 
-class CustomFieldValueCreateView(CreateView):
+class CustomFieldValueCreateView(LoginRequiredMixin, CreateView):
     model = CustomFieldValue
     form_class = CustomFieldValueForm
     template_name = 'workflows/custom_field_value_form.html'
@@ -141,40 +142,40 @@ class CustomFieldValueCreateView(CreateView):
         form.instance.value = json_value
         return super().form_valid(form)
 
-class SimpleHttpOperatorViewSet(viewsets.ModelViewSet):
+class SimpleHttpOperatorViewSet(LoginRequiredMixin, viewsets.ModelViewSet):
     queryset = SimpleHttpOperatorModel.objects.all()
     serializer_class = SimpleHttpOperatorModelSerializer
 
 
 
-class EndpointListView(ListView):
+class EndpointListView(LoginRequiredMixin, ListView):
     model = Endpoint
     template_name = 'workflows/endpoint_list.html'  # Template for listing endpoints
     context_object_name = 'endpoints'  # Variable name for the template context
 
-class EndpointCreateView(CreateView):
+class EndpointCreateView(LoginRequiredMixin, CreateView):
     model = Endpoint
     form_class = EndpointForm
     template_name = 'workflows/endpoint_form.html'  # Template for creating an endpoint
     success_url = reverse_lazy('endpoint_list')  # Redirect URL after successful creation
 
-class EndpointUpdateView(UpdateView):
+class EndpointUpdateView(LoginRequiredMixin, UpdateView):
     model = Endpoint
     form_class = EndpointForm
     template_name = 'workflows/endpoint_form.html'  # Template for updating an endpoint
     success_url = reverse_lazy('endpoint_list')  # Redirect URL after successful update
 
-class EndpointDeleteView(DeleteView):
+class EndpointDeleteView(LoginRequiredMixin, DeleteView):
     model = Endpoint
     template_name = 'workflows/endpoint_confirm_delete.html'  # Template for confirming deletion
-    success_url = reverse_lazy('endpoint_list')  # Redirect URL after successful deletion
+    success_url = reverse_lazy('endpoi  nt_list')  # Redirect URL after successful deletion
 
-class ConnectionListView(ListView):
+class ConnectionListView(LoginRequiredMixin, ListView):
     model = HttpOperatorConnectionModel
     template_name = 'workflows/connection_list.html'
     context_object_name = 'connections'
 
-class ConnectionCreateView(CreateView):
+class ConnectionCreateView(LoginRequiredMixin, CreateView):
     model = HttpOperatorConnectionModel
     form_class = HttpOperatorConnectionForm
     template_name = 'workflows/connection_form.html'
@@ -219,8 +220,8 @@ class ConnectionCreateView(CreateView):
         else:
             messages.error(self.request, f"Failed to create connection in Airflow: {response.text}")
         return super().form_valid(form)
-    
-class ConnectionUpdateView(UpdateView):
+
+class ConnectionUpdateView(LoginRequiredMixin, UpdateView):
     model = HttpOperatorConnectionModel
     form_class = HttpOperatorConnectionForm
     template_name = 'workflows/connection_form.html'
@@ -267,7 +268,7 @@ class ConnectionUpdateView(UpdateView):
 
         return super().form_valid(form)
 
-class ConnectionDeleteView(DeleteView):
+class ConnectionDeleteView(LoginRequiredMixin, DeleteView):
     model = HttpOperatorConnectionModel
     template_name = 'workflows/connection_confirm_delete.html'
     success_url = reverse_lazy('connection_list')
@@ -390,7 +391,7 @@ class WorkflowInline():
             operator.save()
 
 
-class WorkflowCreate(WorkflowInline, CreateView):
+class WorkflowCreate(LoginRequiredMixin, WorkflowInline, CreateView):
 
     def get_context_data(self, **kwargs):
         ctx = super(WorkflowCreate, self).get_context_data(**kwargs)
@@ -412,8 +413,8 @@ class WorkflowCreate(WorkflowInline, CreateView):
 
 
 
-    
-class WorkflowUpdate(WorkflowInline, UpdateView):
+
+class WorkflowUpdate(LoginRequiredMixin, WorkflowInline, UpdateView):
 
     def get_context_data(self, **kwargs):
         ctx = super(WorkflowUpdate, self).get_context_data(**kwargs)
@@ -429,7 +430,7 @@ class WorkflowUpdate(WorkflowInline, UpdateView):
 
 
 
-class WorkflowRunner(DetailView):
+class WorkflowRunner(LoginRequiredMixin, DetailView):
     model = WorkflowModel
     template_name = "workflows/workflow_runner.html"
     context_object_name = "workflow"
@@ -474,7 +475,7 @@ class WorkflowRunner(DetailView):
         return self.render_to_response(self.get_context_data(form=form))
     
 
-class TriggerRun(View):
+class TriggerRun(LoginRequiredMixin, View):
     
     def get(self, request, *args, **kwargs):
         
@@ -555,7 +556,7 @@ def delete_dag(request, pk):
     return redirect('update_workflow', pk=dag.workflow.id)
 
 
-class WorkflowList(ListView):
+class WorkflowList(LoginRequiredMixin, ListView):
     model = WorkflowModel
     template_name = "workflows/workflows.html"
     context_object_name = "workflows"

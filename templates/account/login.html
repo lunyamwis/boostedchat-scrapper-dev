@@ -1,0 +1,81 @@
+{% load socialaccount %}
+{% load i18n %}
+{% load static %}
+{% load widget_tweaks %}
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{% trans "Login" %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="{% static 'css/custom-auth.css' %}">
+</head>
+<body class="bg-light d-flex align-items-center vh-100">
+
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-5">
+
+            <div class="card shadow-sm rounded">
+                <div class="card-body p-4">
+
+                    <h2 class="mb-4 text-center">{% trans "Welcome Back" %}</h2>
+
+                    <form method="POST" action="{% url 'account_login' %}">
+                        {% csrf_token %}
+                        {{ form.non_field_errors }}
+                        <div class="mb-3">
+                            <label for="id_login" class="form-label">{% trans "Email" %}</label>
+                            {{ form.login|add_class:"form-control" }}
+                        </div>
+                        <div class="mb-3">
+                            <label for="id_password" class="form-label">{% trans "Password" %}</label>
+                            {{ form.password|add_class:"form-control" }}
+                        </div>
+
+                        <div class="mb-3 form-check">
+                            {{ form.remember|add_class:"form-check-input" }}
+                            <label class="form-check-label" for="id_remember">{% trans "Remember Me" %}</label>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100">{% trans "Log In" %}</button>
+                    </form>
+
+                    <hr class="my-4" />
+
+                    <div class="text-center mb-3">
+                        <p>{% trans "Or login using" %}:</p>
+
+                        {% providers_media_js %}
+                        <div class="d-flex justify-content-center gap-3">
+                            <a href="/accounts/facebook/login/?process=login" class="btn btn-outline-secondary d-flex align-items-center">
+                                <!-- <img src="https://upload.wikimedia.org/wikipedia/commons/0/05/Facebook_Logo_(2019).svg" alt="Facebook" width="20" height="20" class="me-2"> -->
+                                {% trans "Sign up with" %} Facebook
+                            </a>
+                            <a href="/accounts/google/login/?process=login" class="btn btn-outline-secondary d-flex align-items-center">
+                                <!-- <img src="https://fonts.gstatic.com/s/i/productlogos/googleg/v6/24px.svg" alt="Google" width="20" height="20" class="me-2"> -->
+                                {% trans "Sign up with" %} Google
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="text-center">
+                        <p>
+                            <a href="{% url 'account_reset_password' %}">{% trans "Forgot your password?" %}</a> |
+                            <a href="{% url 'account_signup' %}">{% trans "Sign up" %}</a>
+                        </p>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

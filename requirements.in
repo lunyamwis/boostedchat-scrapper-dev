@@ -38,9 +38,7 @@ cssselect
 decorator
 defusedxml
 distlib
-dj-rest-auth
 Django
-django-allauth
 django-auditlog
 django-celery-beat
 django-cors-headers
@@ -162,3 +160,6 @@ wcwidth
 webdriver-manager
 wsproto
 zope.interface
+dj-rest-auth[with_social] 
+django-allauth[socialaccount]
+django-widget-tweaks

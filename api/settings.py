@@ -113,7 +113,10 @@ SHARED_APPS = [
     "dj_rest_auth",
     "allauth.socialaccount",
     "allauth.socialaccount.providers.google",
-
+    "allauth.socialaccount.providers.facebook",
+    'allauth.socialaccount.providers.linkedin_oauth2',
+    'dj_rest_auth.registration',
+    'widget_tweaks',
     # "django_extensions"
     'api.helpers'
     
@@ -123,7 +126,7 @@ TENANT_APPS = [
     'api.workflow',
     'api.instagram','api.scout','api.prompt',
     'api.analyst','api.sales_rep','api.whatsapp',
-    'api.facebook','api.linkedin','api.gmail'
+    'api.facebookautomator','api.linkedin','api.gmail'
 ]
 INSTALLED_APPS = SHARED_APPS + [app for app in TENANT_APPS if app not in SHARED_APPS]
 TENANT_MODEL = "helpers.Client"
@@ -153,7 +156,7 @@ STATICFILES_FINDERS = (
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [os.path.join(BASE_DIR, 'templates')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -252,11 +255,30 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 STATIC_ROOT = '/usr/src/app/static'
-
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework.authentication.SessionAuthentication',
+        'rest_framework.authentication.TokenAuthentication',
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ),
+    'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.IsAuthenticated',
+    ),
+}
+
+AUTHENTICATION_BACKENDS = [
+    # Needed to login by username in Django admin, regardless of `allauth`
+    'django.contrib.auth.backends.ModelBackend',
+
+    # `allauth` specific authentication methods, such as login by email
+    'allauth.account.auth_backends.AuthenticationBackend',
+]
+
 
 CORS_ALLOWED_ORIGINS = [
     f"https://{os.environ.get('DOMAIN1', '')}.boostedchat.com",
@@ -335,3 +357,40 @@ SIMPLE_JWT = {
     "SLIDING_TOKEN_REFRESH_SERIALIZER": "rest_framework_simplejwt.serializers.TokenRefreshSlidingSerializer",
 }
 
+
+SOCIALACCOUNT_PROVIDERS = {
+    'facebook': {
+        'METHOD': 'oauth2',
+        'SCOPE': ['email', 'public_profile', 'user_friends'],  # Add desired extra permissions here
+        'AUTH_PARAMS': {'auth_type': 'reauthenticate'},
+        'FIELDS': [
+            'id',
+            'email',
+            'name',
+            'first_name',
+            'last_name',
+            'verified',
+        ],
+        'APP': {
+            'client_id': os.getenv("FACEBOOK_APP_ID").strip(),
+            'secret': os.getenv("FACEBOOK_APP_SECRET").strip(),
+            'key': ''
+        }
+    },
+    # Add other providers similarly
+    'google': {
+        'SCOPE': ['profile', 'email'],
+        'AUTH_PARAMS': {'access_type': 'online'},
+        'PROFILE_FIELDS': ['id', 'name', 'email'],
+        'APP': {
+            'client_id': os.getenv("GOOGLE_CLIENT_ID").strip(),
+            'secret': os.getenv("GOOGLE_CLIENT_SECRET").strip(),
+            'key': ''
+        }
+    }
+
+}
+
+SITE_ID = 1
+LOGIN_REDIRECT_URL = '/'
+ACCOUNT_LOGOUT_REDIRECT_URL = '/accounts/login/'

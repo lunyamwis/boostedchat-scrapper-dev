@@ -1,17 +1,23 @@
 from django.contrib import admin
 from django.urls import path,include
+from django.conf import settings
 from django.http import HttpResponse
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+from django.conf.urls.static import static
 
 def home(request):
     return HttpResponse("Welcome to the homepage")
 
 urlpatterns = [
+
     path('admin/', admin.site.urls),  # Admin URL
     # path('', home),  # Root URL
     # path('',include('boostedchatScrapper.urls')),
+    path('dj-rest-auth/', include('dj_rest_auth.urls')),
+    path('dj-rest-auth/registration/', include('dj_rest_auth.registration.urls')),
     path('instagram/',include('api.instagram.urls')),
     path('whatsapp/',include('api.whatsapp.urls')),
-    path('facebook/',include('api.facebook.urls')),
+    path('facebook/',include('api.facebookautomator.urls')),
     path('scout/',include('api.scout.urls')),
     path('prompt/',include('api.prompt.urls')),
     path('authentication/',include('api.authentication.urls')),
@@ -23,4 +29,7 @@ urlpatterns = [
     path('gmail/',include('api.gmail.urls')),
     path('analyst/',include('api.analyst.urls')),
     path('',include('api.workflow.urls')),
-]
+    path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    path('accounts/', include('allauth.urls')),  # Allauth URLs
+]+ static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
