@@ -16,7 +16,7 @@ from api.authentication.models import User
 from api.instagram.helpers.llm import query_gpt
 from api.instagram.helpers.login import login_user
 from api.instagram.models import Account, StatusCheck
-from api.instagram.tasks import send_first_compliment,assign_salesrepresentative
+from api.workflow.tasks import send_first_compliment,assign_salesrepresentative
 
 from .helpers.task_allocation import no_consecutives, no_more_than_x,get_moving_average
 from .models import SalesRep, Influencer, LeadAssignmentHistory

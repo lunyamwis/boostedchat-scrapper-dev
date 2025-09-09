@@ -9,15 +9,12 @@ import requests
 from django.contrib.contenttypes.models import ContentType
 from django.utils import timezone
 from django.db.models import Q
-from .models import SimpleHttpOperatorModel, WorkflowModel, Endpoint, CustomFieldValue, CustomField, DagModel,HttpOperatorConnectionModel,Account, Message, OutSourced, StatusCheck, Thread, UnwantedAccount
+from api.instagram.models import Account, Message, OutSourced, StatusCheck, Thread, UnwantedAccount
 from django.conf import settings
 
-from api.helpers.dag_generator import generate_dag
 from django_tenants.utils import schema_context
 from django_celery_beat.models import PeriodicTask, CrontabSchedule
 from rest_framework.response import Response
-from api.outreaches.serializers import PeriodicTaskGetSerializer
-from api.outreaches.serializers import PeriodicTaskPostSerializer
 from api.sales_rep.models import SalesRep
 from rest_framework import status
 from hikerapi import Client, AsyncClient
@@ -172,42 +169,6 @@ def lead_is_for_salesrep(username, salesrep_to_check):
     return ret
 
 
-@schema_context(os.getenv('SCHEMA_NAME'))
-def tasks_by_sales_rep(task_name, sales_rep, task_status="any", order=1, number=-1, ret_tasks = False):
-    tasks = PeriodicTask.objects.filter(task=task_name).order_by('start_time')
-
-    if task_status == "enabled":
-        tasks = tasks.filter(enabled=True)
-    elif task_status == "disabled":
-        tasks = tasks.filter(enabled=False)
-    
-    if order == -1:
-        tasks = tasks.reverse()
-
-    populated_tasks = []
-    count = 0
-
-    task_objs = []
-
-    for task in tasks:
-        lead_user_name = task.name.replace("SendFirstCompliment-", "")
-        if lead_is_for_salesrep(lead_user_name, sales_rep):
-            # any status
-            serializer = PeriodicTaskGetSerializer(task)
-            serialized_task = serializer.data
-            # Populate object to return
-            populated_task = {
-                'task': serialized_task,
-                'sales_rep': sales_rep,
-            }
-            populated_tasks.append(populated_task)
-            task_objs.append(task)
-            count += 1
-            if number != -1 and count == number:
-                break
-    if ret_tasks:
-        return task_objs
-    return Response({'tasks': populated_tasks}, status=status.HTTP_200_OK)
 
 
 
@@ -321,114 +282,6 @@ def remove_timestamp(dict_):
     return dict_
 
 
-@shared_task()
-@schema_context(os.getenv('SCHEMA_NAME'))
-def generate_dag_script(workflow_id):
-    # if "trigger_url" in dag_data:
-        
-    #     data = {
-    #         "dag":[entry for entry in DagModel.objects.filter(id = workflow.dag.id).values()],
-    #         "operators":[entry for entry in workflow.simplehttpoperators.values()],
-    #         "data_seconds":workflow.delay_durations,
-    #         "trigger_url":dag_data.get("trigger_url"),
-    #         "trigger_url_expected_response":dag_data.get("trigger_url_expected_response")
-    #     }
-    # else:
-    workflow = WorkflowModel.objects.get(id=workflow_id)
-    print(workflow.workflow_type)
-    print(workflow)
-    dag_ = DagModel.objects.filter(workflow__id = workflow.id)
-    dag = dag_.latest('created_at')
-    print(dag.dag_id)
-    operators = [entry for entry in dag.simplehttpoperatormodel_set.filter().values()]
-    data_points = []
-    for operator in operators:
-        try:
-            print(operator['connection_id'])
-            operator['http_conn_id'] = HttpOperatorConnectionModel.objects.get(id=operator['connection_id']).connection_id
-            endpoint = Endpoint.objects.get(id=operator['endpointurl_id'])
-            operator['endpoint'] = endpoint.url
-            operator['method'] = endpoint.method
-            # Get the content type for the Endpoint model
-            endpoint_content_type = ContentType.objects.get_for_model(Endpoint)
-            # Query to get all custom fields and their values for the given end
-            custom_fields_with_value = CustomFieldValue.objects.filter(
-                content_type=endpoint_content_type,
-                object_id=endpoint.id
-            ).select_related('field')
-
-            for custom_field_value in custom_fields_with_value:
-                data_points.append({
-                    custom_field_value.field.name: custom_field_value.value,
-                    "created_at": custom_field_value.created_at
-                })
-
-            operator['data'] = remove_timestamp(flatten_dict_list(merge_lists_by_timestamp(data_points)))
-            
-        except Exception as error:
-            print(str(error))
-
-    dags = [entry for entry in dag_.values()]
-    for x in dags:
-        x['http_conn_id'] = HttpOperatorConnectionModel.objects.get(id=x['connection_id']).connection_id
-
-    data = {
-        "dag":dags,
-        "operators":operators,
-        "data_seconds":[str(workflow.delay_durations)]
-    }
-
-    print(dag.dag_id)
-    # print(data)
-    # Write the dictionary to a YAML file
-    yaml_file_path = os.path.join(settings.BASE_DIR, 'api', 'helpers', 'include', 'dag_configs', f"{dag.dag_id}_config.yaml")
-    with open(yaml_file_path, 'w') as yaml_file:
-        try:
-            yaml.dump(data, yaml_file, default_flow_style=False)
-        except Exception as error:
-            print(str(error))
-
-    try:
-        generate_dag(workflow_type=workflow.workflow_type)
-    except Exception as error:
-        print(str(error))
-
-
-def dag_fields_to_exclude():
-    return [
-            "id",
-            "timetable",
-            "start_date",
-            "end_date",
-            "full_filepath",
-            "template_searchpath",
-            "template_undefined",
-            "user_defined_macros",
-            "user_defined_filters",
-            "default_args",
-            "concurrency",
-            "max_active_tasks",
-            "max_active_runs",
-            "dagrun_timeout",
-            "sla_miss_callback",
-            "default_view",
-            "orientation",
-            "catchup",
-            "on_success_callback",
-            "on_failure_callback",
-            "doc_md",
-            "params",
-            "access_control",
-            "is_paused_upon_creation",
-            "jinja_environment_kwargs",
-            "render_template_as_native_obj",
-            "tags",
-            "owner_links",
-            "auto_register",
-            "fail_stop",
-            "trigger_url_expected_response",
-            "workflow",
-        ]
 
 
 

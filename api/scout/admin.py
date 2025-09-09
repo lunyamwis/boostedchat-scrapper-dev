@@ -4,7 +4,7 @@ from django_tenants.utils import schema_context
 from boostedchatScrapper.spiders.helpers.instagram_login_helper import login_user
 from django.contrib import messages
 from django.utils.translation import gettext_lazy as _
-from api.instagram.tasks import relogin_scouts
+from api.workflow.tasks import relogin_scouts
 import os
 
 # Register your models here.

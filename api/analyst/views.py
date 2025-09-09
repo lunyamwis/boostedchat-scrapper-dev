@@ -13,11 +13,9 @@ from bokeh.models import ColumnDataSource, LabelSet
 from bokeh.embed import components
 from bokeh.io.export import export_png,export_svgs
 from sqlalchemy import create_engine,text
-from .forms import DataEntryForm,CustomFieldValueForm,CombinedDataEntryForm, ChartChooserForm
+from .forms import DataEntryForm,CombinedDataEntryForm, ChartChooserForm
 from django.views.generic.edit import CreateView
 from django.urls import reverse_lazy
-from api.instagram.models import CustomFieldValue
-from api.instagram.forms import CustomFieldValueForm
 from django.forms import modelformset_factory
 from rest_framework import status
 from rest_framework.decorators import api_view

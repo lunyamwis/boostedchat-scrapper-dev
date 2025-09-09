@@ -1,7 +1,7 @@
 from typing import Any
 from django import forms
 from .models import DagModel, SimpleHttpOperatorModel, WorkflowModel,HttpOperatorConnectionModel, Endpoint, CustomFieldValue, CustomField
-from .utils import dag_fields_to_exclude
+from api.workflow.utils import dag_fields_to_exclude
 
 dag_exclusions = dag_fields_to_exclude()
 

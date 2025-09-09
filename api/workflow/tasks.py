@@ -8,13 +8,14 @@ import random
 import logging
 import wandb
 import time
+import yaml
 import uuid
 import subprocess
 from django.db.models import Q, Count
 from boostedchatScrapper.spiders.instagram import InstagramSpider
 from boostedchatScrapper.spiders.helpers.instagram_login_helper import login_user
 from django.utils import timezone
-from .models import InstagramUser,Account, Message, OutSourced, StatusCheck, Thread, UnwantedAccount, OutreachTime
+from api.instagram.models import InstagramUser,Account, Message, OutSourced, StatusCheck, Thread, UnwantedAccount, OutreachTime
 from api.scout.models import Scout
 from api.instagram.utils import initialize_hikerapi_client
 from django_tenants.utils import schema_context
@@ -41,17 +42,20 @@ from django_celery_beat.models import PeriodicTask, CrontabSchedule
 from api.sales_rep.models import SalesRep
 from api.dialogflow.helpers.get_prompt_responses import get_gpt_response
 
-from .helpers.format_username import format_full_name
-from api.outreaches.utils import process_reschedule_single_task, ig_thread_exists, not_in_interval ## move
-from .utils import get_account, tasks_by_sales_rep,assign_salesrep,initialize_hikerapi_client
-from .constants import STYLISTS_WORDS
+from api.instagram.utils import get_account,assign_salesrep
+from api.instagram.utils import initialize_hikerapi_client
+from api.instagram.constants import STYLISTS_WORDS
 from api.instagram.prequalifying import prequalifying_automatically
-from api.outreaches.models import OutreachErrorLog
+from api.workflow.models import WorkflowModel, DagModel, SimpleHttpOperatorModel, AirflowCreds, ContentType, HttpOperatorConnectionModel, Endpoint, CustomFieldValue, CustomField   
 # from tabulate import tabulate # for print_logs
 from urllib.parse import urlparse
 from api.sales_rep.helpers.task_allocation import no_consecutives, no_more_than_x,get_moving_average
+from api.workflow.utils import flatten_dict,remove_timestamp,merge_lists_by_timestamp,flatten_dict_list
+from api.workflow.dag_generator import generate_dag
 from api.sales_rep.models import SalesRep, Influencer, LeadAssignmentHistory
 from django.db.models import Q
+from django.conf import settings
+from django_tenants.utils import schema_context
 
 import socket
 # test
@@ -62,19 +66,6 @@ db_url = f"postgresql://{os.getenv('POSTGRES_USERNAME')}:{os.getenv('POSTGRES_PA
 load_tables = True
 
 
-def print_logs():
-    logs = OutreachErrorLog.objects.all().order_by('-created_at')[:30]  # Assuming OutreachErrorLog is a Django model
-    headers = ["Code", "Account", "Sales Rep", "Error Message", "Error Type", "Created At", "Log Level"]
-    data = []
-
-    ## print logs
-    
-
-    for log in logs:
-        sales_rep_username = log.sales_rep.ig_username if log.sales_rep else ""
-        data.append([log.code, log.account, sales_rep_username, log.error_message, log.error_type, log.created_at, log.log_level])
-
-    # print(tabulate(data, headers=headers, tablefmt="pretty"))
 
 def sales_rep_is_logged_in(account, salesrep):
     igname =  account_has_sales_rep(account)
@@ -120,26 +111,10 @@ def account_has_sales_rep(account):
         srep.instagram.add(account)
         return srep.ig_username
 
-def reschedule_last_enabled(salesrep):
-    tasks = tasks_by_sales_rep("instagram.tasks.send_first_compliment", salesrep, "enabled", -1, 1, True)
-    # task = PeriodicTask.objects.filter(task="instagram.tasks.send_first_compliment", enabled=True).order_by('start_time').last()
-    task = tasks[0]
-    if task:
-        current_time = datetime.datetime.now()
-        task_time = current_time + datetime.timedelta(minutes=1)  # Add 1 minute to the current time
-        start_hour = task_time.hour
-        start_minute = task_time.minute
-        process_reschedule_single_task("instagram.tasks.send_first_compliment", task.name, start_hour, start_minute, 48*3)
-    else:
-        print ('No more enabled tasks found')
     
 def outreachErrorLogger(account, sales_rep, error_message, err_code, log_level, error_type, repeat = False):
     #save
-    error_log_instance =  OutreachErrorLog()
-    error_log_instance.save_log(err_code, error_message, error_type, log_level, account, sales_rep)
     # react
-    if repeat and sales_rep:
-        reschedule_last_enabled(sales_rep.ig_username)
     if log_level == "WARNING":
         pass
     else: # not action to be taken
@@ -1884,3 +1859,78 @@ def remove_duplicates_task():
                 # Delete all others except preferred
                 accounts_to_delete = accounts.exclude(id=preferred.id)
                 accounts_to_delete.delete()
+
+
+@shared_task()
+@schema_context(os.getenv('SCHEMA_NAME'))
+def generate_dag_script(workflow_id):
+    # if "trigger_url" in dag_data:
+        
+    #     data = {
+    #         "dag":[entry for entry in DagModel.objects.filter(id = workflow.dag.id).values()],
+    #         "operators":[entry for entry in workflow.simplehttpoperators.values()],
+    #         "data_seconds":workflow.delay_durations,
+    #         "trigger_url":dag_data.get("trigger_url"),
+    #         "trigger_url_expected_response":dag_data.get("trigger_url_expected_response")
+    #     }
+    # else:
+    workflow = WorkflowModel.objects.get(id=workflow_id)
+    print(workflow.workflow_type)
+    print(workflow)
+    dag_ = DagModel.objects.filter(workflow__id = workflow.id)
+    dag = dag_.latest('created_at')
+    print(dag.dag_id)
+    operators = [entry for entry in dag.simplehttpoperatormodel_set.filter().values()]
+    data_points = []
+    for operator in operators:
+        try:
+            print(operator['connection_id'])
+            operator['http_conn_id'] = HttpOperatorConnectionModel.objects.get(id=operator['connection_id']).connection_id
+            endpoint = Endpoint.objects.get(id=operator['endpointurl_id'])
+            operator['endpoint'] = endpoint.url
+            operator['method'] = endpoint.method
+            # Get the content type for the Endpoint model
+            endpoint_content_type = ContentType.objects.get_for_model(Endpoint)
+            # Query to get all custom fields and their values for the given end
+            custom_fields_with_value = CustomFieldValue.objects.filter(
+                content_type=endpoint_content_type,
+                object_id=endpoint.id
+            ).select_related('field')
+
+            for custom_field_value in custom_fields_with_value:
+                data_points.append({
+                    custom_field_value.field.name: custom_field_value.value,
+                    "created_at": custom_field_value.created_at
+                })
+
+            operator['data'] = remove_timestamp(flatten_dict_list(merge_lists_by_timestamp(data_points)))
+            
+        except Exception as error:
+            print(str(error))
+
+    dags = [entry for entry in dag_.values()]
+    for x in dags:
+        x['http_conn_id'] = HttpOperatorConnectionModel.objects.get(id=x['connection_id']).connection_id
+
+    data = {
+        "dag":dags,
+        "operators":operators,
+        "data_seconds":[str(workflow.delay_durations)]
+    }
+
+    print(dag.dag_id)
+    # print(data)
+    # Write the dictionary to a YAML file
+    yaml_file_path = os.path.join(settings.BASE_DIR, 'api', 'helpers', 'include', 'dag_configs', f"{dag.dag_id}_config.yaml")
+    with open(yaml_file_path, 'w') as yaml_file:
+        try:
+            yaml.dump(data, yaml_file, default_flow_style=False)
+        except Exception as error:
+            print(str(error))
+
+    try:
+        generate_dag(workflow_type=workflow.workflow_type)
+    except Exception as error:
+        print(str(error))
+
+

@@ -23,7 +23,8 @@ admin.site.register(Video)
 from django.http import HttpResponseRedirect
 from django.urls import reverse
 from .utils import get_the_cut_info  # Import your function
-from api.instagram.tasks import send_first_compliment,qualify_and_reschedule, send_test_compliment, delete_accounts, remove_duplicates_task
+from api.workflow.tasks import send_first_compliment,qualify_and_reschedule, send_test_compliment, delete_accounts, remove_duplicates_task
+
 @admin.action(description='Get The Cut Info')
 def get_cut_info_action(modeladmin, request, queryset):
     for obj in queryset:

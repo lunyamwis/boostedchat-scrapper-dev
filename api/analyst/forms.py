@@ -2,7 +2,6 @@
 from django import forms
 from django.utils import timezone
 from datetime import timedelta
-from api.instagram.models import CustomFieldValue, CustomField
 from .models import DataEntry
 
 
@@ -37,37 +36,6 @@ class DataEntryForm(forms.ModelForm):
         extra_kwargs = {
             "id": {"required": False, "allow_null": True},
         }
-
-class CustomFieldValueForm(forms.ModelForm):
-    class Meta:
-        model = CustomFieldValue
-        fields = ['field', 'value']
-
-    def __init__(self, *args, **kwargs):
-        endpoint_id = kwargs.pop('endpoint_id', None)
-        super().__init__(*args, **kwargs)
-        
-        # Filter fields if necessary
-        if endpoint_id:
-            self.fields['field'].queryset = CustomField.objects.all()  # Adjust as needed
-        
-        # Dynamically set widget based on field type
-        if 'field' in self.data:
-            try:
-                field = CustomField.objects.get(id=self.data.get('field'))
-                if field.data_type == 'text':
-                    self.fields['value'] = forms.CharField(label='Value')
-                elif field.data_type == 'number':
-                    self.fields['value'] = forms.IntegerField(label='Value')
-                elif field.data_type == 'date':
-                    self.fields['value'] = forms.DateField(label='Value', widget=forms.SelectDateWidget())
-                elif field.data_type == 'boolean':
-                    self.fields['value'] = forms.BooleanField(label='Value', required=False)
-                elif field.data_type == 'json':
-                    self.fields['value'] = forms.CharField(label='Value')  # Accept JSON as string
-            except CustomField.DoesNotExist:
-                pass
-
 
 
 class ChartChooserForm(forms.Form):

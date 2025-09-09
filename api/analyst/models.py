@@ -1,5 +1,5 @@
 from django.db import models
-from api.instagram.models import CustomFieldValue
+
 from django.contrib.contenttypes.models import ContentType
 
 # Create your models here.
@@ -23,9 +23,6 @@ class DataEntry(models.Model):
     chart_type = models.CharField(max_length=200,choices=CHARTTYPES,default='line')
     query = models.TextField()
 
-    @property
-    def custom_fields(self):
-        return CustomFieldValue.objects.filter(content_type=ContentType.objects.get_for_model(self), object_id=self.id)
-
+    
     def __str__(self) -> str:
         return self.name if self.name else self.id

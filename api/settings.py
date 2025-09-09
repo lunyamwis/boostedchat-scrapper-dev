@@ -104,7 +104,6 @@ SHARED_APPS = [
     'rest_framework.authtoken',
     'django_celery_beat',
     'softdelete',
-    'boostedchatScrapper',
     'sitemaps',
     "crispy_forms",
     "crispy_bootstrap5",
@@ -117,17 +116,19 @@ SHARED_APPS = [
     "allauth.socialaccount.providers.google",
 
     # "django_extensions"
-    'api.instagram','api.scout', 'api.helpers','api.prompt',
-    'api.analyst','api.sales_rep','api.whatsapp','api.outreaches',
-    'api.facebook','api.workflow','api.linkedin','api.gmail'
+    'api.helpers'
+    
 ]
 
 TENANT_APPS = [
-    'api.outreaches',
+    'api.workflow',
+    'api.instagram','api.scout','api.prompt',
+    'api.analyst','api.sales_rep','api.whatsapp',
+    'api.facebook','api.linkedin','api.gmail'
 ]
 INSTALLED_APPS = SHARED_APPS + [app for app in TENANT_APPS if app not in SHARED_APPS]
-TENANT_MODEL = "boostedchatScrapper.Client"
-TENANT_DOMAIN_MODEL = "boostedchatScrapper.Domain"
+TENANT_MODEL = "helpers.Client"
+TENANT_DOMAIN_MODEL = "helpers.Domain"
 
 MIDDLEWARE = [
     "allauth.account.middleware.AccountMiddleware",

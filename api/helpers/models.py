@@ -2,6 +2,7 @@ from django.db import models
 
 from softdelete.models import SoftDeleteObject
 from softdelete.models import SoftDeleteManager
+from django_tenants.models import TenantMixin, DomainMixin
 from .push_id import PushID
 
 
@@ -30,3 +31,18 @@ class BaseModel(SoftDeleteObject):
 
     class Meta:
         abstract = True  # Set this model as Abstract
+
+
+class Client(TenantMixin):
+    name = models.CharField(max_length=100)
+    paid_until = models.DateField()
+    on_trial = models.BooleanField(default=True)
+    created_on = models.DateField(auto_now_add=True)
+    is_active = models.BooleanField(default=True)
+
+    def __str__(self) -> str:
+        return self.name
+    
+
+class Domain(DomainMixin):
+    pass
