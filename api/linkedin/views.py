@@ -106,7 +106,7 @@ class LinkedInAccountsView(APIView):
                 "protocol": "https",
                 "host": "gate.decodo.com",
                 "port": 10001,
-                "username": f"user-{os.getenv("PROXY_USERNAME", "")}-country-{request.data.get("country", "")}-city-{request.data.get("city", "")}",
+                "username": f'user-{os.getenv("PROXY_USERNAME", "")}-country-{request.data.get("country", "")}-city-{request.data.get("city", "")}',
                 "password": os.getenv("PROXY_PASSWORD", "")
             }
         }
@@ -154,7 +154,7 @@ class LinkedInAccountView(APIView):
                 "protocol": "https",
                 "host": "gate.decodo.com",
                 "port": 10001,
-                "username": f"user-{os.getenv("PROXY_USERNAME", "")}-country-{request.data.get("country", "")}-city-{request.data.get("city", "")}",
+                "username": f'user-{os.getenv("PROXY_USERNAME", "")}-country-{request.data.get("country", "")}-city-{request.data.get("city", "")}',
                 "password": os.getenv("PROXY_PASSWORD", "")
             }
         }
