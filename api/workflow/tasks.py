@@ -12,14 +12,12 @@ import yaml
 import uuid
 import subprocess
 from django.db.models import Q, Count
-from boostedchatScrapper.spiders.instagram import InstagramSpider
-from boostedchatScrapper.spiders.helpers.instagram_login_helper import login_user
 from django.utils import timezone
 from api.instagram.models import InstagramUser,Account, Message, OutSourced, StatusCheck, Thread, UnwantedAccount, OutreachTime
 from api.scout.models import Scout
 from api.instagram.utils import initialize_hikerapi_client
 from django_tenants.utils import schema_context
-from boostedchatScrapper.spiders.constants import STYLISTS_WORDS,STYLISTS_NEGATIVE_WORDS
+from api.instagram.constants import STYLISTS_WORDS
 import datetime
 import json
 import logging

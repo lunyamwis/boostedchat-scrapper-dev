@@ -104,7 +104,6 @@ SHARED_APPS = [
     'rest_framework.authtoken',
     'django_celery_beat',
     'softdelete',
-    'sitemaps',
     "crispy_forms",
     "crispy_bootstrap5",
     "api.authentication",

@@ -1,7 +1,6 @@
 from django.contrib import admin
 from .models import Scout,ScoutingMaster,Device
 from django_tenants.utils import schema_context
-from boostedchatScrapper.spiders.helpers.instagram_login_helper import login_user
 from django.contrib import messages
 from django.utils.translation import gettext_lazy as _
 from api.workflow.tasks import relogin_scouts
