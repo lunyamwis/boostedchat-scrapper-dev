@@ -1,3 +1,4 @@
+from operator import sub
 import os
 from django.shortcuts import render,redirect
 from api.helpers.models import Client, Domain
@@ -22,7 +23,7 @@ def home(request):
             )
             # import pdb; pdb.set_trace()
             # create_tenant.delay(form.cleaned_data['domain_name'])
-            create_tenant.delay(domain_name=form.cleaned_data['domain_name'], email=form.cleaned_data['email'])
+            create_tenant.delay(domain_name=form.cleaned_data['domain_name'], email=form.cleaned_data['email'], subscription=form.cleaned_data['subscription_plan'])
             # Redirect or show a success message as needed
             redirect('home')  # Redirect to the home page or any other page
     return render(request, 'home/index.html', {'form': form})  # Render the home.html template

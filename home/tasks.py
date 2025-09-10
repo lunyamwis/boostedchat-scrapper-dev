@@ -5,11 +5,12 @@ from django_tenants.utils import schema_context
 from api.authentication.models import User
 
 @shared_task
-def create_tenant(domain_name=None, email=None):
+def create_tenant(domain_name=None, email=None, subscription=None):
     with schema_context('public'):
         user = User.objects.get(email=email)
         tenant = Client(schema_name=domain_name, name=domain_name, paid_until=timezone.now() + timezone.timedelta(days=7), on_trial=True)
         tenant.user = user
+        tenant.subscription = subscription
         tenant.save()
         domain = Domain(domain=domain_name, tenant=tenant)
         domain.save()
