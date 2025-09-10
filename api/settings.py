@@ -76,6 +76,8 @@ ALLOWED_HOSTS = [
     "scrapper.booksy.boostedchat.com",
     "airflow.booksy.boostedchat.com",
     "lunyamwi.localhost",
+    ".lunyamwi.org", "lunyamwi.org",
+
 ]
 CSRF_TRUSTED_ORIGINS = [
     f"https://api.{os.environ.get('DOMAIN1', '')}.boostedchat.com",
@@ -87,6 +89,9 @@ CSRF_TRUSTED_ORIGINS = [
     "https://173.249.6.165",
     "http://lunyamwi.localhost/",
     "http://lunyamwi.localhost",
+    "https://lunyamwi.org",
+    "https://*.lunyamwi.org",
+
 ]
 
 # Application definition
