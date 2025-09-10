@@ -28,8 +28,11 @@ urlpatterns = [
     path('linkedin/',include('api.linkedin.urls')),
     path('gmail/',include('api.gmail.urls')),
     path('analyst/',include('api.analyst.urls')),
-    path('',include('api.workflow.urls')),
+    path('workflow/',include('api.workflow.urls')),
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('accounts/', include('allauth.urls')),  # Allauth URLs
+    path('helpers/', include('api.helpers.urls')),  # Include the URLs from the helpers app
+    path('', include('home.urls')),  # Include the URLs from the home app
+    path('billing/', include('billing.urls')),  # Include the URLs from the billing app
 ]+ static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

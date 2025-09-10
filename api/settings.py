@@ -123,7 +123,9 @@ SHARED_APPS = [
     'dj_rest_auth.registration',
     'widget_tweaks',
     # "django_extensions"
-    'api.helpers'
+    'api.helpers',
+    'billing',
+    'home',
     
 ]
 

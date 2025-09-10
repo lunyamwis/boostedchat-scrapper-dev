@@ -35,10 +35,19 @@ class BaseModel(SoftDeleteObject):
 
 class Client(TenantMixin):
     name = models.CharField(max_length=100)
+    email = models.EmailField(blank=True, null=True)
     paid_until = models.DateField()
     on_trial = models.BooleanField(default=True)
     created_on = models.DateField(auto_now_add=True)
     is_active = models.BooleanField(default=True)
+    user = models.ForeignKey('authentication.User', on_delete=models.CASCADE, blank=True, null=True)
+    subscription = models.CharField(max_length=100, blank=True, null=True, choices=[
+        ('2000', '2,000 KES'),
+        ('5000', '5,000 KES'),
+        ('10000', '10,000 KES'),
+        ('20000', '20,000 KES'),
+        ('50000', '50,000 KES'),
+    ])
 
     def __str__(self) -> str:
         return self.name

@@ -163,3 +163,4 @@ zope.interface
 dj-rest-auth[with_social] 
 django-allauth[socialaccount]
 django-widget-tweaks
+paystackapi
