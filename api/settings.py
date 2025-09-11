@@ -373,7 +373,7 @@ SOCIALACCOUNT_PROVIDERS = {
     'facebook': {
         'METHOD': 'oauth2',
         'SCOPE': ['email', 'public_profile', 'user_friends'],  # Add desired extra permissions here
-        'AUTH_PARAMS': {'auth_type': 'reauthenticate'},
+        'AUTH_PARAMS': {'auth_type': 'reauthenticate', 'redirect_uri':'https://lunyamwi.org'},
         'FIELDS': [
             'id',
             'email',
@@ -391,7 +391,7 @@ SOCIALACCOUNT_PROVIDERS = {
     # Add other providers similarly
     'google': {
         'SCOPE': ['profile', 'email'],
-        'AUTH_PARAMS': {'access_type': 'online'},
+        'AUTH_PARAMS': {'access_type': 'online','redirect_uri':'https://lunyamwi.org'},
         'PROFILE_FIELDS': ['id', 'name', 'email'],
         'APP': {
             'client_id': os.getenv("GOOGLE_CLIENT_ID").strip(),
