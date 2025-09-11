@@ -90,11 +90,11 @@ CSRF_TRUSTED_ORIGINS = [
     "http://lunyamwi.localhost/",
     "http://lunyamwi.localhost",
     "https://lunyamwi.org",
-    "https://*.lunyamwi.org",
-
 ]
 
 # Application definition
+
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 SHARED_APPS = [
     'auditlog',
