@@ -1,3 +1,4 @@
+import re
 from django import forms
 from django.core.exceptions import ValidationError
 from django.contrib.auth.password_validation import validate_password
@@ -52,3 +53,23 @@ class TenantSignupForm(forms.Form):
         if password1:
             validate_password(password1)
         return password1
+
+    def clean_domain_name(self):
+        domain = self.cleaned_data.get('domain_name')
+
+        # Convert to lowercase
+        domain = domain.lower()
+
+        # Remove spaces
+        domain = domain.replace(' ', '')
+
+        # Validate domain format for subdomain:
+        # - Only letters, digits, and hyphens allowed
+        # - Cannot start or end with a hyphen
+        # - Length rules generally apply (1-63 characters)
+        if not re.match(r'^[a-z0-9]([a-z0-9\-]{0,61}[a-z0-9])?$', domain):
+            raise ValidationError(
+                "Invalid domain name: only lowercase letters, numbers, and hyphens are allowed. "
+                "Cannot start or end with a hyphen."
+            )
+        return domain

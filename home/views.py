@@ -1,6 +1,7 @@
 from operator import sub
 import os
 from django.shortcuts import render,redirect
+from django.contrib import messages
 from api.helpers.models import Client, Domain
 from api.authentication.models import User
 from django_tenants.utils import schema_context
@@ -27,6 +28,7 @@ def home(request):
                 email=form.cleaned_data['email'], 
                 subscription=form.cleaned_data['subscription_plan']
             )
+            messages.success(request, 'Tenant created successfully! Please check your email for the subscription link. and allow up to 10 minutes for the tenant to be fully set up. and then you can log in using your email and password that will be sent to you via email.')
             return redirect('home')
 
     host = request.get_host().split(':')[0]  # hostname without port
