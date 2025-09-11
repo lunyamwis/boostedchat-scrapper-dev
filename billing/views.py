@@ -36,7 +36,7 @@ class PaystackWebhookView(APIView):
                 # Find the tenant by email and update their subscription status
                 tenant = Client.objects.get(email=customer_email)
                 print("Tenant found:", tenant)
-                tenant.paid_until = tenant.paid_until + timezone.timedelta(days=30)
+                tenant.paid_until = timezone.now() + timezone.timedelta(days=30)
                 tenant.on_trial = False
                 tenant.save()
                 # Find the domain associated with the tenant
