@@ -90,6 +90,8 @@ CSRF_TRUSTED_ORIGINS = [
     "http://lunyamwi.localhost/",
     "http://lunyamwi.localhost",
     "https://lunyamwi.org",
+    "https://*.lunyamwi.org",
+
 ]
 
 # Application definition
