@@ -2,15 +2,23 @@ from operator import sub
 import os
 from django.shortcuts import render,redirect
 from django.contrib import messages
-from api.helpers.models import Client, Domain
 from api.authentication.models import User
 from django_tenants.utils import schema_context
-from django.utils import timezone
 from .forms import TenantSignupForm
 from .tasks import create_tenant
 
 # Create your views here.
 from django.shortcuts import redirect, render
+
+from django.http import JsonResponse
+
+def debug_request(request):
+    return JsonResponse({
+        "is_secure": request.is_secure(),
+        "scheme": request.scheme,
+        "http_x_forwarded_proto": request.META.get("HTTP_X_FORWARDED_PROTO"),
+    })
+
 
 @schema_context('public')
 def home(request):
