@@ -26,7 +26,7 @@ def handle_tenant_created(sender, tenant, **kwargs):
     }
     # send credentials email
     email_data = {
-        "to": [tenant.email],
+        "to": [tenant.user.email],
         "subject": "Subscription Link",
         "body": f"Hello {tenant.name},\n\n Your subscription link is: {subscription_link_mapper.get(tenant.subscription, 'No subscription plan selected')}\n\nThank you!",
     }

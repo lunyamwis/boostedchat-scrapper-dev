@@ -10,7 +10,8 @@ def create_tenant(domain_name=None, email=None, subscription=None):
         user = User.objects.get(email=email)
         tenant = Client(schema_name=domain_name, name=domain_name, paid_until=timezone.now() + timezone.timedelta(days=7), on_trial=True)
         tenant.user = user
+        tenant.email = email
         tenant.subscription = subscription
         tenant.save()
-        domain = Domain(domain=domain_name, tenant=tenant)
+        domain = Domain(domain=domain_name + '.lunyamwi.org', tenant=tenant)
         domain.save()
