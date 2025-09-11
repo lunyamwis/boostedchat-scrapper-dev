@@ -96,8 +96,8 @@ CSRF_TRUSTED_ORIGINS = [
 
 # Application definition
 
-SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-SECURE_SSL_REDIRECT = False
+# SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+SECURE_SSL_REDIRECT = True
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
 SHARED_APPS = [
@@ -144,10 +144,10 @@ TENANT_MODEL = "helpers.Client"
 TENANT_DOMAIN_MODEL = "helpers.Domain"
 
 MIDDLEWARE = [
-    'django.middleware.security.SecurityMiddleware',
     "allauth.account.middleware.AccountMiddleware",
     'django_tenants.middleware.main.TenantMainMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.middleware.security.SecurityMiddleware',
     "corsheaders.middleware.CorsMiddleware",
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -403,5 +403,5 @@ SOCIALACCOUNT_PROVIDERS = {
 }
 
 SITE_ID = 1
-LOGIN_REDIRECT_URL = '/'
+LOGIN_REDIRECT_URL = '/workflow/'
 ACCOUNT_LOGOUT_REDIRECT_URL = '/accounts/login/'
