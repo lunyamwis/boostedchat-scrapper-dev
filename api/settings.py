@@ -142,9 +142,9 @@ TENANT_MODEL = "helpers.Client"
 TENANT_DOMAIN_MODEL = "helpers.Domain"
 
 MIDDLEWARE = [
+    'django.middleware.security.SecurityMiddleware',
     "allauth.account.middleware.AccountMiddleware",
     'django_tenants.middleware.main.TenantMainMiddleware',
-    'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     "corsheaders.middleware.CorsMiddleware",
     'django.middleware.common.CommonMiddleware',
