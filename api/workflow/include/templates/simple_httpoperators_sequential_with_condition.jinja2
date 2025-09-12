@@ -50,7 +50,7 @@ with DAG(
 
     {% for operator in operators %}
     # Define the HTTP task to make a GET request using Jinja templating
-    http_task_{{operator.task_id}} = SimpleHttpOperator(
+    http_task_{{operator.task_id}} = SimpleHttpOperator.partial(
         task_id="{{ operator.task_id }}",
         http_conn_id="{{ operator.http_conn_id }}",
         endpoint="{{ operator.endpoint }}",

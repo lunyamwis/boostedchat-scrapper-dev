@@ -11,7 +11,7 @@ def push_file(filename):
 
     # Define local and remote file paths
     local_file_path = f'/opt/airflow/dags/{filename}.py'  # Path to the local file you want to upload
-    remote_file_path = f'/home/ubuntu/booksy-boostedchat-deployment/boostedchat-site/dags/{filename}.py'  # Path on the remote server where the file will be uploaded
+    remote_file_path = f'/root/lunyamwi-devops/dags/{filename}.py'  # Path on the remote server where the file will be uploaded
 
     try:
         # Create an SSH client instance

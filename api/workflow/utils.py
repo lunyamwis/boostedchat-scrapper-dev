@@ -46,6 +46,30 @@ def remove_timestamp(dict_):
     return dict_
 
 
+
+# test this function thoroughly
+def expand_comma_values(data: dict):
+    """
+    Expands any comma-separated values in JSON strings.
+    
+    Args:
+        json_list (list of str): List of JSON strings with one or more key-value pairs.
+    
+    Returns:
+        list of str: List of JSON strings with expanded values.
+    """
+    expanded = []
+    for key, value in data.items():
+        if "," in value:
+            values = [v.strip() for v in value.split(',')]  # strip whitespace
+            expanded.extend({key: v} for v in values)
+        else:
+            expanded.append({key: value})
+    return expanded
+
+
+
+
 def dag_fields_to_exclude():
     return [
             "id",

@@ -1,9 +1,9 @@
 import json
+import pendulum
 from datetime import datetime, timedelta
 from airflow import DAG
-from airflow.providers.http.operators.http import SimpleHttpOperator
-from airflow.operators.python_operator import PythonOperator
-from airflow.utils.dates import days_ago
+from airflow.providers.http.operators.http import HttpOperator
+from airflow.providers.standard.operators.python import PythonOperator
 from airflow.models.baseoperator import chain
 
 
@@ -11,9 +11,9 @@ from airflow.models.baseoperator import chain
 default_args = {
     'owner': 'airflow',
     'depends_on_past': False,
-    'start_date': days_ago(1),
+    'start_date': pendulum.now("Africa/Nairobi").subtract(days=1),
     'retries': 1,
-    'retry_delay': timedelta(minutes=5),
+    'retry_delay': timedelta(minutes=1),
 }
 {% set http_tasks = [] %}
 http_tasks = []
@@ -23,20 +23,21 @@ with DAG(
     "{{dag_.dag_id}}",
     default_args=default_args,
     description="{{dag_.description}}",
-    schedule_interval="{{dag_.schedule_interval}}"
+    schedule="{{dag_.schedule_interval}}"
 ) as dag:
 
     {% for operator in operators %}
     # Define the HTTP task to make a GET request using Jinja templating
-    http_task_{{operator.task_id}} = SimpleHttpOperator(
+    http_task_{{operator.task_id}} = HttpOperator.partial(
         task_id="{{ operator.task_id }}",
         http_conn_id="{{ operator.http_conn_id }}",
         endpoint="{{ operator.endpoint }}",
         method="{{ operator.method }}",
         headers={{ operator.headers | tojson }},  # Assuming headers is a dictionary, convert it to JSON
-        data=json.dumps({{ operator.data }}),
         log_response=True,
         do_xcom_push=True,  # Enable pushing response to XCom
+    ).expand(
+        data=[json.dumps(x) for x in {{ operator.data }}]  # Assuming data is a dictionary, convert it to JSON
     )
     http_tasks.append(http_task_{{operator.task_id}})
     {% endfor %}

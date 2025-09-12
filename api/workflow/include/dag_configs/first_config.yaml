@@ -1,0 +1,72 @@
+dag:
+- access_control: null
+  auto_register: false
+  catchup: false
+  concurrency: null
+  connection_id: -OZxDOXms8MnQiVs0gbZ
+  created_at: 2025-09-12 11:25:28.561844+00:00
+  dag_id: first
+  dagrun_timeout: null
+  default_args: null
+  default_view: null
+  deleted_at: null
+  description: testdesc
+  doc_md: null
+  end_date: null
+  fail_stop: false
+  full_filepath: null
+  http_conn_id: data_pipeline_connection
+  id: -OZxf4BudT-FB02gPtwE
+  is_paused_upon_creation: false
+  jinja_environment_kwargs: null
+  max_active_runs: null
+  max_active_tasks: null
+  on_failure_callback: null
+  on_success_callback: null
+  orientation: null
+  owner_links: null
+  params: null
+  render_template_as_native_obj: false
+  schedule: '2025-01-01'
+  schedule_interval: 0 0 * * *
+  sla_miss_callback: null
+  start_date: null
+  tags: null
+  template_searchpath: null
+  template_undefined: null
+  timetable: null
+  trigger_url: null
+  trigger_url_expected_key: null
+  trigger_url_expected_value: null
+  updated_at: 2025-09-12 11:25:28.561879+00:00
+  user_defined_filters: null
+  user_defined_macros: null
+  workflow_id: -OZxf4-9ErNIJwC-3NNG
+data_seconds:
+- '10'
+operators:
+- connection_id: -OZxDOXms8MnQiVs0gbZ
+  created_at: 2025-09-12 11:25:31.423978+00:00
+  dag_id: -OZxf4BudT-FB02gPtwE
+  data:
+  - comma_separated_value_strings: ad
+  - comma_separated_value_strings: pd
+  - comma_separated_value_strings: jd
+  - comma_separated_value_strings: ld
+  - comma_separated_value_strings: vd
+  - comma_separated_value_strings: mg
+  deleted_at: null
+  endpoint: /facebook/users/me/
+  endpointurl_id: -OZwfJtZGKclrDwdan_X
+  extra_options: null
+  headers:
+    Content-Type: application/json
+  http_conn_id: data_pipeline_connection
+  id: -OZxf4vI4JVRsGy5rECR
+  log_response: false
+  method: GET
+  response_check: null
+  task_id: first_endpoint
+  updated_at: 2025-09-12 11:34:37.386588+00:00
+  urls: null
+  xcom_push: true

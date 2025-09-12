@@ -307,63 +307,66 @@ class WorkflowInline():
     model = WorkflowModel
     template_name = "workflows/workflow.html"
 
-    # @schema_context("lunyamwi")
     def form_valid(self, form, schema_name=os.getenv('SCHEMA_NAME')):
-        with schema_context(schema_name):
-            named_formsets = self.get_named_formsets()
-            if not all((x.is_valid() for x in named_formsets.values())):
-                return self.render_to_response(self.get_context_data(form=form))
-            print(self.object,'---object')
-            is_update = self.object is not None
-            self.object = form.save()
-            if is_update:
-                dag = self.object.dagmodel_set.latest('created_at')
+        # with schema_context(schema_name):
+        # import pdb; pdb.set_trace()
+        named_formsets = self.get_named_formsets()
+        if not all((x.is_valid() for x in named_formsets.values())):
+            return self.render_to_response(self.get_context_data(form=form))
+        print(self.object,'---object')
+        is_update = self.object is not None
+        self.object = form.save()
+        # import pdb; pdb.set_trace()
+        if is_update:
+            dag = self.object.dagmodel_set.latest('created_at')
+            try:
+                airflowcreds = AirflowCreds.objects.latest('created_at')
+                headers = {
+                    "Content-Type": "application/json",
+                    "Accept": "application/json",
+                }
+                dag_update_data = {
+                    "is_paused": False
+                }
+
                 try:
-                    airflowcreds = AirflowCreds.objects.latest('created_at')
-                    headers = {
-                        "Content-Type": "application/json",
-                        "Accept": "application/json",
-                    }
-                    dag_update_data = {
-                        "is_paused": False
-                    }
-
-                    try:
-                        resp = requests.patch(f"{airflowcreds.airflow_base_url}/api/v1/dags/{dag.dag_id}", 
-                                          data=json.dumps(dag_update_data),
-                                          auth=HTTPBasicAuth(airflowcreds.username, airflowcreds.password),
-                                          headers=headers,timeout=10)
-                    except requests.exceptions.Timeout:
-                        print("Request timed out")
-                    except requests.exceptions.RequestException as e:
-                        print(f"An error occurred: {e}")
-                    
-                    if resp.status_code == 200:
-                        messages.success(self.request, f"DAG updated successfully {resp.status_code}")
-                    else:
-                        messages.error(self.request, f"Failed to update DAG: {resp.status_code}-{resp.text}")
-                except Exception as e:
-                    messages.error(self.request, f"Failed to update DAG: {str(e)}")
-                print("Updating workflow:", self.object)
-                logging.warning("updating workflow")
-                # Additional logic for updating can go here
-            else:
-                print("Creating new workflow:", self.object)
-                logging.warning("creating new workflow")
-                # Additional logic for creation can go here
-
-
-            # for every formset, attempt to find a specific formset save function
-            # otherwise, just save.
-            for name, formset in named_formsets.items():
-                formset_save_func = getattr(self, 'formset_{0}_valid'.format(name), None)
-                if formset_save_func is not None:
-                    formset_save_func(formset)
+                    resp = requests.patch(f"{airflowcreds.airflow_base_url}/api/v1/dags/{dag.dag_id}", 
+                                        data=json.dumps(dag_update_data),
+                                        auth=HTTPBasicAuth(airflowcreds.username, airflowcreds.password),
+                                        headers=headers,timeout=10)
+                except requests.exceptions.Timeout:
+                    print("Request timed out")
+                except requests.exceptions.RequestException as e:
+                    print(f"An error occurred: {e}")
+                
+                if resp.status_code == 200:
+                    messages.success(self.request, f"DAG updated successfully {resp.status_code}")
                 else:
-                    formset.save()
-            
-            logging.warning(f"Workflow --> {self.object.id}")
-            generate_dag_script.delay(self.object.id)
+                    messages.error(self.request, f"Failed to update DAG: {resp.status_code}-{resp.text}")
+            except Exception as e:
+                messages.error(self.request, f"Failed to update DAG: {str(e)}")
+            print("Updating workflow:", self.object)
+            logging.warning("updating workflow")
+            # Additional logic for updating can go here
+        else:
+            print("Creating new workflow:", self.object)
+            logging.warning("creating new workflow")
+            # Additional logic for creation can go here
+
+
+        # for every formset, attempt to find a specific formset save function
+        # otherwise, just save.
+        for name, formset in named_formsets.items():
+            formset_save_func = getattr(self, 'formset_{0}_valid'.format(name), None)
+            if formset_save_func is not None:
+                formset_save_func(formset)
+            else:
+                formset.save()
+        
+        logging.warning(f"Workflow --> {self.object.id}")
+        # generate_dag_script.delay(self.object.id)
+        generate_dag_script(self.object.id)
+
         return redirect('list_workflows')
 
     def formset_dags_valid(self, formset):
@@ -392,6 +395,11 @@ class WorkflowInline():
 
 
 class WorkflowCreate(LoginRequiredMixin, WorkflowInline, CreateView):
+
+    success_url = reverse_lazy('list_workflows')
+
+    def post(self, request, *args, **kwargs):
+        return super().post(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
         ctx = super(WorkflowCreate, self).get_context_data(**kwargs)
@@ -561,34 +569,33 @@ class WorkflowList(LoginRequiredMixin, ListView):
     template_name = "workflows/workflows.html"
     context_object_name = "workflows"
     
-    with schema_context(os.getenv('SCHEMA_NAME')): queryset = WorkflowModel.objects.all()
+    queryset = WorkflowModel.objects.all()
     
 
     # @schema_context(os.getenv('SCHEMA_NAME'))
     def get_context_data(self, **kwargs):
-        with schema_context(os.getenv('SCHEMA_NAME')):
-            print(WorkflowModel.objects.count())
-            # context = super().get_context_data(**kwargs)
-            context = {}
-            context['workflows'] = self.queryset
-            print(WorkflowModel.objects.count())
-            airflowcreds = AirflowCreds.objects.latest('created_at')
-            headers = {
-                "Content-Type": "application/json",
-                "Accept": "application/json",
-            }
-            context['data'] = []
-            try:
-                print("Fetching DAGs from Airflow under construction")
-                # resp = requests.get(f"{airflowcreds.airflow_base_url}/api/v1/dags", auth=HTTPBasicAuth(airflowcreds.username, airflowcreds.password),headers=headers)   
-                # messages.success(self.request, "Fetched DAGs from Airflow successfully.")
-                # if resp.status_code == 200:
-                #     context['data'] = resp.json()
-            except Exception as e:
-                messages.error(self.request, f"Failed to fetch DAGs from Airflow: {str(e)}")
+        print(WorkflowModel.objects.count())
+        # context = super().get_context_data(**kwargs)
+        context = {}
+        context['workflows'] = self.queryset
+        print(WorkflowModel.objects.count())
+        airflowcreds = AirflowCreds.objects.latest('created_at')
+        headers = {
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+        }
+        context['data'] = []
+        try:
+            print("Fetching DAGs from Airflow under construction")
+            # resp = requests.get(f"{airflowcreds.airflow_base_url}/api/v1/dags", auth=HTTPBasicAuth(airflowcreds.username, airflowcreds.password),headers=headers)   
+            # messages.success(self.request, "Fetched DAGs from Airflow successfully.")
+            # if resp.status_code == 200:
+            #     context['data'] = resp.json()
+        except Exception as e:
+            messages.error(self.request, f"Failed to fetch DAGs from Airflow: {str(e)}")
 
-            # print(resp.json())
-            return context
+        # print(resp.json())
+        return context
 
 
 

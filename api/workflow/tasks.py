@@ -48,7 +48,7 @@ from api.workflow.models import WorkflowModel, DagModel, SimpleHttpOperatorModel
 # from tabulate import tabulate # for print_logs
 from urllib.parse import urlparse
 from api.sales_rep.helpers.task_allocation import no_consecutives, no_more_than_x,get_moving_average
-from api.workflow.utils import flatten_dict,remove_timestamp,merge_lists_by_timestamp,flatten_dict_list
+from api.workflow.utils import flatten_dict,remove_timestamp,merge_lists_by_timestamp,flatten_dict_list,expand_comma_values
 from api.workflow.dag_generator import generate_dag
 from api.sales_rep.models import SalesRep, Influencer, LeadAssignmentHistory
 from django.db.models import Q
@@ -1901,7 +1901,8 @@ def generate_dag_script(workflow_id):
                     "created_at": custom_field_value.created_at
                 })
 
-            operator['data'] = remove_timestamp(flatten_dict_list(merge_lists_by_timestamp(data_points)))
+            operator['data'] = expand_comma_values(remove_timestamp(flatten_dict_list(merge_lists_by_timestamp(data_points))))
+            print(operator['data'])
             
         except Exception as error:
             print(str(error))
@@ -1919,7 +1920,9 @@ def generate_dag_script(workflow_id):
     print(dag.dag_id)
     # print(data)
     # Write the dictionary to a YAML file
-    yaml_file_path = os.path.join(settings.BASE_DIR, 'api', 'helpers', 'include', 'dag_configs', f"{dag.dag_id}_config.yaml")
+    yaml_file_path = os.path.join(settings.BASE_DIR, 'api', 'workflow', 'include', 'dag_configs', f"{dag.dag_id}_config.yaml")
+    os.makedirs(os.path.dirname(yaml_file_path), exist_ok=True)
+
     with open(yaml_file_path, 'w') as yaml_file:
         try:
             yaml.dump(data, yaml_file, default_flow_style=False)

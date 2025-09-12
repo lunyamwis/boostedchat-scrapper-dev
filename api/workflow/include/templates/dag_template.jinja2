@@ -1,7 +1,7 @@
 import requests
 import time
 from airflow import DAG
-from airflow.operators.http_operator import SimpleHttpOperator
+from airflow.providers.http.operators.http import HttpOperator
 from airflow.operators.python_operator import PythonOperator  # Import PythonOperator
 from airflow.sensors.time_delta import TimeDeltaSensor
 from airflow.utils.dates import days_ago
