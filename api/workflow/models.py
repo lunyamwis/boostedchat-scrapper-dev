@@ -19,7 +19,8 @@ class WorkflowModel(BaseModel):
     WORKFLOW_CHOICES = (
         ("simple_httpoperators_sequential_with_condition","chain the endpoints but initialize with a condition to be checked in order for it to begin running"),
         ("simple_httpoperators_sequential_run","chain the endpoints and run them sequentially in a linear fashion"),
-        ("simple_httpoperators_parallel_run","chain the endpoints and run them in a parallel manner")
+        ("simple_httpoperators_parallel_run","chain the endpoints and run them in a parallel manner"),
+        ("pythonoperator_http","sequential run with wait times between each api call")
     )
     name = models.CharField(max_length=255,null=True, blank=True)
     delay_durations = models.JSONField(null=True,blank=True)

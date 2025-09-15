@@ -51,6 +51,7 @@ class WorkflowModelForm(forms.ModelForm):
                     ("simple_httpoperators_sequential_with_condition","chain the endpoints but initialize with a condition to be checked in order for it to begin running"),
                     ("simple_httpoperators_sequential_run", "simple_httpoperators_sequential_run"),
                     ("simple_httpoperators_parallel_run", "simple_httpoperators_parallel_run"),
+                    ("pythonoperator_http","sequential run with wait times between each api call")
                 ],
                 attrs={"class": "form-control"}
             )
