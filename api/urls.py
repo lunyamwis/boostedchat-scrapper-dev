@@ -36,3 +36,9 @@ urlpatterns = [
     path('', include('home.urls')),  # Include the URLs from the home app
     path('billing/', include('billing.urls')),  # Include the URLs from the billing app
 ]+ static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+
+
+handler404 = "api.views.handler404"
+handler403 = "api.views.handler403"
+handler400 = "api.views.handler400"
+handler500 = "api.views.handler500"

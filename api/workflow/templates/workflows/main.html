@@ -70,6 +70,16 @@
       </nav>
       <main class="col-md-9 ml-sm-auto col-lg-10 px-md-4">
         <!-- Main content goes here -->
+        {% if messages %}
+          <div class="alerts">
+            {% for message in messages %}
+              <div class="alert {% if message.tags %}alert-{{ message.tags }}{% endif %}">
+                {{ message }}
+              </div>
+            {% endfor %}
+          </div>
+        {% endif %}
+
         {% block content %}{% endblock %}
       </main>
     </div>

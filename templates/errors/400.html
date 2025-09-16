@@ -1,0 +1,11 @@
+{% extends "errors/error_base.html" %}
+{% block title %}Bad Request (400){% endblock %}
+{% block content %}
+<div class="text-center my-5">
+  <h1 class="display-1 fw-bold text-warning">400</h1>
+  <p class="lead">The request could not be understood by the server.</p>
+  <a href="{% url 'home' %}" class="btn btn-outline-primary btn-lg mt-3">
+    <i class="bi bi-arrow-repeat"></i> Try Again
+  </a>
+</div>
+{% endblock %}

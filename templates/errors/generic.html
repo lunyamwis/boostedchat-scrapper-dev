@@ -1,0 +1,15 @@
+{% extends "errors/error_base.html" %}
+{% block title %}Oops! Something Went Wrong{% endblock %}
+{% block content %}
+<div class="text-center my-5">
+  <h1 class="display-1 fw-bold text-danger">⚠️</h1>
+  <p class="lead">We hit a bump in the road. Don’t worry — our team has been notified.</p>
+  <p class="text-muted">Please try again in a moment.</p>
+  <a href="{% url 'home' %}" class="btn btn-primary btn-lg mt-3">
+    <i class="bi bi-house-door-fill"></i> Back to Home
+  </a>
+  <a href="javascript:location.reload()" class="btn btn-outline-secondary btn-lg mt-3 ms-2">
+    <i class="bi bi-arrow-clockwise"></i> Reload Page
+  </a>
+</div>
+{% endblock %}
