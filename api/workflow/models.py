@@ -27,6 +27,7 @@ class WorkflowModel(BaseModel):
     airflow_creds = models.ForeignKey(AirflowCreds,on_delete=models.CASCADE,null=True, blank=True)
     workflow_type = models.CharField(max_length=255, choices=WORKFLOW_CHOICES, default="simple_httpoperators_sequential_run")
 
+
 class HttpOperatorConnectionModel(BaseModel):
     connection_id = models.CharField(max_length=255)
     conn_type = models.CharField(max_length=255)
@@ -109,7 +110,8 @@ class CustomFieldValue(BaseModel):
 class Endpoint(BaseModel):
     base_url = models.URLField(null=True,blank=True)
     url = models.CharField(null=True,blank=True)
-    method = models.CharField(max_length=10, choices=(('GET','GET'), ('POST','POST')),default='GET')
+    method = models.CharField(max_length=10, choices=(('GET','GET'), ('POST','POST'),('PUT','PUT'),('DELETE','DELETE'),('PATCH','PATCH'),),default='GET')
+    results = models.JSONField(null=True, blank=True)
     
     def __str__(self):
         return self.url
