@@ -21,7 +21,4 @@ class GlobalErrorMiddleware(MiddlewareMixin):
         # Strategy:
         # - GET → reload same page (to keep URL)
         # - POST/PUT/DELETE → fallback to home (avoid infinite loop / lost form data)
-        if request.method == "GET":
-            return redirect(request.path)
-        else:
-            return render(request, "errors/generic.html", status=500)
+        return render(request, "errors/generic.html", status=500)
