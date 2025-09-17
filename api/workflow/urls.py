@@ -34,6 +34,7 @@ urlpatterns = [
     path('workflow/delete-operator/<str:pk>/', views.delete_httpoperator, name='delete_httpoperator'),
     path('workflow/delete-dag/<str:pk>/', views.delete_dag, name='delete_dag'),
     path('workflow/runner/<str:pk>/', views.WorkflowRunner.as_view(), name='workflow_runner'),
+    path('workflow/results/<str:workflow_id>/', views.WorkflowResultsView.as_view(), name='workflow_results'),
     path('workflow/trigger/<str:pk>/trigger', views.TriggerRun.as_view(), name='trigger_workflow'),
     path('connection/', views.ConnectionListView.as_view(), name='connection_list'),
     path('connection/create/', views.ConnectionCreateView.as_view(), name='connection_create'),
@@ -45,7 +46,7 @@ urlpatterns = [
     path('custom-fields/list/', views.CustomFieldListView.as_view(), name='custom_field_list'),
     path('endpoints/<str:endpoint_id>/custom-field/create/', views.CustomFieldValueCreateView.as_view(), name='custom_field_value_create'),
     path('endpoints/<str:endpoint_id>/url-kwargs/create/', views.URLKwargsCreateView.as_view(), name='url_kwargs_create'),
-    path('endpoints/<str:endpoint_id>/result/', views.EndpointResultsCreateView.as_view(),name="endpoint_results"),
+
     path('displayWorkflow/', views.display_workflows,name="workflows"),
     path('generateWorkflow/', views.generate_workflow,name="create_workflowset"),
     

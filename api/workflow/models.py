@@ -27,6 +27,8 @@ class WorkflowModel(BaseModel):
     delay_durations = models.JSONField(null=True,blank=True)
     airflow_creds = models.ForeignKey(AirflowCreds,on_delete=models.CASCADE,null=True, blank=True)
     workflow_type = models.CharField(max_length=255, choices=WORKFLOW_CHOICES, default="simple_httpoperators_sequential_run")
+    results = models.JSONField(null=True, blank=True)
+    dag_run_id = models.CharField(max_length=255, null=True, blank=True)
 
 
 class HttpOperatorConnectionModel(BaseModel):
@@ -79,7 +81,7 @@ class DagModel(BaseModel):
     trigger_url_expected_key = models.CharField(null=True,blank=True,max_length=255)
     trigger_url_expected_value = models.CharField(null=True,blank=True,max_length=255)
     workflow = models.ForeignKey(WorkflowModel,on_delete=models.CASCADE,null=True, blank=True)
-
+    
     def __str__(self) -> str:
         return self.dag_id
 
@@ -114,7 +116,7 @@ class Endpoint(BaseModel):
     method = models.CharField(max_length=10, choices=(('GET','GET'), ('POST','POST'),('PUT','PUT'),('DELETE','DELETE'),('PATCH','PATCH'),),default='GET')
     results = models.JSONField(null=True, blank=True)
     url_kwargs = models.JSONField(null=True, blank=True)
-
+    
     def __str__(self):
         return self.url
 

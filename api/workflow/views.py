@@ -588,8 +588,11 @@ class TriggerRun(LoginRequiredMixin, View):
             }
 
             now = timezone.now()
+            dag_run_id = f'{dag_id}_{request.tenant.schema_name}_{str(uuid.uuid4())}'
+            workflow.dag_run_id = dag_run_id
+            workflow.save()
             trigger_payload = {
-                "dag_run_id": f'{dag_id}_{request.tenant.schema_name}_{str(uuid.uuid4())}',
+                "dag_run_id": dag_run_id,
                 "logical_date": now.isoformat(),
                 "data_interval_start": now.isoformat(),
                 "data_interval_end": (now + timezone.timedelta(minutes=1)).isoformat(),
@@ -644,11 +647,11 @@ def delete_dag(request, pk):
     return redirect('update_workflow', pk=dag.workflow.id)
 
 
-class EndpointResultsCreateView(LoginRequiredMixin, DetailView):
-    model = Endpoint
-    template_name = "workflows/endpoint_results.html"
-    context_object_name = "endpoint"
-    pk_url_kwarg = "endpoint_id" 
+class WorkflowResultsView(LoginRequiredMixin, DetailView):
+    model = WorkflowModel
+    template_name = "workflows/workflow_results.html"
+    context_object_name = "workflow"
+    pk_url_kwarg = "workflow_id"
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -681,17 +684,27 @@ class EndpointResultsCreateView(LoginRequiredMixin, DetailView):
             "Content-Type": "application/json", 
             "Authorization": f"Bearer {token}",
         }
-        endpoint = self.get_object()
-        dag_id = "first"
-        dag_run_id = "first_lunyamwi_5aa6aa38-5985-4e52-9508-774c3fddd4ac"
-        task_id = "first_endpoint"
-        task_try_number = "1"
-        map_index = "0"
-        logs_url = f"{base_url}/api/v2/dags/{dag_id}/dagRuns/{dag_run_id}/taskInstances/{task_id}/logs/{task_try_number}?map_index={map_index}"
-        resp = requests.get(logs_url, headers=headers)
-        endpoint.results = resp.json()
-        endpoint.save()
-        context['endpoint'] = self.get_object()
+        workflow = self.get_object()
+        dag_id = workflow.dagmodel_set.latest('created_at').dag_id
+        dag_run_id = workflow.dag_run_id
+        url = f"{base_url}/api/v2/dags/{dag_id}/dagRuns/{dag_run_id}/taskInstances"
+        resp = requests.get(url, headers=headers)
+        workflow_results = []
+        if resp.status_code == 200:
+            task_instances = resp.json()["task_instances"]
+            for ti in task_instances:
+                print(ti["task_id"], ti["try_number"], ti.get("map_index", 0))
+                task_id = ti["task_id"]
+                task_try_number = str(ti["try_number"])
+                map_index = str(ti.get("map_index", 0))
+                logs_url = f"{base_url}/api/v2/dags/{dag_id}/dagRuns/{dag_run_id}/taskInstances/{task_id}/logs/{task_try_number}?map_index={map_index}"
+                resp = requests.get(logs_url, headers=headers)
+                workflow_results.append(resp.json())
+
+
+        workflow.results = workflow_results
+        workflow.save()
+        context['workflow'] = self.get_object()
         return context
 
 class WorkflowList(LoginRequiredMixin, ListView):

@@ -15,8 +15,6 @@
                 </form>
                 <a href="{% url 'custom_field_value_create' endpoint.pk %}">Add data points</a> ||
                 <a href="{% url 'url_kwargs_create' endpoint.pk %}">Add URL Kwargs</a>
-                <br>||
-                <a href="{% url 'endpoint_results' endpoint.pk %}">View Results</a>
             </li>
         {% empty %}
             <li>No endpoints available.</li>
