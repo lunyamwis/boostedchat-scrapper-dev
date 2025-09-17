@@ -1,3 +1,4 @@
+import re
 import pandas as pd
 
 def combine_dicts(group):
@@ -107,4 +108,49 @@ def dag_fields_to_exclude():
         ]
 
 
+def replace_url_kwargs(endpoint: str, params: dict | None = None) -> str:
+    """
+    Replace Django-style URL kwargs (<str:...>, <int:...>, etc.) with values from a dict.
+    - If params is None or empty, return the endpoint unchanged (placeholders remain).
+    """
+    if not params:  # covers None or {}
+        return endpoint
 
+    pattern = re.compile(r"<(str|int|slug|uuid):(\w+)>")
+
+    def replacer(match):
+        _, key = match.group(1), match.group(2)  # converter, key
+        if key not in params:
+            return match.group(0)  # leave placeholder untouched
+        return str(params[key])
+
+    return pattern.sub(replacer, endpoint)
+
+
+
+def path_to_regex(path_pattern: str) -> str:
+    """
+    Convert Django-style path string into regex.
+    Example: /facebook/pages/<str:page_id>/ 
+             -> ^/facebook/pages/(?P<page_id>[^/]+)/$
+    """
+    converters = {
+        "str": r"[^/]+",
+        "int": r"\d+",
+        "slug": r"[-a-zA-Z0-9_]+",
+        "uuid": r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}",
+        "path": r".+",
+    }
+
+    regex = path_pattern
+    for conv, rgx in converters.items():
+        regex = re.sub(
+            rf"<{conv}:(\w+)>",
+            lambda m: f"(?P<{m.group(1)}>{rgx})",  # function avoids escape issues
+            regex
+        )
+    return f"^{regex}$"
+
+def paths_match(request_path: str, db_path: str) -> bool:
+    regex = path_to_regex(db_path)
+    return bool(re.match(regex, request_path))

@@ -147,7 +147,7 @@
     <div class="mb-3">
       <label for="{{ form.domain_name.id_for_label }}" class="form-label">{{ form.domain_name.label }}</label>
       {{ form.domain_name|add_class:"form-control" }}
-      <div class="form-text">This will be your subdomain for the tenant.</div>
+      <div class="form-text">This will be your subdomain.</div>
       {% if form.domain_name.errors %}
       <div class="text-danger small">{{ form.domain_name.errors }}</div>
       {% endif %}

@@ -265,6 +265,7 @@ class FacebookPageView(APIView):
             params={'fields': fields},
             access_token=access_token
         )
+        # result.update({"requested_path": request.path, "schema": request.tenant.schema_name})
         
         return Response(result, status=result.get('status_code', 500))
     

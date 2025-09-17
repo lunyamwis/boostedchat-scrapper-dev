@@ -30,10 +30,10 @@ class TenantSignupForm(forms.Form):
         widget=forms.PasswordInput(attrs={'class': 'form-control', 'id': 'password2', 'required': True, 'placeholder': 'Confirm your password'}),
     )
     domain_name = forms.CharField(
-        label="Tenant Domain Name",
+        label="Domain Name (Company Name)",
         max_length=15,
         widget=forms.TextInput(attrs={'class': 'form-control', 'id': 'domainName', 'required': True, 'placeholder': 'yourdomain'}),
-        help_text="This will be your subdomain for the tenant."
+        help_text="This will be your subdomain."
     )
     subscription_plan = forms.ChoiceField(
         label="Select Subscription Plan (KES)",

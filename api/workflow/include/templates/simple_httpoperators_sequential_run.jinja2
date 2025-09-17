@@ -28,19 +28,34 @@ with DAG(
 
     {% for operator in operators %}
     # Define the HTTP task to make a GET request using Jinja templating
-    http_task_{{operator.task_id}} = HttpOperator.partial(
-        task_id="{{ operator.task_id }}",
-        http_conn_id="{{ operator.http_conn_id }}",
-        endpoint="{{ operator.endpoint }}",
-        method="{{ operator.method }}",
-        headers={{ operator.headers | tojson }},  # Assuming headers is a dictionary, convert it to JSON
-        log_response=True,
-        do_xcom_push=True,  # Enable pushing response to XCom
-    ).expand(
-        data=[json.dumps(x) for x in {{ operator.data }}]  # Assuming data is a dictionary, convert it to JSON
-    )
-    http_tasks.append(http_task_{{operator.task_id}})
+    {% if operator.data %}
+        http_task_{{operator.task_id}} = HttpOperator.partial(
+            task_id="{{ operator.task_id }}",
+            http_conn_id="{{ operator.http_conn_id }}",
+            endpoint="{{ operator.endpoint }}",
+            method="{{ operator.method }}",
+            headers={{ operator.headers | tojson }},  # Assuming headers is a dictionary, convert it to JSON
+            log_response=True,
+            do_xcom_push=True,  # Enable pushing response to XCom
+        ).expand(
+            data=[json.dumps(x) for x in {{ operator.data }}]  # Assuming data is a dictionary, convert it to JSON
+        )
+        http_tasks.append(http_task_{{operator.task_id}})
+    {% else %}
+        http_task_{{operator.task_id}} = HttpOperator.partial(
+            task_id="{{ operator.task_id }}",
+            http_conn_id="{{ operator.http_conn_id }}",
+            endpoint="{{ operator.endpoint }}",
+            method="{{ operator.method }}",
+            headers={{ operator.headers | tojson }},  # Assuming headers is a dictionary, convert it to JSON
+            log_response=True,
+            do_xcom_push=True,  # Enable pushing response to XCom
+            data=json.dumps({{operator.data}})  # Assuming data is a dictionary, convert it to JSON
+        )
+        http_tasks.append(http_task_{{operator.task_id}})
+    {% endif %}
+    
     {% endfor %}
     # Unpack the http tasks and chain them together to run sequentially
-    chain(*http_tasks)
+        chain(*http_tasks)
 {% endfor %}

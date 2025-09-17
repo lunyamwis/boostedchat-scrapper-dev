@@ -44,6 +44,8 @@ urlpatterns = [
     path('custom-fields/delete/<str:pk>/', views.CustomFieldDeleteView.as_view(), name='custom_field_delete'),
     path('custom-fields/list/', views.CustomFieldListView.as_view(), name='custom_field_list'),
     path('endpoints/<str:endpoint_id>/custom-field/create/', views.CustomFieldValueCreateView.as_view(), name='custom_field_value_create'),
+    path('endpoints/<str:endpoint_id>/url-kwargs/create/', views.URLKwargsCreateView.as_view(), name='url_kwargs_create'),
+    path('endpoints/<str:endpoint_id>/result/', views.EndpointResultsCreateView.as_view(),name="endpoint_results"),
     path('displayWorkflow/', views.display_workflows,name="workflows"),
     path('generateWorkflow/', views.generate_workflow,name="create_workflowset"),
     

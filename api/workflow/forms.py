@@ -6,6 +6,15 @@ from api.workflow.utils import dag_fields_to_exclude
 
 dag_exclusions = dag_fields_to_exclude()
 
+class URLKwargsForm(forms.ModelForm):
+    class Meta:
+        model = Endpoint
+        fields = ['url_kwargs']
+        widgets = {
+            "url_kwargs": forms.Textarea(attrs={"class": "form-control", "placeholder": "URL Kwargs (JSON format)", "rows": 5}),
+        }
+
+
 class DagModelForm(forms.ModelForm):
     class Meta:
         model = DagModel

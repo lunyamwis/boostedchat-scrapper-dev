@@ -48,7 +48,7 @@ from api.workflow.models import WorkflowModel, DagModel, SimpleHttpOperatorModel
 # from tabulate import tabulate # for print_logs
 from urllib.parse import urlparse
 from api.sales_rep.helpers.task_allocation import no_consecutives, no_more_than_x,get_moving_average
-from api.workflow.utils import flatten_dict,remove_timestamp,merge_lists_by_timestamp,flatten_dict_list,expand_comma_values
+from api.workflow.utils import flatten_dict,remove_timestamp,merge_lists_by_timestamp,flatten_dict_list,expand_comma_values,replace_url_kwargs
 from api.workflow.dag_generator import generate_dag
 from api.sales_rep.models import SalesRep, Influencer, LeadAssignmentHistory
 from django.db.models import Q
@@ -1885,7 +1885,7 @@ def generate_dag_script(workflow_id):
             print(operator['connection_id'])
             operator['http_conn_id'] = HttpOperatorConnectionModel.objects.get(id=operator['connection_id']).connection_id
             endpoint = Endpoint.objects.get(id=operator['endpointurl_id'])
-            operator['endpoint'] = endpoint.url
+            operator['endpoint'] = replace_url_kwargs(endpoint.url,endpoint.url_kwargs if endpoint.url_kwargs else {})
             operator['method'] = endpoint.method
             # Get the content type for the Endpoint model
             endpoint_content_type = ContentType.objects.get_for_model(Endpoint)

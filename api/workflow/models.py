@@ -11,6 +11,7 @@ class AirflowCreds(BaseModel):
     password = models.CharField(max_length=255)
     schema_name = models.CharField(max_length=255)
     airflow_base_url = models.URLField()
+    airflow_token = models.CharField(max_length=255,null=True,blank=True)
 
     def __str__(self) -> str:
         return self.schema_name
@@ -112,7 +113,8 @@ class Endpoint(BaseModel):
     url = models.CharField(null=True,blank=True)
     method = models.CharField(max_length=10, choices=(('GET','GET'), ('POST','POST'),('PUT','PUT'),('DELETE','DELETE'),('PATCH','PATCH'),),default='GET')
     results = models.JSONField(null=True, blank=True)
-    
+    url_kwargs = models.JSONField(null=True, blank=True)
+
     def __str__(self):
         return self.url
 

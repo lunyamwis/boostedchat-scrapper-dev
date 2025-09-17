@@ -16,7 +16,8 @@ def sequential_http(method="GET", endpoint="http://your-api/facebook/users/me/",
             f"https://lunyamwi.org{endpoint}",
             json=payload,
             headers={"Content-Type": "application/json"},
-            params=payload if method.upper() == "GET" else None
+            params=payload if method.upper() == "GET" else None,
+            data=payload if method.upper() == "POST" or method.upper() == "PUT" or method.upper() == "PATCH" else None
         )
         print(f"Response: {resp.status_code} -> {resp.text}")
         wait_time = random.randint(10, 20)  # your requested range
@@ -39,21 +40,33 @@ with DAG(
 
     {% for operator in operators %}
 
-
-    task = PythonOperator.partial(
-        task_id="{{ operator.task_id }}",
-        python_callable=sequential_http
-    ).expand(
-        op_kwargs=[
-            {
+    {% if operator.data %}
+        task = PythonOperator.partial(
+            task_id="{{ operator.task_id }}",
+            python_callable=sequential_http
+        ).expand(
+            op_kwargs=[
+                {
+                    "method": "{{ operator.method }}",
+                    "endpoint": "{{ operator.endpoint }}",
+                    "payloads": [json.dumps(x) for x in {{ operator.data }}]  # Assuming data is a list of dictionaries
+                }
+            ]
+        )
+        http_tasks.append(task)
+    {% else %}
+        task = PythonOperator(
+            task_id="{{ operator.task_id }}",
+            python_callable=sequential_http,
+            op_kwargs={
                 "method": "{{ operator.method }}",
                 "endpoint": "{{ operator.endpoint }}",
-                "payloads": [json.dumps(x) for x in {{ operator.data }}]  # Assuming data is a list of dictionaries
+                "payloads": [json.dumps({})]  # Empty payload
             }
-        ]
-    )
-    http_tasks.append(task)
+        )
+        http_tasks.append(task)
+    {% endif %}
 
-    chain(*http_tasks)
+        chain(*http_tasks)
     {% endfor %}
 {% endfor %}

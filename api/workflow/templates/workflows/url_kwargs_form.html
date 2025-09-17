@@ -1,0 +1,24 @@
+{% extends 'workflows/main.html' %}
+
+{% block content %}
+{% load crispy_forms_tags %}
+<h1>Add Value for {{ endpoint.url }}</h1>
+
+<form method="post">
+    {% csrf_token %}
+    {{ form.url_kwargs.label_tag }}
+    {{ form.url_kwargs }}
+    <button type="submit">Save</button>
+</form>
+
+
+<a href="{% url 'endpoint_list' %}">Back to Endpoints</a>
+
+{% if form.errors %}
+<div style="color: red;">
+    {{ form.errors }}
+</div>
+{% endif %}
+
+
+{% endblock %}

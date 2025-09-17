@@ -1,6 +1,7 @@
 import requests
 import json
 import os
+import re
 import uuid
 import logging
 from django.urls import reverse_lazy
@@ -11,6 +12,7 @@ from django.forms import inlineformset_factory
 from django import forms
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import render
+from django.utils import timezone
 from requests.auth import HTTPBasicAuth
 from rest_framework import generics,viewsets
 from rest_framework.permissions import IsAuthenticated, AllowAny
@@ -24,6 +26,8 @@ from django.contrib import messages
 from api.workflow.dag_file_handler import push_file,push_file_gcp
 from api.workflow.tasks import generate_dag_script
 
+from api.workflow.utils import paths_match, path_to_regex
+
 from api.scout.models import Scout
 from api.workflow.models import CustomField, CustomFieldValue, Endpoint, HttpOperatorConnectionModel, WorkflowModel, SimpleHttpOperatorModel, DagModel, AirflowCreds
 from api.workflow.serializers import (
@@ -31,7 +35,7 @@ from api.workflow.serializers import (
     HttpOperatorConnectionModelSerializer, WorkflowModelSerializer, SimpleHttpOperatorModelSerializer, DagModelSerializer, AirflowCredsSerializer
 )
 from api.workflow.forms import (
-    CustomFieldForm, CustomFieldValueForm, EndpointForm, HttpOperatorConnectionForm, WorkflowModelForm, SimpleHttpOperatorModelForm, DagModelForm, SimpleHttpOperatorFormSet, DagFormSet, WorkflowRunnerForm
+    CustomFieldForm, CustomFieldValueForm, EndpointForm, HttpOperatorConnectionForm, WorkflowModelForm, SimpleHttpOperatorModelForm, DagModelForm, SimpleHttpOperatorFormSet, DagFormSet, WorkflowRunnerForm, URLKwargsForm
 )
 
 
@@ -141,6 +145,20 @@ class CustomFieldValueCreateView(LoginRequiredMixin, CreateView):
         # Save the constructed JSON object in the value field
         form.instance.value = json_value
         return super().form_valid(form)
+    
+class URLKwargsCreateView(LoginRequiredMixin, CreateView):
+    model = Endpoint
+    form_class = URLKwargsForm
+    template_name = 'workflows/url_kwargs_form.html'
+    success_url = reverse_lazy('endpoint_list')  # Redirect after creation
+
+    def form_valid(self, form):
+        # Associate the url_kwargs with an endpoint (or other model)
+        endpoint_id = self.kwargs['endpoint_id']
+        endpoint = Endpoint.objects.get(id=endpoint_id)
+        endpoint.url_kwargs = form.cleaned_data['url_kwargs']
+        endpoint.save()
+        return redirect('endpoint_list')
 
 class SimpleHttpOperatorViewSet(LoginRequiredMixin, viewsets.ModelViewSet):
     queryset = SimpleHttpOperatorModel.objects.all()
@@ -168,7 +186,7 @@ class EndpointUpdateView(LoginRequiredMixin, UpdateView):
 class EndpointDeleteView(LoginRequiredMixin, DeleteView):
     model = Endpoint
     template_name = 'workflows/endpoint_confirm_delete.html'  # Template for confirming deletion
-    success_url = reverse_lazy('endpoi  nt_list')  # Redirect URL after successful deletion
+    success_url = reverse_lazy('endpoint_list')  # Redirect URL after successful deletion
 
 class ConnectionListView(LoginRequiredMixin, ListView):
     model = HttpOperatorConnectionModel
@@ -491,17 +509,44 @@ class TriggerRun(LoginRequiredMixin, View):
         dag_id = workflow.dagmodel_set.latest('created_at').dag_id
         try:
             airflowcreds = AirflowCreds.objects.latest('created_at')
+            base_url = airflowcreds.airflow_base_url
+            token = airflowcreds.airflow_token
             headers = {
                 "Content-Type": "application/json",
-                "Accept": "application/json",
+                "Authorization": f"Bearer {token}",
             }
+            resp = requests.get(f"{base_url}/api/v2/dags", headers=headers)
+
+            if resp.status_code == 200:
+                print("Token is valid")
+            else:
+                print(f"Token invalid or expired, status code therefore renewing: {resp.status_code}")
+                headers = {"Content-Type": "application/json", "Accept": "application/json"}
+            
+                resp = requests.post(
+                    f"{base_url}/auth/token",
+                    json={"username": airflowcreds.username, "password": airflowcreds.password},
+                    headers=headers
+                )
+                
+                if resp.status_code in [200, 201]:
+                    token = resp.json()["access_token"]
+                    airflowcreds.airflow_token = token
+                    airflowcreds.save()
+            
+            # update the headers with the new token
+            headers = {
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {token}",
+            }
+            
             dag_update_data = {
                 "is_paused": False
             }
-            resp = requests.patch(f"{airflowcreds.airflow_base_url}/api/v1/dags/{dag_id}", 
+            resp = requests.patch(f"{airflowcreds.airflow_base_url}/api/v2/dags/{dag_id}", 
                                     data=json.dumps(dag_update_data),
-                                    auth=HTTPBasicAuth(airflowcreds.username, airflowcreds.password),
                                     headers=headers)
+            # import pdb; pdb.set_trace()
             if resp.status_code in [200,201]:
                 messages.success(request, "DAG unpaused successfully")
             else:
@@ -511,15 +556,50 @@ class TriggerRun(LoginRequiredMixin, View):
         # Trigger the DAG run
         try:
             airflowcreds = AirflowCreds.objects.latest('created_at')
+            base_url = airflowcreds.airflow_base_url
+            token = airflowcreds.airflow_token
             headers = {
                 "Content-Type": "application/json",
-                "Accept": "application/json",
+                "Authorization": f"Bearer {token}",
             }
-            dag_run_data = {'conf': {}, 'dag_run_id': f'{dag_id}_{str(uuid.uuid4())}', 'note': None}
+            resp = requests.get(f"{base_url}/api/v2/dags", headers=headers)
+
+            if resp.status_code == 200:
+                print("Token is valid")
+            else:
+                print(f"Token invalid or expired, status code therefore renewing: {resp.status_code}")
+                headers = {"Content-Type": "application/json", "Accept": "application/json"}
+            
+                resp = requests.post(
+                    f"{base_url}/auth/token",
+                    json={"username": airflowcreds.username, "password": airflowcreds.password},
+                    headers=headers
+                )
+                
+                if resp.status_code in [200, 201]:
+                    token = resp.json()["access_token"]
+                    airflowcreds.airflow_token = token
+                    airflowcreds.save()
+            
+            # update the headers with the new token
+            headers = {
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {token}",
+            }
+
+            now = timezone.now()
+            trigger_payload = {
+                "dag_run_id": f'{dag_id}_{request.tenant.schema_name}_{str(uuid.uuid4())}',
+                "logical_date": now.isoformat(),
+                "data_interval_start": now.isoformat(),
+                "data_interval_end": (now + timezone.timedelta(minutes=1)).isoformat(),
+                "run_after": now.isoformat(),
+                "conf": {},
+                "note": "Triggered via API using Django timezone"
+            }
             resp = requests.post(
-                f"{airflowcreds.airflow_base_url}/api/v1/dags/{dag_id}/dagRuns",
-                data=json.dumps(dag_run_data),
-                auth=HTTPBasicAuth(airflowcreds.username, airflowcreds.password),
+                f"{airflowcreds.airflow_base_url}/api/v2/dags/{dag_id}/dagRuns",
+                json=trigger_payload,
                 headers=headers
             )
             if resp.status_code == 200:
@@ -563,6 +643,56 @@ def delete_dag(request, pk):
             )
     return redirect('update_workflow', pk=dag.workflow.id)
 
+
+class EndpointResultsCreateView(LoginRequiredMixin, DetailView):
+    model = Endpoint
+    template_name = "workflows/endpoint_results.html"
+    context_object_name = "endpoint"
+    pk_url_kwarg = "endpoint_id" 
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        airflowcreds = AirflowCreds.objects.latest('created_at')
+        base_url = airflowcreds.airflow_base_url
+        token = airflowcreds.airflow_token
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {token}",
+        }
+        resp = requests.get(f"{base_url}/api/v2/dags", headers=headers)
+        if resp.status_code == 200:
+            print("Token is valid")
+        else:
+            print(f"Token invalid or expired, status code therefore renewing: {resp.status_code}")
+            headers = {"Content-Type": "application/json", "Accept": "application/json"}
+        
+            resp = requests.post(
+                f"{base_url}/auth/token",
+                json={"username": airflowcreds.username, "password": airflowcreds.password},
+                headers=headers
+            )
+            
+            if resp.status_code in [200, 201]:
+                token = resp.json()["access_token"]
+                airflowcreds.airflow_token = token
+                airflowcreds.save()
+        # update the headers with the new token
+        headers = {
+            "Content-Type": "application/json", 
+            "Authorization": f"Bearer {token}",
+        }
+        endpoint = self.get_object()
+        dag_id = "first"
+        dag_run_id = "first_lunyamwi_5aa6aa38-5985-4e52-9508-774c3fddd4ac"
+        task_id = "first_endpoint"
+        task_try_number = "1"
+        map_index = "0"
+        logs_url = f"{base_url}/api/v2/dags/{dag_id}/dagRuns/{dag_run_id}/taskInstances/{task_id}/logs/{task_try_number}?map_index={map_index}"
+        resp = requests.get(logs_url, headers=headers)
+        endpoint.results = resp.json()
+        endpoint.save()
+        context['endpoint'] = self.get_object()
+        return context
 
 class WorkflowList(LoginRequiredMixin, ListView):
     model = WorkflowModel
