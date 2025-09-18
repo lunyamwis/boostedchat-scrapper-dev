@@ -32,10 +32,14 @@ class TenantAwareAdapter(DefaultSocialAccountAdapter):
 
     
     def get_connect_redirect_url(self, request, socialaccount):
-        return super().get_connect_redirect_url(request, socialaccount)
-    
-    
-    
+        print("Get connect redirect URL called")
+        print()
+        url = super().get_connect_redirect_url(request, socialaccount)
+        print("+++++++++++++++++++++Redirect URL:", url)
+        return url
+
+
+
     def generate_state_param(self, state_dict: dict) -> str:
         # First let allauth generate the base state string
         base_state = super().generate_state_param(state_dict)
