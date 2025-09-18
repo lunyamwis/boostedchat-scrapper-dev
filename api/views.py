@@ -1,6 +1,8 @@
 # yourapp/views.py
 from django.shortcuts import render, redirect
 from django.contrib import messages
+from .utils import decode_state
+
 import logging
 
 logger = logging.getLogger(__name__)
@@ -28,7 +30,27 @@ def handler500(request):
     messages.error(request, "⚠️ Something went wrong on our side. Please try again later.")
     return render(request, "errors/500.html", status=500)
 
+# views.py
+
+
 
 def oauth_callback(request, provider):
     query_string = request.META.get("QUERY_STRING", "")
-    return redirect(f"/accounts/{provider}/login/callback/?{query_string}")
+    logger.debug("[CALLBACK] Provider=%s Raw query=%s", provider, query_string)
+
+    state = request.GET.get("state")
+    tenant, allauth_state = decode_state(state)
+
+    # Replace state in query string with the original Allauth state
+    query_params = request.GET.copy()
+    query_params["state"] = allauth_state
+
+    tenant = tenant or "public"
+
+    scheme = "https" if request.is_secure() else "http"
+    forward_url = f"{scheme}://{tenant}.lunyamwi.org/accounts/{provider}/login/callback/?{query_params.urlencode()}"
+
+    logger.debug("[CALLBACK] Forwarding to %s", forward_url)
+
+    return redirect(forward_url)
+

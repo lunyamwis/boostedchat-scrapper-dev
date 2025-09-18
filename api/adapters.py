@@ -1,6 +1,8 @@
 # apps/accounts/adapters.py
 import logging
 from allauth.socialaccount.adapter import DefaultSocialAccountAdapter
+from django.http import HttpResponse
+from .utils import encode_state
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +25,25 @@ class TenantAwareAdapter(DefaultSocialAccountAdapter):
         logger.error("Error: %s", error)
         logger.error("Exception: %s", exception)
         logger.error("Extra context: %s", extra_context)
-        return super().authentication_error(request, provider_id, error, exception, extra_context)
+        return HttpResponse(
+            f"Authentication error for {provider_id}: {error} ({exception})",
+            status=400
+        )
+
+    def get_authorize_url(self, request, provider, action):
+        url = super().get_authorize_url(request, provider, action)
+        return url
+
+    def get_connect_redirect_url(self, request, socialaccount):
+        return super().get_connect_redirect_url(request, socialaccount)
+
+    def stash_state(self, request, state):
+        tenant = getattr(request, "tenant", None)
+        tenant_name = getattr(tenant, "schema_name", "public")
+        encoded = encode_state(tenant_name, state)
+        logger.debug("[ADAPTER] stash_state tenant=%s original=%s encoded=%s", tenant_name, state, encoded)
+        return encoded
+    
 
     def populate_state(self, request, state):
         """Inject tenant info into the OAuth state param before redirecting to provider."""
