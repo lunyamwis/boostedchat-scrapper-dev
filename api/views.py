@@ -50,6 +50,7 @@ def oauth_callback(request, provider):
 # myapp/views.py
 # myapp/views.py
 # myapp/views.py
+# myapp/views.py
 import logging
 from django.views import View
 from django.shortcuts import redirect
@@ -58,26 +59,26 @@ from allauth.socialaccount.helpers import complete_social_login, render_authenti
 from allauth.socialaccount.providers.oauth2.client import OAuth2Error
 from django.core.exceptions import PermissionDenied
 from requests.exceptions import RequestException
+from allauth.socialaccount.providers.base import AuthError
 
 logger = logging.getLogger(__name__)
 
 class TenantOAuth2CallbackView(View):
     """
-    Simple multitenant OAuth2 callback view for django-allauth 0.61.1
+    Django CBV for multitenant OAuth2 callback (Allauth 0.61.1)
     """
 
     def get(self, request, *args, **kwargs):
         provider_name = kwargs.get("provider")
         adapter = get_adapter(request)
-        provider = adapter.get_provider(provider_name)
+        provider = adapter.get_provider(provider_name)  # pass provider name!
 
-        # Grab 'state', 'code', 'error' directly from GET params
+        # Extract query parameters
         state_id = request.GET.get("state")
         code = request.GET.get("code")
         error = request.GET.get("error")
 
         if error or not code:
-            logger.warning(f"OAuth2 error from {provider_name}: {error}")
             return render_authentication_error(
                 request,
                 provider,
@@ -85,11 +86,9 @@ class TenantOAuth2CallbackView(View):
                 extra_context={"callback_view": self, "state_id": state_id},
             )
 
-        # Restore state from session
+        # Restore state
         state = adapter.unstash_state(request, state_id)
-
         if state is None:
-            logger.error(f"Could not restore state for {provider_name}")
             return render_authentication_error(
                 request,
                 provider,
@@ -117,7 +116,7 @@ class TenantOAuth2CallbackView(View):
             login.token = token
             login.state = state
 
-            # Optional: store tenant in session for redirect
+            # Optional: store tenant in session
             tenant = state.get("tenant")
             if tenant:
                 request.session["tenant"] = tenant
