@@ -43,6 +43,7 @@ class TenantAwareAdapter(DefaultSocialAccountAdapter):
             Here we wrap Allauth's state with tenant info.
             """
             base_state = super().get_state_param(request)
+            print("------------->",request.user)
             tenant = getattr(request, "tenant", None)
             tenant_name = getattr(tenant, "schema_name", "public")
 
