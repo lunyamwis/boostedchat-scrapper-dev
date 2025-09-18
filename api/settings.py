@@ -56,7 +56,7 @@ os.environ["DJANGO_ALLOW_ASYNC_UNSAFE"] = "true"
 SECRET_KEY = 'django-insecure-utr163745j!iq*)7h-+g6_!y+z$mkmcx3x2ouv$gq$8-42)yn+'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
 
 ALLOWED_HOSTS = [
@@ -372,6 +372,8 @@ SIMPLE_JWT = {
 
 SOCIALACCOUNT_PROVIDERS = {
     'facebook': {
+        'ADAPTER': 'api.authentication.adapters.TenantAwareAdapter',
+        # 'provider_class': 'api.authentication.providers.TenantAwareFacebookProvider',
         'METHOD': 'oauth2',
         'SCOPE': ['email', 'public_profile', 'user_friends'],  # Add desired extra permissions here
         'AUTH_PARAMS': {'auth_type': 'reauthenticate', 'redirect_uri':'https://lunyamwi.org'},
@@ -392,6 +394,8 @@ SOCIALACCOUNT_PROVIDERS = {
     # Add other providers similarly
     # settings.py
     'google': {
+        'ADAPTER': 'api.authentication.adapters.TenantAwareAdapter',
+        # 'provider_class': 'api.authentication.providers.TenantAwareGoogleProvider',
         'SCOPE': [
             'openid',
             'profile',
