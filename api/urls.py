@@ -4,6 +4,7 @@ from django.conf import settings
 from django.http import HttpResponse
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from django.conf.urls.static import static
+from . import views
 
 def home(request):
     return HttpResponse("Welcome to the homepage")
@@ -35,6 +36,8 @@ urlpatterns = [
     path('helpers/', include('api.helpers.urls')),  # Include the URLs from the helpers app
     path('', include('home.urls')),  # Include the URLs from the home app
     path('billing/', include('billing.urls')),  # Include the URLs from the billing app
+    path("oauth/callback/<str:provider>/", views.oauth_callback, name="oauth_callback"),
+
 ]+ static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
 
 

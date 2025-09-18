@@ -1,5 +1,5 @@
 # yourapp/views.py
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.contrib import messages
 import logging
 
@@ -27,3 +27,8 @@ def handler500(request):
     # Generic 500 page for user
     messages.error(request, "⚠️ Something went wrong on our side. Please try again later.")
     return render(request, "errors/500.html", status=500)
+
+
+def oauth_callback(request, provider):
+    query_string = request.META.get("QUERY_STRING", "")
+    return redirect(f"/accounts/{provider}/login/callback/?{query_string}")

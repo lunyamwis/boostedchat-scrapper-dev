@@ -390,19 +390,38 @@ SOCIALACCOUNT_PROVIDERS = {
         }
     },
     # Add other providers similarly
+    # settings.py
     'google': {
-        'SCOPE': ['profile', 'email'],
-        'AUTH_PARAMS': {'access_type': 'online','redirect_uri':'https://lunyamwi.org'},
-        'PROFILE_FIELDS': ['id', 'name', 'email'],
+        'SCOPE': [
+            'openid',
+            'profile',
+            'email',
+            # Gmail scopes:
+            'https://www.googleapis.com/auth/gmail.send',
+            'https://www.googleapis.com/auth/gmail.readonly',
+            'https://www.googleapis.com/auth/gmail.modify',
+            # or full mailbox (very powerful):
+            # 'https://mail.google.com'
+        ],
+        'AUTH_PARAMS': {
+            # offline -> refresh_token; prompt: consent -> force refresh_token return
+            'access_type': 'offline',
+            'prompt': 'consent',
+            'redirect_uri': 'https://lunyamwi.org/oauth/callback/google/',  # keep your existing value
+        },
         'APP': {
-            'client_id': os.getenv("GOOGLE_CLIENT_ID").strip(),
-            'secret': os.getenv("GOOGLE_CLIENT_SECRET").strip(),
+            'client_id': os.getenv("GMAIL_CLIENT_ID").strip(),
+            'secret': os.getenv("GMAIL_CLIENT_SECRET").strip(),
             'key': ''
         }
     }
+
 
 }
 
 SITE_ID = 1
 LOGIN_REDIRECT_URL = '/workflow/'
 ACCOUNT_LOGOUT_REDIRECT_URL = '/accounts/login/'
+
+SOCIALACCOUNT_STORE_TOKENS=True
+SOCIALACCOUNT_ADAPTER = "api.adapters.TenantAwareAdapter"

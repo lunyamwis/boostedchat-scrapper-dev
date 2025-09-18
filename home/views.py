@@ -9,7 +9,7 @@ from .tasks import create_tenant
 
 # Create your views here.
 from django.shortcuts import redirect, render
-
+from rest_framework.decorators import api_view
 from django.http import JsonResponse
 
 def debug_request(request):
@@ -19,6 +19,11 @@ def debug_request(request):
         "http_x_forwarded_proto": request.META.get("HTTP_X_FORWARDED_PROTO"),
     })
 
+
+
+@api_view(['GET'])
+def get_auth_code(requests):
+    pass
 
 @schema_context('public')
 def home(request):
