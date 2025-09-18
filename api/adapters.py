@@ -37,14 +37,19 @@ class TenantAwareAdapter(DefaultSocialAccountAdapter):
     def get_connect_redirect_url(self, request, socialaccount):
         return super().get_connect_redirect_url(request, socialaccount)
 
-    def stash_state(self, request, state):
-        tenant = getattr(request, "tenant", None)
-        tenant_name = getattr(tenant, "schema_name", "public")
-        encoded = encode_state(tenant_name, state)
-        logger.debug("[ADAPTER] stash_state tenant=%s original=%s encoded=%s", tenant_name, state, encoded)
-        return encoded
-    
+    def get_state_param(self, request):
+            """
+            Called when building the authorization URL.
+            Here we wrap Allauth's state with tenant info.
+            """
+            base_state = super().get_state_param(request)
+            tenant = getattr(request, "tenant", None)
+            tenant_name = getattr(tenant, "schema_name", "public")
 
+            encoded = encode_state(tenant_name, base_state)
+            logger.debug("[ADAPTER] get_state_param tenant=%s base=%s encoded=%s", tenant_name, base_state, encoded)
+            return encoded
+    
     def populate_state(self, request, state):
         """Inject tenant info into the OAuth state param before redirecting to provider."""
         tenant = getattr(request, "tenant", None)  # django-tenants gives this
