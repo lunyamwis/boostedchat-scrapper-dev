@@ -425,3 +425,24 @@ ACCOUNT_LOGOUT_REDIRECT_URL = '/accounts/login/'
 
 SOCIALACCOUNT_STORE_TOKENS=True
 SOCIALACCOUNT_ADAPTER = "api.adapters.TenantAwareAdapter"
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+        },
+    },
+    "root": {
+        "handlers": ["console"],
+        "level": "DEBUG",
+    },
+    "loggers": {
+        "allauth": {
+            "handlers": ["console"],
+            "level": "DEBUG",
+            "propagate": True,
+        },
+    },
+}
