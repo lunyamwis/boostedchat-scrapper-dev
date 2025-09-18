@@ -411,7 +411,6 @@ SOCIALACCOUNT_PROVIDERS = {
             # offline -> refresh_token; prompt: consent -> force refresh_token return
             'access_type': 'offline',
             'prompt': 'consent',
-            'redirect_uri': 'https://lunyamwi.org/oauth/callback/google/',  # keep your existing value
         },
         'APP': {
             'client_id': os.getenv("GMAIL_CLIENT_ID").strip(),
