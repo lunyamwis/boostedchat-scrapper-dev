@@ -3,6 +3,7 @@ from django.urls import path,include
 from django.conf import settings
 from django.http import HttpResponse
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+from allauth.socialaccount.providers.oauth2.views import OAuth2CallbackView
 from django.conf.urls.static import static
 from . import views
 
@@ -37,7 +38,7 @@ urlpatterns = [
     path('', include('home.urls')),  # Include the URLs from the home app
     path('billing/', include('billing.urls')),  # Include the URLs from the billing app
     path("oauth/callback/<str:provider>/", views.oauth_callback, name="oauth_callback"),
-
+    path('accounts/<str:provider>/login/callback/', OAuth2CallbackView, name='socialaccount_callback_custom'),
 ]+ static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
 
 

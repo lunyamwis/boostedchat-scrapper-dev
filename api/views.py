@@ -37,24 +37,17 @@ def handler500(request):
 def oauth_callback(request, provider):
     query_string = request.META.get("QUERY_STRING", "")
     logger.debug("[CALLBACK] Provider=%s Raw query=%s", provider, query_string)
-    print(request)
-    try:
-        print(request.tenant)
-    except Exception as e:
-        print("No tenant in request", e)
-    # import pdb;pdb.set_trace()
-    state = request.GET.get("state")
-    tenant, allauth_state = decode_state(state)
-
     # Replace state in query string with the original Allauth state
     query_params = request.GET.copy()
     
-    tenant = tenant or "computertutor"
+    
 
-    scheme = "https" if request.is_secure() else "http"
-    forward_url = f"{scheme}://{tenant}.lunyamwi.org/accounts/{provider}/login/callback/?{query_params.urlencode()}"
+    forward_url = f"https://lunyamwi.org/accounts/{provider}/login/callback/?{query_params.urlencode()}"
 
     logger.debug("[CALLBACK] Forwarding to %s", forward_url)
 
     return redirect(forward_url)
+
+
+
 
