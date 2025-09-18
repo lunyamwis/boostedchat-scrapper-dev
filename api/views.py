@@ -49,7 +49,7 @@ def oauth_callback(request, provider):
     # Replace state in query string with the original Allauth state
     query_params = request.GET.copy()
     
-    tenant = tenant or "public"
+    tenant = tenant or "computertutor"
 
     scheme = "https" if request.is_secure() else "http"
     forward_url = f"{scheme}://{tenant}.lunyamwi.org/accounts/{provider}/login/callback/?{query_params.urlencode()}"
