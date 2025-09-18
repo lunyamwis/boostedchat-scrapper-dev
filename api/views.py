@@ -48,47 +48,51 @@ def oauth_callback(request, provider):
 
     return redirect(forward_url)
 # myapp/views.py
+# myapp/views.py
 import logging
 from django.views import View
-from django.shortcuts import redirect, render
 from django.conf import settings
 from django.core.exceptions import PermissionDenied
+from django.shortcuts import render
 from requests.exceptions import RequestException
-from allauth.socialaccount.helpers import complete_social_login, render_authentication_error
-from allauth.socialaccount.models import SocialLogin
-from allauth.socialaccount.providers.oauth2.client import OAuth2Error
+
 from allauth.socialaccount.adapter import get_adapter
-from allauth.socialaccount import state as statekit
-from allauth.socialaccount.helpers import get_request_param, add_query_params
-from allauth.socialaccount import app_settings as account_settings
+from allauth.socialaccount.helpers import complete_social_login, render_authentication_error, get_request_param
+from allauth.socialaccount.providers.oauth2.client import OAuth2Error
+from allauth.socialaccount.providers.base import AuthError
 
 logger = logging.getLogger(__name__)
 
 class TenantOAuth2CallbackView(View):
     """
-    Django CBV for multitenant OAuth2 callback.
-    All logic is in the GET method.
+    Django CBV for handling OAuth2 callbacks.
     """
 
     def get(self, request, *args, **kwargs):
-        # Get provider
         self.adapter = get_adapter(request)
         provider = self.adapter.get_provider()
 
-        # Decode state
-        state, resp = self._get_state(request, provider)
-        if resp:
-            return resp
+        # Unstash state from session
+        state = None
+        state_id = get_request_param(request, "state")
+        if state_id:
+            state = self.adapter.unstash_state(request, state_id)
 
-        # Handle errors or missing code
+        if state is None:
+            return render_authentication_error(
+                request,
+                provider,
+                extra_context={"state_id": state_id, "callback_view": self},
+            )
+
+        # Error from provider?
         if "error" in request.GET or "code" not in request.GET:
             auth_error = request.GET.get("error")
-            from allauth.socialaccount.providers.base import AuthError
-            if auth_error == getattr(self.adapter, "login_cancelled_error", None):
-                error = AuthError.CANCELLED
-            else:
-                error = AuthError.UNKNOWN
-            logger.warning("OAuth2 login error: %s", auth_error)
+            error = (
+                AuthError.CANCELLED
+                if auth_error == getattr(self.adapter, "login_cancelled_error", None)
+                else AuthError.UNKNOWN
+            )
             return render_authentication_error(
                 request,
                 provider,
@@ -99,63 +103,30 @@ class TenantOAuth2CallbackView(View):
         # Exchange code for token
         app = provider.get_app(request)
         client = self.adapter.get_client(request, app)
+
         try:
             access_token_data = self.adapter.get_access_token_data(
-                request, app, client, pkce_code_verifier=state.get("pkce_code_verifier")
+                request,
+                app,
+                client,
+                pkce_code_verifier=state.get("pkce_code_verifier"),
             )
             token = self.adapter.parse_token(access_token_data)
             if app.pk:
                 token.app = app
 
-            login: SocialLogin = self.adapter.complete_login(
+            login = self.adapter.complete_login(
                 request, app, token, response=access_token_data
             )
             login.token = token
             login.state = state
 
-            # Log tenant
-            tenant = state.get("tenant")
-            logger.info("OAuth2 login successful for tenant: %s", tenant)
-            if tenant:
-                request.session["tenant"] = tenant
-
             return complete_social_login(request, login)
 
         except (PermissionDenied, OAuth2Error, RequestException) as e:
-            logger.error("OAuth2 token exchange error: %s", e)
             return render_authentication_error(
                 request, provider, exception=e, extra_context={"state": state}
             )
-
-    def _get_state(self, request, provider):
-        state = None
-        state_id = get_request_param(request, "state")
-        if self.adapter.supports_state and state_id:
-            state = statekit.unstash_state(request, state_id)
-        else:
-            state = statekit.unstash_last_state(request)
-
-        if state is None:
-            resp = self._redirect_strict_samesite(request, provider)
-            if resp:
-                return None, resp
-            return None, render_authentication_error(
-                request,
-                provider,
-                extra_context={"state_id": state_id, "callback_view": self},
-            )
-        return state, None
-
-    def _redirect_strict_samesite(self, request, provider):
-        if "_redir" in request.GET or settings.SESSION_COOKIE_SAMESITE.lower() != "strict" or request.method != "GET":
-            return
-        redirect_to = request.get_full_path()
-        redirect_to = add_query_params(redirect_to, {"_redir": ""})
-        return render(
-            request,
-            "socialaccount/login_redirect." + account_settings.TEMPLATE_EXTENSION,
-            {"provider": provider, "redirect_to": redirect_to},
-        )
 
 
 
