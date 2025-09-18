@@ -48,6 +48,13 @@ def oauth_callback(request, provider):
 
     return redirect(forward_url)
 
+import logging
+from allauth.socialaccount.providers.oauth2.views import OAuth2CallbackView
+
+class TenantOAuth2CallbackView(OAuth2CallbackView):
+    def __call__(self, request, *args, **kwargs):
+        print("Callback hit:", request.GET)
+        return super().__call__(request, *args, **kwargs)
 
 
 
