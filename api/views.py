@@ -51,3 +51,20 @@ def oauth_callback(request, provider):
 
 
 
+def oauth_callback2(request, provider):
+    query_string = request.META.get("QUERY_STRING", "")
+    logger.debug("[CALLBACK] Provider=%s Raw query=%s", provider, query_string)
+    # Replace state in query string with the original Allauth state
+    query_params = request.GET.copy()
+    
+    
+
+    forward_url = f"https://lunyamwi.org/accounts/{provider}/login/callback/2?{query_params.urlencode()}"
+
+    logger.debug("[CALLBACK] Forwarding to %s", forward_url)
+
+    return redirect(forward_url)
+
+
+
+
