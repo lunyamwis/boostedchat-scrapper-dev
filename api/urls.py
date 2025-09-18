@@ -37,9 +37,11 @@ urlpatterns = [
     path('helpers/', include('api.helpers.urls')),  # Include the URLs from the helpers app
     path('', include('home.urls')),  # Include the URLs from the home app
     path('billing/', include('billing.urls')),  # Include the URLs from the billing app
-    path("oauth/callback/<str:provider>/", views.oauth_callback, name="oauth_callback"),
-    path('accounts/<str:provider>/login/callback/', views.oauth_callback2, name='socialaccount_callback_custom'),
+    # path("oauth/callback/<str:provider>/", views.oauth_callback, name="oauth_callback"),
+    path("oauth/callback/<str:provider>/", OAuth2CallbackView, name="oauth_callback"),
+    # path('accounts/<str:provider>/login/callback/', views.oauth_callback2, name='socialaccount_callback_custom'),
     path('accounts/<str:provider>/login/callback/2', OAuth2CallbackView, name='socialaccount_callback_custom'),
+    
 ]+ static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
 
 
