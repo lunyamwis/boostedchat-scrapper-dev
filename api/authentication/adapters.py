@@ -37,19 +37,22 @@ class TenantAwareAdapter(DefaultSocialAccountAdapter):
     def get_connect_redirect_url(self, request, socialaccount):
         return super().get_connect_redirect_url(request, socialaccount)
 
-    def get_state_param(self, request):
-            """
-            Called when building the authorization URL.
-            Here we wrap Allauth's state with tenant info.
-            """
-            base_state = super().get_state_param(request)
-            print("------------->",request.user)
-            tenant = getattr(request, "tenant", None)
-            tenant_name = getattr(tenant, "schema_name", "public")
-
-            encoded = encode_state(tenant_name, base_state)
-            logger.debug("[ADAPTER] get_state_param tenant=%s base=%s encoded=%s", tenant_name, base_state, encoded)
-            return encoded
+    def generate_state_param(self, request, state_dict):
+        """
+        Override this to wrap allauth's state with tenant info.
+        `state_dict` is what allauth will use internally. You encode it and return your custom string.
+        """
+        base_state = super().generate_state_param(request, state_dict)
+        tenant = getattr(request, "tenant", None)
+        try:
+            print("request.user: -->>", request.user)
+        except Exception as e:
+            print("Error accessing request.user:", e)
+        tenant_name = getattr(tenant, "schema_name", "public")
+        encoded = encode_state(tenant_name, base_state)
+        logger.debug("[ADAPTER] generate_state_param tenant=%s base=%s encoded=%s",
+                     tenant_name, base_state, encoded)
+        return encoded
     
     def populate_state(self, request, state):
         """Inject tenant info into the OAuth state param before redirecting to provider."""

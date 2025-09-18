@@ -424,7 +424,8 @@ LOGIN_REDIRECT_URL = '/workflow/'
 ACCOUNT_LOGOUT_REDIRECT_URL = '/accounts/login/'
 
 SOCIALACCOUNT_STORE_TOKENS=True
-SOCIALACCOUNT_ADAPTER = "api.adapters.TenantAwareAdapter"
+SOCIALACCOUNT_ADAPTER = "api.authentication.adapters.TenantAwareAdapter"
+ADAPTER = "api.authentication.adapters.TenantAwareAdapter"
 
 LOGGING = {
     "version": 1,
