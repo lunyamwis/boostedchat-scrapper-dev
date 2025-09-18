@@ -49,87 +49,90 @@ def oauth_callback(request, provider):
     return redirect(forward_url)
 # myapp/views.py
 # myapp/views.py
+# myapp/views.py
 import logging
 from django.views import View
-from django.conf import settings
-from django.core.exceptions import PermissionDenied
-from django.shortcuts import render
-from requests.exceptions import RequestException
-
+from django.shortcuts import redirect
 from allauth.socialaccount.adapter import get_adapter
-from allauth.socialaccount.helpers import complete_social_login, render_authentication_error, get_request_param
+from allauth.socialaccount.helpers import complete_social_login, render_authentication_error
 from allauth.socialaccount.providers.oauth2.client import OAuth2Error
-from allauth.socialaccount.providers.base import AuthError
+from django.core.exceptions import PermissionDenied
+from requests.exceptions import RequestException
 
 logger = logging.getLogger(__name__)
 
 class TenantOAuth2CallbackView(View):
     """
-    Django CBV for handling OAuth2 callbacks.
+    Simple multitenant OAuth2 callback view for django-allauth 0.61.1
     """
 
     def get(self, request, *args, **kwargs):
-        self.adapter = get_adapter(request)
-        provider = self.adapter.get_provider()
+        provider_name = kwargs.get("provider")
+        adapter = get_adapter(request)
+        provider = adapter.get_provider(provider_name)
 
-        # Unstash state from session
-        state = None
-        state_id = get_request_param(request, "state")
-        if state_id:
-            state = self.adapter.unstash_state(request, state_id)
+        # Grab 'state', 'code', 'error' directly from GET params
+        state_id = request.GET.get("state")
+        code = request.GET.get("code")
+        error = request.GET.get("error")
+
+        if error or not code:
+            logger.warning(f"OAuth2 error from {provider_name}: {error}")
+            return render_authentication_error(
+                request,
+                provider,
+                error=None,
+                extra_context={"callback_view": self, "state_id": state_id},
+            )
+
+        # Restore state from session
+        state = adapter.unstash_state(request, state_id)
 
         if state is None:
+            logger.error(f"Could not restore state for {provider_name}")
             return render_authentication_error(
                 request,
                 provider,
-                extra_context={"state_id": state_id, "callback_view": self},
-            )
-
-        # Error from provider?
-        if "error" in request.GET or "code" not in request.GET:
-            auth_error = request.GET.get("error")
-            error = (
-                AuthError.CANCELLED
-                if auth_error == getattr(self.adapter, "login_cancelled_error", None)
-                else AuthError.UNKNOWN
-            )
-            return render_authentication_error(
-                request,
-                provider,
-                error=error,
-                extra_context={"state": state, "callback_view": self},
+                extra_context={"callback_view": self, "state_id": state_id},
             )
 
         # Exchange code for token
         app = provider.get_app(request)
-        client = self.adapter.get_client(request, app)
+        client = adapter.get_client(request, app)
 
         try:
-            access_token_data = self.adapter.get_access_token_data(
+            access_token_data = adapter.get_access_token_data(
                 request,
                 app,
                 client,
                 pkce_code_verifier=state.get("pkce_code_verifier"),
             )
-            token = self.adapter.parse_token(access_token_data)
+            token = adapter.parse_token(access_token_data)
             if app.pk:
                 token.app = app
 
-            login = self.adapter.complete_login(
+            login = adapter.complete_login(
                 request, app, token, response=access_token_data
             )
             login.token = token
             login.state = state
 
+            # Optional: store tenant in session for redirect
+            tenant = state.get("tenant")
+            if tenant:
+                request.session["tenant"] = tenant
+                logger.info(f"OAuth2 login successful for tenant: {tenant}")
+
             return complete_social_login(request, login)
 
         except (PermissionDenied, OAuth2Error, RequestException) as e:
+            logger.error(f"OAuth2 token exchange failed for {provider_name}: {e}")
             return render_authentication_error(
-                request, provider, exception=e, extra_context={"state": state}
+                request,
+                provider,
+                exception=e,
+                extra_context={"callback_view": self, "state": state},
             )
-
-
-
 
 def oauth_callback2(request, provider):
     query_string = request.META.get("QUERY_STRING", "")
