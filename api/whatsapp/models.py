@@ -1,9 +1,19 @@
 from django.db import models
 
 # Create your models here.
+
+class Group(models.Model):
+    name = models.CharField(max_length=255, unique=True)
+    listen = models.BooleanField(default=False)
+
+    def __str__(self):
+        return self.name
+
+
 class ChatSession(models.Model):
     phone = models.CharField(max_length=20, unique=True)
     conversation_history = models.JSONField(default=list)
+    stop = models.BooleanField(default=False)
 
     def __str__(self):
         return self.phone
@@ -11,3 +21,5 @@ class ChatSession(models.Model):
     def add_message(self, role, content):
         self.conversation_history.append({"role": role, "content": content})
         self.save()
+
+

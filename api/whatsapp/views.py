@@ -20,9 +20,11 @@ from django_tenants.utils import schema_context
 from django.http import JsonResponse, HttpResponse
 from rest_framework.permissions import AllowAny
 
-from api.whatsapp.models import ChatSession
-from .prompts import hospital_prompt, system_prompt,solarama_prompt
+from api.whatsapp.models import ChatSession, Group
+from api.prompt.models import Prompt
+from .prompts import solarama_prompt
 from .tasks import send_batch_whatsapp_text
+from .utils import query_gpt
 from .constants import GROUPS_TO_REACT_TO
 
 load_dotenv()
@@ -174,7 +176,7 @@ def query_gpt_test(request):
             chat_session.add_message("user", prompt)
         except ChatSession.DoesNotExist:
             conversation_history=[
-                    {"role": "system", "content": system_prompt},
+                    {"role": "system", "content": solarama_prompt},
                     {"role": "user", "content": prompt},
                 ]
             chat_session = ChatSession.objects.create(
@@ -214,7 +216,7 @@ def query_gpt_test(request):
         except ChatSession.DoesNotExist:
             print("wooooooiiiiii")
             conversation_history=[
-                    {"role": "system", "content": system_prompt},
+                    {"role": "system", "content": solarama_prompt},
                     {"role": "user", "content": my_prompt},
                 ]
             chat_session = ChatSession.objects.create(
@@ -301,43 +303,7 @@ def user_message_processor(message, phonenumber, name):
     #     else:
     #         send_message(message, phonenumber, "CHATBOT", name)
     
-@schema_context(os.getenv('SCHEMA_NAME'))
-def query_gpt(prompt,phone_number=None):
-    # declare chat_session variable
-    chat_session= None
-    if phone_number is not None:
-        try:
-            # Check if session exists
-            conversation_history=[
-                {"role": "system", "content": solarama_prompt},
-                {"role": "user", "content": prompt},
-            ]
-            chat_session = ChatSession.objects.get(phone=phone_number)
-            chat_session.conversation_history = conversation_history
-            chat_session.save()
-            chat_session.add_message("user", prompt)
-        except ChatSession.DoesNotExist:
-            conversation_history=[
-                    {"role": "system", "content": solarama_prompt},
-                    {"role": "user", "content": prompt},
-                ]
-            chat_session = ChatSession.objects.create(
-                phone=phone_number,
-                conversation_history=conversation_history
-            )
-    body = {
-        "model": "gpt-4-1106-preview",
-        "messages": chat_session.conversation_history,
-    }
-    header = {"Authorization": "Bearer " + os.getenv("OPENAI_API_KEY").strip()}
 
-    res = requests.post("https://api.openai.com/v1/chat/completions", json=body, headers=header)
-    # save the response to the database
-    gpt_response = res.json()["choices"][0]["message"]["content"]
-    chat_session.add_message("system", gpt_response)
-    logging.warn(str(["time elapsed", res.elapsed.total_seconds()]))
-
-    return res.json()
 
 def send_message(message, phone_number, message_option, name):
     print(phone_number)
@@ -764,7 +730,10 @@ def webhook_whapi(request):
         message = extract_message_body(request.data)
         print("Message:", message)
         print("From number:", number)
-        if group_name in GROUPS_TO_REACT_TO:
+        groups = Group.objects.filter(listen=True)
+        print("Groups to react to:", [g.name for g in groups])
+        groups_to_react_to = [g.name for g in groups]
+        if group_name in groups_to_react_to:
             generated_message = query_gpt(message, number)["choices"][0]["message"]["content"]
             time.sleep(15)  # Simulate typing delay
             make_whapi_request("POST", "/messages/text", data = {
@@ -772,7 +741,7 @@ def webhook_whapi(request):
                 "to": number,
                 "body": generated_message
             })
-        elif ChatSession.objects.filter(phone=number).exists():
+        elif ChatSession.objects.filter(phone=number).filter(stop=False).exists():
             response = query_gpt(message, number)["choices"][0]["message"]["content"]
             time.sleep(15)  # Simulate typing delay
             make_whapi_request("POST", "/messages/text", data = {

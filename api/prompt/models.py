@@ -22,6 +22,15 @@ class ToneOfVoice(BaseModel):
         return self.name
 
 class Prompt(BaseModel):
+    channel_choices = (
+        ('facebook', 'Facebook'),
+        ('gmail', 'Gmail'),
+        ('linkedin', 'LinkedIn'),
+        ('whatsapp', 'WhatsApp'),
+        ('general', 'General'),
+        ('instagram', 'Instagram'),
+    )
+    channel = models.CharField(max_length=50, choices=channel_choices, default='general')
     name = models.CharField(max_length=1024)
     # data = models.JSONField(default=dict)
     text_data = models.TextField(default='')
