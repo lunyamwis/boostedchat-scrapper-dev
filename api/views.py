@@ -119,7 +119,7 @@ class TenantOAuth2CallbackView(View):
                 try:
                     # Save tokens to the database
                     user = User.objects.get(email=email)
-                    login(request, user)
+                    # login(request, user)
                     Token.objects.update_or_create(
                         user=user,
                         provider=provider_name,
