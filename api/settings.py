@@ -56,7 +56,7 @@ os.environ["DJANGO_ALLOW_ASYNC_UNSAFE"] = "true"
 SECRET_KEY = 'django-insecure-utr163745j!iq*)7h-+g6_!y+z$mkmcx3x2ouv$gq$8-42)yn+'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 
 ALLOWED_HOSTS = [
