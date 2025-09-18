@@ -130,6 +130,13 @@ class CustomFieldValueCreateView(LoginRequiredMixin, CreateView):
     template_name = 'workflows/custom_field_value_form.html'
     success_url = reverse_lazy('custom_field_list')  # Redirect after creation
 
+    def get_context_data(self, **kwargs):
+        kwargs['endpoint_id'] = self.kwargs['endpoint_id']
+        endpoint = Endpoint.objects.get(id=self.kwargs['endpoint_id'])
+        context = super().get_context_data(**kwargs)
+        context['custom_field_values'] = [{x.field.name: x.value} for x in endpoint.custom_fields.all()]
+        return context
+
     def form_valid(self, form):
         # Associate the custom field value with an endpoint (or other model)
         endpoint_id = self.kwargs['endpoint_id']
