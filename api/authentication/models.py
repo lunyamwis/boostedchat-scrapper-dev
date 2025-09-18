@@ -56,3 +56,18 @@ class AccountRequest(models.Model):
     approved_rejected_by = models.ForeignKey(User, on_delete=models.CASCADE, null=True, related_name="account_approver")
     approved_rejected_on = models.DateTimeField(null=True)
     rejection_reason = models.TextField(null=True)
+
+
+class Token(models.Model):
+    id = models.UUIDField(default=uuid.uuid4, primary_key=True)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, null=False)
+    access_token = models.CharField(max_length=255, null=False)
+    refresh_token = models.CharField(max_length=255, null=True, blank=True)
+    provider = models.CharField(max_length=100, null=False, choices=[
+        ('google', 'Google'),
+        ('facebook', 'Facebook'),
+        # Add other providers as needed
+    ])
+    created_at = models.DateTimeField(auto_now_add=True)
+    is_active = models.BooleanField(default=True)
+    token_type = models.CharField(max_length=50, null=False)  # e.g., 'access', 'refresh', 'password_reset'

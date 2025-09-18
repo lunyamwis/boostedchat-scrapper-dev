@@ -59,7 +59,16 @@ from allauth.socialaccount.helpers import complete_social_login, render_authenti
 from allauth.socialaccount.providers.oauth2.client import OAuth2Error
 from django.core.exceptions import PermissionDenied
 from requests.exceptions import RequestException
+from api.authentication.models import Token,User
 from allauth.socialaccount.providers.base import AuthError
+from django.contrib.auth import get_user_model, authenticate, login
+from urllib.parse import unquote
+import os
+import requests
+from rest_framework.response import Response
+from rest_framework import status
+
+
 
 logger = logging.getLogger(__name__)
 
@@ -70,68 +79,58 @@ class TenantOAuth2CallbackView(View):
 
     def get(self, request, *args, **kwargs):
         provider_name = kwargs.get("provider")
-        adapter = get_adapter(request)
-        provider = adapter.get_provider(provider_name)  # pass provider name!
+        if provider_name == "google":
+            code = unquote(request.GET.get("code", ""))
+            redirect_uri = "https://lunyamwi.org/oauth/callback/google/"
+            client_id = os.getenv("GMAIL_CLIENT_ID", "")
+            client_secret = os.getenv("GMAIL_CLIENT_SECRET", "")
+            
+            if not code:
+                raise PermissionDenied("Missing authorization code")
+            
+            if not client_id or not client_secret:
+                raise PermissionDenied("GMAIL_CLIENT_ID or GMAIL_CLIENT_SECRET not configured")
+            
+            token_url = "https://oauth2.googleapis.com/token"
+            data = {
+                "code": code,
+                "client_id": client_id,
+                "client_secret": client_secret,
+                "redirect_uri": redirect_uri,
+                "grant_type": "authorization_code"
+            }
+            
+            response = requests.post(token_url, data=data)
+            if response.status_code != 200:
+                raise PermissionDenied("Failed to exchange code for tokens")
 
-        # Extract query parameters
-        state_id = request.GET.get("state")
-        code = request.GET.get("code")
-        error = request.GET.get("error")
+            if response.status_code == 200:
+                tokens = response.json()
+                logger.debug("[CALLBACK] Tokens received: %s", tokens)
+                try:
+                    headers = {"Authorization": f"Bearer {tokens['access_token']}"}
+                    resp = requests.get("https://www.googleapis.com/oauth2/v2/userinfo", headers=headers)
+                    user_info = resp.json()
+                    email = user_info.get("email")
+                    logger.debug("[CALLBACK] User info: %s", user_info)
+                    
+                except RequestException as e:
+                    print("Failed to fetch user info: %s", e)
+                try:
+                    # Save tokens to the database
+                    user = User.objects.get(email=email)
+                    login(request, user)
+                    Token.objects.update_or_create(
+                        user=user,
+                        provider=provider_name,
+                        access_token=tokens.get("access_token"),
+                        refresh_token=tokens.get("refresh_token"),
+                        token_type=tokens.get("token_type", "refresh")
+                    )
+                except Exception as e:
+                    logger.warning("Error saving tokens: %s", e)
 
-        if error or not code:
-            return render_authentication_error(
-                request,
-                provider,
-                error=None,
-                extra_context={"callback_view": self, "state_id": state_id},
-            )
-
-        # Restore state
-        state = adapter.unstash_state(request, state_id)
-        if state is None:
-            return render_authentication_error(
-                request,
-                provider,
-                extra_context={"callback_view": self, "state_id": state_id},
-            )
-
-        # Exchange code for token
-        app = provider.get_app(request)
-        client = adapter.get_client(request, app)
-
-        try:
-            access_token_data = adapter.get_access_token_data(
-                request,
-                app,
-                client,
-                pkce_code_verifier=state.get("pkce_code_verifier"),
-            )
-            token = adapter.parse_token(access_token_data)
-            if app.pk:
-                token.app = app
-
-            login = adapter.complete_login(
-                request, app, token, response=access_token_data
-            )
-            login.token = token
-            login.state = state
-
-            # Optional: store tenant in session
-            tenant = state.get("tenant")
-            if tenant:
-                request.session["tenant"] = tenant
-                logger.info(f"OAuth2 login successful for tenant: {tenant}")
-
-            return complete_social_login(request, login)
-
-        except (PermissionDenied, OAuth2Error, RequestException) as e:
-            logger.error(f"OAuth2 token exchange failed for {provider_name}: {e}")
-            return render_authentication_error(
-                request,
-                provider,
-                exception=e,
-                extra_context={"callback_view": self, "state": state},
-            )
+            return redirect("/")
 
 def oauth_callback2(request, provider):
     query_string = request.META.get("QUERY_STRING", "")
