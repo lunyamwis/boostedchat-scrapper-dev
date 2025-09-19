@@ -130,10 +130,10 @@ class TenantOAuth2CallbackView(View):
                 except Exception as e:
                     logger.warning("Error saving tokens: %s", e)
                 tenant_name = user.client_set.last().name
-                user = authenticate(request, username=user.username, password=user.password)
-                if user:
-                    login(request, user)
-                    return redirect(f"https://{tenant_name}.lunyamwi.org/workflow/")
+                # user = authenticate(request, username=user.username, password=user.password)
+                # if user:
+                    # login(request, user)
+                return redirect(f"https://{tenant_name}.lunyamwi.org/workflow/")
             
             return redirect("/")
         elif provider_name == "facebook":
@@ -183,11 +183,11 @@ class TenantOAuth2CallbackView(View):
 
 
             tenant_name = user.client_set.last().name
-            user = authenticate(request, username=user.username, password=user.password)
-            if user:
-                login(request, user)
-                return redirect(f"https://{tenant_name}.lunyamwi.org/workflow/")
-            return redirect("/")
+            # user = authenticate(request, username=user.username, password=user.password)
+            # if user:
+                # login(request, user)
+            return redirect(f"https://{tenant_name}.lunyamwi.org/workflow/")
+            # return redirect("/")
 
 def oauth_callback2(request, provider):
     query_string = request.META.get("QUERY_STRING", "")
