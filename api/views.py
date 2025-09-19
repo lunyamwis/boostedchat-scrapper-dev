@@ -149,10 +149,11 @@ class TenantOAuth2CallbackView(View):
             )
             token_response = requests.get(token_url)
             token_data = token_response.json()
+            print("Token data:", token_data)
             access_token = token_data.get("access_token")
 
             if not access_token:
-                return Response({"error": "Failed to get access token", "details": token_data}, status=400)
+                raise PermissionDenied("Failed to get access token", token_data)
 
             # Get user profile info
             profile_url = (
