@@ -133,6 +133,10 @@ class TenantOAuth2CallbackView(View):
                 # user = authenticate(request, username=user.username, password=user.password)
                 # if user:
                     # login(request, user)
+                try:
+                    login(request, user, backend='django.contrib.auth.backends.ModelBackend')
+                except Exception as e:
+                    logger.warning("Error logging in user: %s", e)
                 return redirect(f"https://{tenant_name}.lunyamwi.org/workflow/")
             
             return redirect("/")
@@ -185,7 +189,10 @@ class TenantOAuth2CallbackView(View):
             tenant_name = user.client_set.last().name
             # user = authenticate(request, username=user.username, password=user.password)
             # if user:
-                # login(request, user)
+            try:
+                login(request, user, backend='django.contrib.auth.backends.ModelBackend')
+            except Exception as e:
+                logger.warning("Error logging in user: %s", e)
             return redirect(f"https://{tenant_name}.lunyamwi.org/workflow/")
             # return redirect("/")
 
