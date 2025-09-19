@@ -131,7 +131,49 @@ class TenantOAuth2CallbackView(View):
                     logger.warning("Error saving tokens: %s", e)
 
             return redirect("/")
-        else:
+        elif provider_name == "facebook":
+            code = unquote(request.GET.get("code", ""))
+            redirect_uri = "https://lunyamwi.org/oauth/callback/facebook/"
+            client_id = os.getenv("FACEBOOK_APP_ID", "")
+            client_secret = os.getenv("FACEBOOK_APP_SECRET", "")
+            if not code:
+                raise PermissionDenied("Missing authorization code")
+            if not client_id or not client_secret:
+                raise PermissionDenied("FACEBOOK_APP_ID or FACEBOOK_APP_SECRET not configured")
+            token_url = (
+                f"https://graph.facebook.com/v12.0/oauth/access_token?"
+                f"client_id={os.getenv('FACEBOOK_APP_ID')}"
+                f"&redirect_uri={os.getenv('FACEBOOK_REDIRECT_URI')}"
+                f"&client_secret={os.getenv('FACEBOOK_APP_SECRET')}"
+                f"&code={code}"
+            )
+            token_response = requests.get(token_url)
+            token_data = token_response.json()
+            access_token = token_data.get("access_token")
+
+            if not access_token:
+                return Response({"error": "Failed to get access token", "details": token_data}, status=400)
+
+            # Get user profile info
+            profile_url = (
+                f"https://graph.facebook.com/me?"
+                f"fields=id,name,email"
+                f"&access_token={access_token}"
+            )
+            profile_response = requests.get(profile_url)
+            profile_data = profile_response.json()
+            try:
+                email = profile_data.get("email")
+                user = User.objects.get(email=email)
+                # login(request, user)
+                Token.objects.update_or_create(
+                    user=user,
+                    provider=provider_name,
+                    access_token=access_token,
+                    token_type="refresh"
+                )
+            except Exception as e:
+                logger.warning("Error saving Facebook tokens: %s", e)
             return redirect("/")
 
 def oauth_callback2(request, provider):
