@@ -61,8 +61,8 @@ class AccountRequest(models.Model):
 class Token(models.Model):
     id = models.UUIDField(default=uuid.uuid4, primary_key=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE, null=False)
-    access_token = models.CharField(max_length=255, null=False)
-    refresh_token = models.CharField(max_length=255, null=True, blank=True)
+    access_token = models.CharField(max_length=2048, null=False)
+    refresh_token = models.CharField(max_length=2048, null=True, blank=True)
     provider = models.CharField(max_length=100, null=False, choices=[
         ('google', 'Google'),
         ('facebook', 'Facebook'),
