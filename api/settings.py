@@ -444,7 +444,7 @@ SOCIALACCOUNT_PROVIDERS = {
         ],
         'AUTH_PARAMS': {
             # offline -> refresh_token; prompt: consent -> force refresh_token return
-            'access_type': 'offline',
+            'access_type': 'online',
             'prompt': 'consent',
             # 'redirect_uri':'https://lunyamwi.org/oauth/callback/google/'
         },
