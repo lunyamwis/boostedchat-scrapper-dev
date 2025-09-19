@@ -143,7 +143,7 @@ class TenantOAuth2CallbackView(View):
             token_url = (
                 f"https://graph.facebook.com/v12.0/oauth/access_token?"
                 f"client_id={os.getenv('FACEBOOK_APP_ID')}"
-                f"&redirect_uri={os.getenv('FACEBOOK_REDIRECT_URI')}"
+                f"&redirect_uri={redirect_uri}"
                 f"&client_secret={os.getenv('FACEBOOK_APP_SECRET')}"
                 f"&code={code}"
             )
