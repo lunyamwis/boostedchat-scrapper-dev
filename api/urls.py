@@ -41,6 +41,7 @@ urlpatterns = [
     path("oauth/callback/<str:provider>/", views.TenantOAuth2CallbackView.as_view(), name="oauth_callback"),
     # path('accounts/<str:provider>/login/callback/', views.oauth_callback2, name='socialaccount_callback_custom'),
     path('accounts/<str:provider>/login/callback/2', OAuth2CallbackView, name='socialaccount_callback_custom'),
+    path('tenant/redirect', views.tenant_login_and_redirect, name='tenant_redirect'),
     
 ]+ static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
 

@@ -189,12 +189,51 @@ class TenantOAuth2CallbackView(View):
             tenant_name = user.client_set.last().name
             # user = authenticate(request, username=user.username, password=user.password)
             # if user:
-            try:
-                login(request, user, backend='django.contrib.auth.backends.ModelBackend')
-            except Exception as e:
-                logger.warning("Error logging in user: %s", e)
-            return redirect(f"https://{tenant_name}.lunyamwi.org/workflow/")
+            # try:
+            #     login(request, user, backend='django.contrib.auth.backends.ModelBackend')
+            # except Exception as e:
+            #     logger.warning("Error logging in user: %s", e)
+            return redirect("tenant_redirect")
             # return redirect("/")
+
+
+from django.contrib.auth import login
+from django.shortcuts import redirect
+import logging
+
+logger = logging.getLogger(__name__)
+
+def tenant_login_and_redirect(request, user):
+    """
+    Call this after you have the `user` instance (e.g. after oauth or lookup).
+    """
+    # sanity checks
+    # login (must provide backend if you didn't call authenticate())
+    try:
+        login(request, user, backend='django.contrib.auth.backends.ModelBackend')
+    except Exception as e:
+        logger.exception("login failed: %s", e)
+        return redirect("/login/?error=login_failed")
+
+    # force session persistence (helps ensure Set-Cookie is emitted)
+    try:
+        request.session.save()
+    except Exception:
+        # session save might be redundant but safe
+        logger.exception("session save failed")
+
+    # build tenant host safely
+    tenant_obj = user.client_set.last()
+    if not tenant_obj:
+        return redirect("/")
+
+    tenant_name = tenant_obj.name.strip().lower()
+    # sanitize tenant_name to avoid injection; ensure allowed characters only
+    # e.g. tenant_name = re.sub(r'[^a-z0-9-]', '', tenant_name)
+
+    redirect_url = f"https://{tenant_name}.lunyamwi.org/workflow/"
+    response = redirect(redirect_url)
+    return response
 
 def oauth_callback2(request, provider):
     query_string = request.META.get("QUERY_STRING", "")
