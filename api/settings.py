@@ -375,7 +375,7 @@ SOCIALACCOUNT_PROVIDERS = {
         'ADAPTER': 'api.authentication.adapters.TenantAwareAdapter',
         # 'provider_class': 'api.authentication.providers.TenantAwareFacebookProvider',
         'METHOD': 'oauth2',
-        'SCOPE': ['email', 'public_profile'],  # Add desired extra permissions here
+        'SCOPE': ['email', 'public_profile','pages_show_list'],  # Add desired extra permissions here
         'AUTH_PARAMS': {'auth_type': 'reauthenticate', 'redirect_uri':'https://lunyamwi.org/oauth/callback/facebook/'},
         'FIELDS': [
             'id',
