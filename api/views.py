@@ -131,6 +131,8 @@ class TenantOAuth2CallbackView(View):
                     logger.warning("Error saving tokens: %s", e)
 
             return redirect("/")
+        else:
+            return redirect("/")
 
 def oauth_callback2(request, provider):
     query_string = request.META.get("QUERY_STRING", "")
@@ -145,6 +147,7 @@ def oauth_callback2(request, provider):
     logger.debug("[CALLBACK] Forwarding to %s", forward_url)
 
     return redirect(forward_url)
+
 
 
 
