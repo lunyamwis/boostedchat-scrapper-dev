@@ -207,7 +207,7 @@ def tenant_login_and_redirect(request, user):
     """
     Call this after you have the `user` instance (e.g. after oauth or lookup).
     """
-    # sanity checks
+    # sanity checks trying to force user to login
     # login (must provide backend if you didn't call authenticate())
     try:
         login(request, user, backend='django.contrib.auth.backends.ModelBackend')
