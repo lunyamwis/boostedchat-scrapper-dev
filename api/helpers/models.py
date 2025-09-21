@@ -48,6 +48,9 @@ class Client(TenantMixin):
         ('20000', '20,000 KES'),
         ('50000', '50,000 KES'),
     ])
+    phone_number_id = models.CharField(max_length=20,null=True,blank=True)
+    instagram_business_account_id = models.CharField(max_length=255, null=True,blank=True)
+    page_id = models.CharField(max_length=255, null=True,blank=True)
 
     def __str__(self) -> str:
         return self.name

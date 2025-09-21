@@ -21,6 +21,7 @@ from django.http import JsonResponse, HttpResponse
 from rest_framework.permissions import AllowAny
 
 from api.whatsapp.models import ChatSession, Group
+from api.helpers.models import Client
 from api.prompt.models import Prompt
 from .prompts import solarama_prompt
 from .tasks import send_batch_whatsapp_text
@@ -145,14 +146,23 @@ def webhook(request):
         logging.warning(request.data)
         request_data = request.data  # Access POST data via request.data
         logging.warning(request_data)
-        
+        # get tenant
+        phone_number_id = request_data['entry'][0]['id']
+        tenant_exists = Client.objects.filter(phone_number_id=phone_number_id)
+        tenant = None
+        if tenant_exists.exists():
+            tenant = tenant_exists.last()
+
+        # get token
+        token = tenant.user.token_set.latest('created_at').access_token
+
         if (request_data['entry'][0]['changes'][0]['value'].get('messages') is not None):
             name = request_data['entry'][0]['changes'][0]['value']['contacts'][0]['profile']['name']
 
             if (request_data['entry'][0]['changes'][0]['value']['messages'][0].get('text') is not None):
                 message = request_data['entry'][0]['changes'][0]['value']['messages'][0]['text']['body']
                 user_phone_number = request_data['entry'][0]['changes'][0]['value']['contacts'][0]['wa_id']
-                user_message_processor(message, user_phone_number, name)
+                user_message_processor(message, user_phone_number, name, token)
 
             elif (request_data['entry'][0]['changes'][0]['value']['messages'][0]['interactive']['nfm_reply']['response_json'] is not None):
                 # Process flow reply
@@ -279,9 +289,9 @@ def extract_string_from_reply(user_input):
     return user_prompt
 
 
-def user_message_processor(message, phonenumber, name):
+def user_message_processor(message, phonenumber, name, token):
     
-    send_message(message, phonenumber, "CHATBOT", name)
+    send_message(message, phonenumber, "CHATBOT", name, token)
     # We are not using this for now, we don't want to intercept the
     # type of messages the client sends. we want to process all messages
     
@@ -305,7 +315,7 @@ def user_message_processor(message, phonenumber, name):
     
 
 
-def send_message(message, phone_number, message_option, name):
+def send_message(message, phone_number, message_option, name, token):
     print(phone_number)
     greetings_text_body = (
         "\nHello "
@@ -393,7 +403,7 @@ def send_message(message, phone_number, message_option, name):
 
     headers = {
         "Content-Type": "application/json",
-        "Authorization": "Bearer " + ACCESS_TOKEN,
+        "Authorization": "Bearer " + token,
     }
 
     resp = requests.request("POST", WHATSAPP_URL, headers=headers, data=payload)

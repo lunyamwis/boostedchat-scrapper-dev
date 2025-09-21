@@ -1,6 +1,7 @@
 # yourapp/views.py
 from django.shortcuts import render, redirect
 from django.contrib import messages
+from api.helpers.models import Client
 from .utils import decode_state
 
 import logging
@@ -72,6 +73,28 @@ from rest_framework import status
 
 logger = logging.getLogger(__name__)
 
+import requests
+
+def get_instagram_business_account_id(user_access_token):
+    # Step 1: Get pages for the user
+    pages_url = f"https://graph.facebook.com/v21.0/me/accounts?access_token={user_access_token}"
+    pages_resp = requests.get(pages_url).json()
+
+    for page in pages_resp.get("data", []):
+        page_id = page["id"]
+        page_access_token = page["access_token"]
+
+        # Step 2: Get IG Business Account linked to this page
+        ig_url = f"https://graph.facebook.com/v21.0/{page_id}?fields=instagram_business_account&access_token={page_access_token}"
+        ig_resp = requests.get(ig_url).json()
+
+        if "instagram_business_account" in ig_resp:
+            ig_business_id = ig_resp["instagram_business_account"]["id"]
+            return ig_business_id, page_id, page_access_token
+
+    return None, None, None
+
+
 class TenantOAuth2CallbackView(View):
     """
     Django CBV for multitenant OAuth2 callback (Allauth 0.61.1)
@@ -116,19 +139,29 @@ class TenantOAuth2CallbackView(View):
                     
                 except RequestException as e:
                     print("Failed to fetch user info: %s", e)
+                
                 try:
-                    # Save tokens to the database
                     user = User.objects.get(email=email)
                     # login(request, user)
-                    Token.objects.update_or_create(
-                        user=user,
-                        provider=provider_name,
-                        access_token=tokens.get("access_token"),
-                        refresh_token=tokens.get("refresh_token"),
-                        token_type=tokens.get("token_type", "refresh")
-                    )
+                    token_exists = Token.objects.filter(user=user)
+                    if token_exists.exists():
+                        token = token_exists.latest('created_at')
+                        token.user = user
+                        token.access_token = tokens.get("access_token"),
+                        token.refresh_token = tokens.get("refresh_token"),
+                        token.token_type = tokens.get("token_type", "refresh")
+                        token.provider = provider_name
+                        token.save()
+                    else:
+                        Token.objects.update_or_create(
+                            user=user,
+                            provider=provider_name,
+                            access_token=tokens.get("access_token"),
+                            refresh_token=tokens.get("refresh_token"),
+                            token_type=tokens.get("token_type", "refresh")
+                        )
                 except Exception as e:
-                    logger.warning("Error saving tokens: %s", e)
+                    logger.warning("Error saving Gmail tokens: %s", e)
                 tenant_name = user.client_set.last().name
                 # user = authenticate(request, username=user.username, password=user.password)
                 # if user:
@@ -170,23 +203,45 @@ class TenantOAuth2CallbackView(View):
                 f"fields=id,name,email"
                 f"&access_token={access_token}"
             )
+            
+
             profile_response = requests.get(profile_url)
             profile_data = profile_response.json()
             try:
                 email = profile_data.get("email")
                 user = User.objects.get(email=email)
                 # login(request, user)
-                Token.objects.update_or_create(
-                    user=user,
-                    provider=provider_name,
-                    access_token=access_token,
-                    token_type="refresh"
-                )
+                token_exists = Token.objects.filter(user=user)
+                if token_exists.exists():
+                    token = token_exists.latest('created_at')
+                    token.user = user
+                    token.access_token = access_token
+                    token.token_type = 'refresh'
+                    token.provider = provider_name
+                    token.save()
+                else:
+                    Token.objects.update_or_create(
+                        user=user,
+                        provider=provider_name,
+                        access_token=access_token,
+                        token_type="refresh"
+                    )
             except Exception as e:
                 logger.warning("Error saving Facebook tokens: %s", e)
 
 
             tenant_name = user.client_set.last().name
+            tenant = None
+            tenants = Client.objects.filter(name=tenant_name)
+
+            if tenants.exists():
+                tenant = tenants.last()
+            
+            # ig_business_id, page_id, page_access_token = get_instagram_business_account_id(access_token)
+            # tenant.instagram_business_account_id = ig_business_id
+            tenant.page_id = profile_data.get("id","")
+            # get instagram_business_account_id and save
+            tenant.save()
             # user = authenticate(request, username=user.username, password=user.password)
             # if user:
             try:

@@ -35,10 +35,25 @@ class TenantSignupForm(forms.Form):
         widget=forms.TextInput(attrs={'class': 'form-control', 'id': 'domainName', 'required': True, 'placeholder': 'yourdomain'}),
         help_text="This will be your subdomain."
     )
+    
     subscription_plan = forms.ChoiceField(
         label="Select Subscription Plan (KES)",
         choices=SUBSCRIPTION_CHOICES,
         widget=forms.Select(attrs={'class': 'form-select', 'id': 'subscriptionPlan', 'required': True}),
+    )
+    phone_number = forms.RegexField(
+        label="Phone Number",
+        regex=r'^\+?[1-9]\d{7,14}$',  # E.164 format
+        max_length=15,
+        widget=forms.TextInput(
+            attrs={
+                'class': 'form-control',
+                'id': 'phoneNumber',
+                'required': True,
+                'placeholder': '+254712345678'
+            }
+        ),
+        help_text="Enter phone number in international format, e.g. +254712345678."
     )
 
     def clean_password2(self):

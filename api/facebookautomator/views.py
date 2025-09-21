@@ -14,6 +14,7 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny
+from api.helpers.models import Client
 from .forms import ScrapFacebookGroupForm, SendFirstMessageForm
 from .utils import query_gpt
 from .models import ChatSession
@@ -86,7 +87,16 @@ def webhook(request):
                         message_text = messaging_event['message'].get('text')
                         if message_text:
                             output_message = query_gpt(message_text,sender_id)
-                            send_message(sender_id, output_message)
+                            # get tenant
+                            page_id = entry.get('id','')
+                            tenant_exists = Client.objects.filter(page_id=page_id)
+                            tenant = None
+                            if tenant_exists.exists():
+                                tenant = tenant_exists.last()
+
+                            # get token
+                            token = tenant.user.token_set.latest('created_at').access_token
+                            send_message(sender_id, output_message, token)
 
             return Response({"success":True},status=status.HTTP_200_OK)
 
@@ -102,7 +112,7 @@ def get_user_profile(user_id):
         return response.json()
     return {}
 
-def send_message(recipient_id, message_text):
+def send_message(recipient_id, message_text, token):
     """Send message to user via Facebook Send API"""
     url = f"https://graph.facebook.com/v22.0/me/messages"
     headers = {'Content-Type': 'application/json'}
@@ -111,7 +121,7 @@ def send_message(recipient_id, message_text):
         'recipient': {'id': recipient_id},
         'message': {'text': message_text}
     }
-    params = {'access_token': PAGE_ACCESS_TOKEN}
+    params = {'access_token': token}
     response = requests.post(url, headers=headers, params=params, json=payload)
     if response.status_code != 200:
         print(f"Failed to send message: {response.text}")
