@@ -134,7 +134,7 @@ from django_celery_beat.models import CrontabSchedule, PeriodicTask
 from api.dialogflow.helpers.intents import detect_intent
 from api.sales_rep.models import SalesRep
 
-from .utils import generate_time_slots,login_user
+from .utils import generate_time_slots,login_user,query_gpt
 
 from api.workflow.tasks import send_first_compliment,generate_response_automatic,reschedule, run_scheduler, delete_accounts,prequalify_task
 from api.instagram.helpers.init_db import init_db
@@ -149,8 +149,199 @@ from rest_framework import status
 
 
 
+
+
+# views.py
+import requests
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from django.conf import settings
+from .utils import get_access_token
+from api.helpers.models import Client
+
 LUNYAMWI_INSTAGRAM_BASE_URL = os.getenv("LUNYAMWI_INSTAGRAM_BASE_URL", "")
 LUNYAMWI_INSTAGRAM_API_KEY = os.getenv("LUNYAMWI_INSTAGRAM_API_KEY", "")
+GRAPH_API_BASE = "https://graph.facebook.com/v20.0"
+
+
+# views.py
+
+VERIFY_TOKEN = os.getenv('VERIFY_IG_TOKEN')     # webhook verify token (set in FB app dashboard)
+# Page token connected to IG Business account
+
+
+class InstagramWebhookView(APIView):
+    """
+    Instagram Webhook for Direct Messaging
+    """
+
+    def get(self, request, *args, **kwargs):
+        """
+        Meta verification handshake
+        """
+        mode = request.query_params.get("hub.mode")
+        token = request.query_params.get("hub.verify_token")
+        challenge = request.query_params.get("hub.challenge")
+
+        if mode and token:
+            if mode == "subscribe" and token == VERIFY_TOKEN:
+                return Response(challenge, status=status.HTTP_200_OK)
+            else:
+                return Response("Verification token mismatch", status=status.HTTP_403_FORBIDDEN)
+
+        return Response("Bad Request", status=status.HTTP_400_BAD_REQUEST)
+
+    def post(self, request, *args, **kwargs):
+        """
+        Handle new messages sent to the Instagram account
+        """
+        body = request.data
+
+        if body.get("object") == "instagram":
+            for entry in body.get("entry", []):
+                for messaging_event in entry.get("messaging", []):
+                    sender_id = messaging_event["sender"]["id"]
+
+                    if messaging_event.get("message"):
+                        message_text = messaging_event["message"].get("text")
+
+                        if message_text:
+                            # get tenant
+                            output_message = query_gpt(message_text,sender_id)
+                            page_id = entry.get('id','')
+                            tenant_exists = Client.objects.filter(page_id=page_id)
+                            tenant = None
+                            if tenant_exists.exists():
+                                tenant = tenant_exists.last()
+
+                            # get token
+                            token = tenant.user.token_set.latest('created_at').access_token
+                            self.send_instagram_message(sender_id, output_message, token)
+                            # Auto-reply
+                            
+
+            return Response("EVENT_RECEIVED", status=status.HTTP_200_OK)
+
+        return Response(status=status.HTTP_404_NOT_FOUND)
+
+    def send_instagram_message(self, recipient_id, text, token):
+        """
+        Send a reply using the Messenger Send API
+        """
+        url = "https://graph.facebook.com/v20.0/me/messages"
+        params = {"access_token": token}
+        headers = {"Content-Type": "application/json"}
+        data = {
+            "recipient": {"id": recipient_id},
+            "message": {"text": text}
+        }
+
+        response = requests.post(url, params=params, headers=headers, data=json.dumps(data))
+        return response.json()
+
+
+class InstagramBasicView(APIView):
+    """Fetch Instagram account basic info"""
+    def get(self, request, *args, **kwargs):
+        token = get_access_token("facebook")
+        if not token:
+            return Response({"error": "No access token found"}, status=status.HTTP_400_BAD_REQUEST)
+
+        url = f"{GRAPH_API_BASE}/me/accounts"
+        params = {"access_token": token}
+        resp = requests.get(url, params=params)
+        return Response(resp.json(), status=resp.status_code)
+
+
+class InstagramContentPublishView(APIView):
+    """Publish content to Instagram account"""
+    def post(self, request, *args, **kwargs):
+        token = get_access_token("facebook")
+        ig_account_id = request.data.get("ig_account_id")
+        image_url = request.data.get("image_url")
+        caption = request.data.get("caption", "")
+
+        if not (token and ig_account_id and image_url):
+            return Response({"error": "Missing required fields"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Step 1: Create media object
+        url = f"{GRAPH_API_BASE}/{ig_account_id}/media"
+        params = {"image_url": image_url, "caption": caption, "access_token": token}
+        creation_resp = requests.post(url, data=params).json()
+
+        if "id" not in creation_resp:
+            return Response(creation_resp, status=status.HTTP_400_BAD_REQUEST)
+
+        # Step 2: Publish media
+        publish_url = f"{GRAPH_API_BASE}/{ig_account_id}/media_publish"
+        publish_resp = requests.post(publish_url, data={
+            "creation_id": creation_resp["id"],
+            "access_token": token
+        })
+
+        return Response(publish_resp.json(), status=publish_resp.status_code)
+
+
+class InstagramInsightsView(APIView):
+    """Get insights for Instagram account"""
+    def get(self, request, *args, **kwargs):
+        token = get_access_token("facebook")
+        ig_account_id = request.query_params.get("ig_account_id")
+
+        url = f"{GRAPH_API_BASE}/{ig_account_id}/insights"
+        params = {
+            "metric": "impressions,reach,profile_views",
+            "period": "day",
+            "access_token": token
+        }
+        resp = requests.get(url, params=params)
+        return Response(resp.json(), status=resp.status_code)
+
+
+class InstagramCommentsView(APIView):
+    """Manage Instagram comments"""
+    def get(self, request, *args, **kwargs):
+        token = get_access_token("facebook")
+        media_id = request.query_params.get("media_id")
+
+        url = f"{GRAPH_API_BASE}/{media_id}/comments"
+        params = {"access_token": token}
+        resp = requests.get(url, params=params)
+        return Response(resp.json(), status=resp.status_code)
+
+    def post(self, request, *args, **kwargs):
+        token = get_access_token("facebook")
+        media_id = request.data.get("media_id")
+        message = request.data.get("message")
+
+        url = f"{GRAPH_API_BASE}/{media_id}/comments"
+        params = {"message": message, "access_token": token}
+        resp = requests.post(url, data=params)
+        return Response(resp.json(), status=resp.status_code)
+
+
+class InstagramMessagesView(APIView):
+    """Read or send Instagram direct messages"""
+    def get(self, request, *args, **kwargs):
+        token = get_access_token("facebook")
+        ig_account_id = request.query_params.get("ig_account_id")
+
+        url = f"{GRAPH_API_BASE}/{ig_account_id}/conversations"
+        params = {"access_token": token}
+        resp = requests.get(url, params=params)
+        return Response(resp.json(), status=resp.status_code)
+
+    def post(self, request, *args, **kwargs):
+        token = get_access_token("facebook")
+        thread_id = request.data.get("thread_id")
+        message = request.data.get("message")
+
+        url = f"{GRAPH_API_BASE}/{thread_id}/messages"
+        params = {"message": message, "access_token": token}
+        resp = requests.post(url, data=params)
+        return Response(resp.json(), status=resp.status_code)
+
 
 # Comment-related HikerAPI Views
 class HikerCommentLikersChunkGql(APIView):

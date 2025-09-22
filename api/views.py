@@ -2,6 +2,7 @@
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from api.helpers.models import Client
+from api.gmail.utils import make_lunyamwi_gmail_request
 from .utils import decode_state
 
 import logging
@@ -142,7 +143,24 @@ class TenantOAuth2CallbackView(View):
                 
                 try:
                     user = User.objects.get(email=email)
-                    # login(request, user)
+                    try:
+                        # login(request, user)
+                        payload = {
+                            "provider": "GOOGLE_OAUTH",
+                            "refresh_token": tokens.get("refresh_token"),
+                            "access_token": tokens.get("access_token")
+                        }
+                    
+                        result = make_lunyamwi_gmail_request("POST", "/accounts", data=payload)
+                        if result.status_code != 200:
+                            logger.warning("Failed to create Gmail account in Lunyamwi: %s", result.text)
+                        else:
+                            logger.info("Successfully created Gmail account in Lunyamwi")
+                            user.gmail_account_id = result.json().get("account_id")
+                            user.save()
+                    except Exception as e:
+                        logger.warning("Error creating Gmail account in Lunyamwi: %s", e)
+
                     token_exists = Token.objects.filter(user=user)
                     if token_exists.exists():
                         token = token_exists.latest('created_at')

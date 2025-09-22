@@ -14,7 +14,8 @@
                     <button type="submit">Delete</button>
                 </form>
                 <a href="{% url 'custom_field_value_create' endpoint.pk %}">Add data points</a> ||
-                <a href="{% url 'url_kwargs_create' endpoint.pk %}">Add URL Kwargs</a>
+                <a href="{% url 'url_kwargs_create' endpoint.pk %}">Add URL Kwargs</a> ||
+                <a href="{% url 'endpoint_test' endpoint.pk %}">Test Endpoint</a>
             </li>
         {% empty %}
             <li>No endpoints available.</li>

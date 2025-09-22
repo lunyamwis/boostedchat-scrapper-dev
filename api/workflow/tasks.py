@@ -16,6 +16,7 @@ from django.utils import timezone
 from api.instagram.models import InstagramUser,Account, Message, OutSourced, StatusCheck, Thread, UnwantedAccount, OutreachTime
 from api.scout.models import Scout
 from api.instagram.utils import initialize_hikerapi_client
+from api.helpers.models import Client, Domain
 from django_tenants.utils import schema_context
 from api.instagram.constants import STYLISTS_WORDS
 import datetime
@@ -1860,7 +1861,6 @@ def remove_duplicates_task():
 
 
 @shared_task()
-@schema_context(os.getenv('SCHEMA_NAME'))
 def generate_dag_script(workflow_id):
     # if "trigger_url" in dag_data:
         
@@ -1872,66 +1872,69 @@ def generate_dag_script(workflow_id):
     #         "trigger_url_expected_response":dag_data.get("trigger_url_expected_response")
     #     }
     # else:
-    workflow = WorkflowModel.objects.get(id=workflow_id)
-    print(workflow.workflow_type)
-    print(workflow)
-    dag_ = DagModel.objects.filter(workflow__id = workflow.id)
-    dag = dag_.latest('created_at')
-    print(dag.dag_id)
-    operators = [entry for entry in dag.simplehttpoperatormodel_set.filter().values()]
-    data_points = []
-    for operator in operators:
+    with schema_context(WorkflowModel.objects.get(id=workflow_id).airflow_creds.schema_name):
+        workflow = WorkflowModel.objects.get(id=workflow_id)
+        print(workflow.workflow_type)
+        print(workflow)
+        dag_ = DagModel.objects.filter(workflow__id = workflow.id)
+        dag = dag_.latest('created_at')
+        print(dag.dag_id)
+        operators = [entry for entry in dag.simplehttpoperatormodel_set.filter().values()]
+        data_points = []
+        for operator in operators:
+            try:
+                print(operator['connection_id'])
+                operator['http_conn_id'] = HttpOperatorConnectionModel.objects.get(id=operator['connection_id']).connection_id
+                endpoint = Endpoint.objects.get(id=operator['endpointurl_id'])
+                operator['endpoint'] = replace_url_kwargs(endpoint.url,endpoint.url_kwargs if endpoint.url_kwargs else {})
+                operator['method'] = endpoint.method
+                tenant = Client.objects.get(schema_name=workflow.airflow_creds.schema_name)
+                operator['token'] = tenant.user.token_set.filter(provider=workflow.provider).latest('created_at').access_token
+                # Get the content type for the Endpoint model
+                endpoint_content_type = ContentType.objects.get_for_model(Endpoint)
+                # Query to get all custom fields and their values for the given end
+                custom_fields_with_value = CustomFieldValue.objects.filter(
+                    content_type=endpoint_content_type,
+                    object_id=endpoint.id
+                ).select_related('field')
+
+                for custom_field_value in custom_fields_with_value:
+                    data_points.append({
+                        custom_field_value.field.name: custom_field_value.value,
+                        "created_at": custom_field_value.created_at
+                    })
+
+                operator['data'] = expand_comma_values(remove_timestamp(flatten_dict_list(merge_lists_by_timestamp(data_points))))
+                print(operator['data'])
+                
+            except Exception as error:
+                print(str(error))
+
+        dags = [entry for entry in dag_.values()]
+        for x in dags:
+            x['http_conn_id'] = HttpOperatorConnectionModel.objects.get(id=x['connection_id']).connection_id
+
+        data = {
+            "dag":dags,
+            "operators":operators,
+            "data_seconds":[str(workflow.delay_durations)]
+        }
+
+        print(dag.dag_id)
+        # print(data)
+        # Write the dictionary to a YAML file
+        yaml_file_path = os.path.join(settings.BASE_DIR, 'api', 'workflow', 'include', 'dag_configs', f"{dag.dag_id}_config.yaml")
+        os.makedirs(os.path.dirname(yaml_file_path), exist_ok=True)
+
+        with open(yaml_file_path, 'w') as yaml_file:
+            try:
+                yaml.dump(data, yaml_file, default_flow_style=False)
+            except Exception as error:
+                print(str(error))
+
         try:
-            print(operator['connection_id'])
-            operator['http_conn_id'] = HttpOperatorConnectionModel.objects.get(id=operator['connection_id']).connection_id
-            endpoint = Endpoint.objects.get(id=operator['endpointurl_id'])
-            operator['endpoint'] = replace_url_kwargs(endpoint.url,endpoint.url_kwargs if endpoint.url_kwargs else {})
-            operator['method'] = endpoint.method
-            # Get the content type for the Endpoint model
-            endpoint_content_type = ContentType.objects.get_for_model(Endpoint)
-            # Query to get all custom fields and their values for the given end
-            custom_fields_with_value = CustomFieldValue.objects.filter(
-                content_type=endpoint_content_type,
-                object_id=endpoint.id
-            ).select_related('field')
-
-            for custom_field_value in custom_fields_with_value:
-                data_points.append({
-                    custom_field_value.field.name: custom_field_value.value,
-                    "created_at": custom_field_value.created_at
-                })
-
-            operator['data'] = expand_comma_values(remove_timestamp(flatten_dict_list(merge_lists_by_timestamp(data_points))))
-            print(operator['data'])
-            
+            generate_dag(workflow_type=workflow.workflow_type)
         except Exception as error:
             print(str(error))
-
-    dags = [entry for entry in dag_.values()]
-    for x in dags:
-        x['http_conn_id'] = HttpOperatorConnectionModel.objects.get(id=x['connection_id']).connection_id
-
-    data = {
-        "dag":dags,
-        "operators":operators,
-        "data_seconds":[str(workflow.delay_durations)]
-    }
-
-    print(dag.dag_id)
-    # print(data)
-    # Write the dictionary to a YAML file
-    yaml_file_path = os.path.join(settings.BASE_DIR, 'api', 'workflow', 'include', 'dag_configs', f"{dag.dag_id}_config.yaml")
-    os.makedirs(os.path.dirname(yaml_file_path), exist_ok=True)
-
-    with open(yaml_file_path, 'w') as yaml_file:
-        try:
-            yaml.dump(data, yaml_file, default_flow_style=False)
-        except Exception as error:
-            print(str(error))
-
-    try:
-        generate_dag(workflow_type=workflow.workflow_type)
-    except Exception as error:
-        print(str(error))
 
 

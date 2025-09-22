@@ -47,11 +47,15 @@ class SimpleHttpOperatorModelForm(forms.ModelForm):
 class WorkflowModelForm(forms.ModelForm):
     class Meta:
         model = WorkflowModel
-        fields = ['name', 'delay_durations','airflow_creds','workflow_type']
+        fields = ['name', 'delay_durations','airflow_creds','workflow_type','provider']
         extra_kwargs = {
             "id": {"required": False, "allow_null": True},
         }
         widgets = {
+            "provider": forms.Select(
+                choices=[("facebook","facebook"),("instagram","instagram"),("linkedin","linkedin"),("whatsapp","whatsapp"),("google","google")],
+                attrs={"class": "form-control"}
+            ),
             "name": forms.TextInput(attrs={"class": "form-control", "placeholder": "Name"}),
             "delay_durations": forms.TextInput(attrs={"class": "form-control", "placeholder": "Delay Durations"}),
             "airflow_creds": forms.Select(attrs={"class": "form-control", "placeholder": "Airflow Creds"}),

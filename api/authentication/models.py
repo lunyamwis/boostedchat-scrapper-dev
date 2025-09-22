@@ -35,6 +35,8 @@ class User(BaseModel, AbstractBaseUser, PermissionsMixin):
     created_by = models.EmailField()
     modified_by = models.EmailField()
     status = models.TextField()
+    gmail_account_id = models.CharField(max_length=255, null=True, blank=True)
+    linked_in_account_id = models.CharField(max_length=255, null=True, blank=True)
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = []
@@ -71,3 +73,4 @@ class Token(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     is_active = models.BooleanField(default=True)
     token_type = models.CharField(max_length=50, null=False)  # e.g., 'access', 'refresh', 'password_reset'
+    expires_at = models.DateTimeField(null=True, blank=True)

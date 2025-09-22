@@ -6,7 +6,7 @@ import requests, time, random, pendulum,json
 
 default_args = {"owner": "airflow", "start_date": pendulum.now("Africa/Nairobi").subtract(days=1)}
 
-def sequential_http(method="GET", endpoint="http://your-api/facebook/users/me/", payloads=None):
+def sequential_http(method="GET", endpoint="http://your-api/facebook/users/me/", payloads=None, headers=None):
     if payloads is None:
         payloads = [{}]
 
@@ -15,7 +15,7 @@ def sequential_http(method="GET", endpoint="http://your-api/facebook/users/me/",
             method,
             f"https://lunyamwi.org{endpoint}",
             json=payload,
-            headers={"Content-Type": "application/json"},
+            headers=headers,
             params=payload if method.upper() == "GET" else None,
             data=payload if method.upper() == "POST" or method.upper() == "PUT" or method.upper() == "PATCH" else None
         )
@@ -49,7 +49,11 @@ with DAG(
                 {
                     "method": "{{ operator.method }}",
                     "endpoint": "{{ operator.endpoint }}",
-                    "payloads": [json.dumps(x) for x in {{ operator.data }}]  # Assuming data is a list of dictionaries
+                    "payloads": [json.dumps(x) for x in {{ operator.data }}],  # Assuming data is a list of dictionaries
+                    "headers": {
+                        "Authorization": "Bearer {{ operator.token }}",
+                        "Content-Type": "application/json"
+                    },
                 }
             ]
         )
@@ -61,7 +65,11 @@ with DAG(
             op_kwargs={
                 "method": "{{ operator.method }}",
                 "endpoint": "{{ operator.endpoint }}",
-                "payloads": [json.dumps({})]  # Empty payload
+                "payloads": [json.dumps({})],  # Empty payload
+                "headers": {
+                    "Authorization": "Bearer {{ operator.token }}",
+                    "Content-Type": "application/json"
+                },
             }
         )
         http_tasks.append(task)

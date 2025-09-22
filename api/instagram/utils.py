@@ -365,3 +365,6 @@ def query_gpt(user_input,identifier=None):
     logging.warn(str(["time elapsed", res.elapsed.total_seconds()]))
 
     return res.json()
+
+def get_access_token():
+    return os.getenv("ACCESS_TOKEN")

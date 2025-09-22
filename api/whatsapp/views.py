@@ -1961,3 +1961,153 @@ class CallsGroupLinkView(APIView):
         result = make_whapi_request("POST", "/calls/group_link", data=request.data)
         return Response(result, status=result.get('status_code', 500))
 
+
+# views.py
+RAPIDAPI_HOST = "whin2.p.rapidapi.com"
+RAPIDAPI_KEY = os.getenv("RAPIDAPI_KEY", "")
+
+BASE_HEADERS = {
+    "x-rapidapi-host": RAPIDAPI_HOST,
+    "x-rapidapi-key": RAPIDAPI_KEY,
+}
+
+
+class SendMessageView(APIView):
+    """Send a message"""
+
+    def post(self, request, *args, **kwargs):
+        url = f"https://{RAPIDAPI_HOST}/send"
+        headers = {**BASE_HEADERS, "Content-Type": "application/json"}
+        resp = requests.post(url, headers=headers, json=request.data)
+        return Response(resp.json(), status=resp.status_code)
+
+
+class SendGroupMessageView(APIView):
+    """Send a message to a group"""
+
+    def post(self, request, *args, **kwargs):
+        url = f"https://{RAPIDAPI_HOST}/send2group"
+        headers = {**BASE_HEADERS, "Content-Type": "application/json"}
+        resp = requests.post(url, headers=headers, json=request.data)
+        return Response(resp.json(), status=resp.status_code)
+
+
+class SetWebhookUrlView(APIView):
+    """Set a webhook URL"""
+
+    def post(self, request, *args, **kwargs):
+        url = f"https://{RAPIDAPI_HOST}/seturl"
+        headers = {**BASE_HEADERS, "Content-Type": "application/json"}
+        resp = requests.post(url, headers=headers, json=request.data)
+        return Response(resp.json(), status=resp.status_code)
+
+
+class ShowWebhookUrlView(APIView):
+    """Show current webhook URL"""
+
+    def get(self, request, *args, **kwargs):
+        url = f"https://{RAPIDAPI_HOST}/showurl"
+        resp = requests.get(url, headers=BASE_HEADERS)
+        return Response(resp.json(), status=resp.status_code)
+
+
+class DeleteWebhookUrlView(APIView):
+    """Delete webhook URL"""
+
+    def get(self, request, *args, **kwargs):
+        url = f"https://{RAPIDAPI_HOST}/delurl"
+        resp = requests.get(url, headers=BASE_HEADERS)
+        return Response(resp.json(), status=resp.status_code)
+
+
+class CreatePollView(APIView):
+    """Create a poll"""
+
+    def post(self, request, *args, **kwargs):
+        url = f"https://{RAPIDAPI_HOST}/createpoll"
+        headers = {**BASE_HEADERS, "Content-Type": "application/json"}
+        resp = requests.post(url, headers=headers, json=request.data)
+        return Response(resp.json(), status=resp.status_code)
+
+# views.py
+class CreateGroupView(APIView):
+    """Create a WhatsApp group"""
+
+    def get(self, request, *args, **kwargs):
+        url = f"https://{RAPIDAPI_HOST}/creategroup"
+        resp = requests.get(url, headers=BASE_HEADERS)
+        return Response(resp.json(), status=resp.status_code)
+
+
+class MyGroupView(APIView):
+    """Show my groups"""
+
+    def get(self, request, *args, **kwargs):
+        url = f"https://{RAPIDAPI_HOST}/mygroup"
+        resp = requests.get(url, headers=BASE_HEADERS)
+        return Response(resp.json(), status=resp.status_code)
+
+
+class GetQrView(APIView):
+    """Get QR code"""
+
+    def get(self, request, *args, **kwargs):
+        url = f"https://{RAPIDAPI_HOST}/getqr"
+        resp = requests.get(url, headers=BASE_HEADERS)
+        return Response(resp.json(), status=resp.status_code)
+
+
+class WebhookView(APIView):
+    """Check webhook"""
+
+    def get(self, request, *args, **kwargs):
+        params = {"origin": request.query_params.get("origin", "Generic")}
+        url = f"https://{RAPIDAPI_HOST}/webhk"
+        resp = requests.get(url, headers=BASE_HEADERS, params=params)
+        return Response(resp.json(), status=resp.status_code)
+
+
+class WebhookPostView(APIView):
+    """Post data to webhook"""
+
+    def post(self, request, *args, **kwargs):
+        gid = request.query_params.get("gid")
+        username = request.query_params.get("username", "rapidapi-username")
+        origin = request.query_params.get("origin", "origin-service")
+
+        url = f"https://{RAPIDAPI_HOST}/hk/{username}/{origin}"
+        headers = {**BASE_HEADERS, "Content-Type": "application/json"}
+        resp = requests.post(url, headers=headers, params={"gid": gid}, json=request.data)
+        return Response(resp.json(), status=resp.status_code)
+
+
+class WebhookGetView(APIView):
+    """Get data from webhook"""
+
+    def get(self, request, *args, **kwargs):
+        gid = request.query_params.get("gid")
+        username = request.query_params.get("username", "rapidapi-username")
+        origin = request.query_params.get("origin", "origin-service")
+
+        url = f"https://{RAPIDAPI_HOST}/hk/{username}/{origin}"
+        resp = requests.get(url, headers=BASE_HEADERS, params={"gid": gid})
+        return Response(resp.json(), status=resp.status_code)
+
+
+class WskCheckView(APIView):
+    """Check WebSocket status"""
+
+    def get(self, request, *args, **kwargs):
+        url = f"https://{RAPIDAPI_HOST}/wskchk"
+        resp = requests.get(url, headers=BASE_HEADERS)
+        return Response(resp.json(), status=resp.status_code)
+
+
+class SignupView(APIView):
+    """Sign up with code"""
+
+    def get(self, request, *args, **kwargs):
+        code = request.query_params.get("code")
+        url = f"https://{RAPIDAPI_HOST}/signup"
+        resp = requests.get(url, headers=BASE_HEADERS, params={"code": code})
+        return Response(resp.json(), status=resp.status_code)

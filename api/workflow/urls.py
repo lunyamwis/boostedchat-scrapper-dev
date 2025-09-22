@@ -27,7 +27,9 @@ urlpatterns = [
     path('endpoints/', views.EndpointListView.as_view(), name='endpoint_list'),
     path('endpoints/create/', views.EndpointCreateView.as_view(), name='endpoint_create'),
     path('endpoints/update/<str:pk>/', views.EndpointUpdateView.as_view(), name='endpoint_update'),
+    path('endpoints/test/<str:pk>/', views.EndpointDetailView.as_view(), name='endpoint_test'),
     path('endpoints/delete/<str:pk>/', views.EndpointDeleteView.as_view(), name='endpoint_delete'),
+    path('endpoint/run/<str:pk>/',views.run_endpoint,name='endpoint_run'),
     path('', views.WorkflowList.as_view(), name='list_workflows'),
     path('workflow/create/', views.WorkflowCreate.as_view(), name='create_workflow'),
     path('workflow/update/<str:pk>/', views.WorkflowUpdate.as_view(), name='update_workflow'),
@@ -46,6 +48,7 @@ urlpatterns = [
     path('custom-fields/list/', views.CustomFieldListView.as_view(), name='custom_field_list'),
     path('endpoints/<str:endpoint_id>/custom-field/create/', views.CustomFieldValueCreateView.as_view(), name='custom_field_value_create'),
     path('endpoints/<str:endpoint_id>/url-kwargs/create/', views.URLKwargsCreateView.as_view(), name='url_kwargs_create'),
+    
 
     path('displayWorkflow/', views.display_workflows,name="workflows"),
     path('generateWorkflow/', views.generate_workflow,name="create_workflowset"),

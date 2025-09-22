@@ -25,6 +25,7 @@ class WorkflowModel(BaseModel):
     )
     name = models.CharField(max_length=255,null=True, blank=True)
     delay_durations = models.JSONField(null=True,blank=True)
+    provider = models.CharField(max_length=255,null=True, blank=True,choices=(("facebook","facebook"),("instagram","instagram"),("linkedin","linkedin"),("whatsapp","whatsapp"),("google","google")))
     airflow_creds = models.ForeignKey(AirflowCreds,on_delete=models.CASCADE,null=True, blank=True)
     workflow_type = models.CharField(max_length=255, choices=WORKFLOW_CHOICES, default="simple_httpoperators_sequential_run")
     results = models.JSONField(null=True, blank=True)

@@ -38,6 +38,52 @@ from api.workflow.forms import (
     CustomFieldForm, CustomFieldValueForm, EndpointForm, HttpOperatorConnectionForm, WorkflowModelForm, SimpleHttpOperatorModelForm, DagModelForm, SimpleHttpOperatorFormSet, DagFormSet, WorkflowRunnerForm, URLKwargsForm
 )
 
+# views.py
+import requests
+from django.shortcuts import get_object_or_404, redirect
+from django.urls import reverse
+from .models import Endpoint
+from api.helpers.models import Client
+from .utils import replace_url_kwargs
+
+def run_endpoint(request, pk):
+    access_token = None
+    host = request.get_host().split(':')[0]  # hostname without port
+    main_domain = "lunyamwi.org"
+    local_main = "localhost"
+    # import pdb;pdb.set_trace()
+    if host == main_domain or host == local_main:
+        # Plain main domain or localhost - render home
+        auth_header = request.headers.get("Authorization", "")
+        access_token = auth_header.replace("Bearer ", "", 1).strip() if auth_header.startswith("Bearer ") else None
+    elif host.endswith('.' + main_domain) or host.endswith('.' + local_main):
+        tenant = Client.objects.filter(user__id=request.user.id).last()
+        print(tenant)
+        access_token = tenant.user.token_set.latest('created_at').access_token
+    endpoint = get_object_or_404(Endpoint, pk=pk)
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+        "Content-Type": "application/json"
+    }
+
+    url_ = replace_url_kwargs(endpoint.url,endpoint.url_kwargs if endpoint.url_kwargs else {})
+    try:
+        resp = requests.request(
+            method=endpoint.method,
+            url=f"{request.scheme}://{host}{url_}",
+            timeout=10,
+            data={e.field.name: e.value for e in endpoint.custom_fields.filter()},
+            params={e.field.name: e.value for e in endpoint.custom_fields.filter()},
+            headers=headers
+
+        )
+        endpoint.results = resp.json()  # store JSON response
+        endpoint.save()
+    except Exception as e:
+        endpoint.results = {"error": str(e)}
+        endpoint.save()
+
+    return redirect(reverse("endpoint_test", args=[pk]))
 
 
 
@@ -189,6 +235,10 @@ class EndpointUpdateView(LoginRequiredMixin, UpdateView):
     form_class = EndpointForm
     template_name = 'workflows/endpoint_form.html'  # Template for updating an endpoint
     success_url = reverse_lazy('endpoint_list')  # Redirect URL after successful update
+
+class EndpointDetailView(LoginRequiredMixin, DetailView):
+    model = Endpoint
+    template_name = "workflows/endpoint_results.html"
 
 class EndpointDeleteView(LoginRequiredMixin, DeleteView):
     model = Endpoint

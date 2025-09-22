@@ -20,69 +20,7 @@ from email.mime.multipart import MIMEMultipart
 from urllib.parse import unquote
 from email.mime.base import MIMEBase
 from email import encoders
-
-load_dotenv()
-
-# Unipile Configuration
-LUNYAMWI_GMAIL_BASE_URL = os.getenv("LUNYAMWI_LINKEDIN_BASE_URL", "htps://example.com")
-LUNYAMWI_GMAIL_API_KEY = os.getenv("LUNYAMWI_GMAIL_API_KEY", "your_lunyamwi_gmail_api_key_here")
-
-# Headers for Unipile API requests
-LUNYAMWI_GMAIL_HEADERS = {
-    "X-API-KEY": LUNYAMWI_GMAIL_API_KEY,
-    "Content-Type": "application/json",
-    "Accept": "application/json"
-}
-
-def make_lunyamwi_gmail_request(method: str, endpoint: str, params: Dict = None, data: Dict = None, headers: Dict = None) -> Dict:
-    """Helper function to make requests to Unipile API"""
-    url = f"{LUNYAMWI_GMAIL_BASE_URL}{endpoint}"
-    
-    request_headers = LUNYAMWI_GMAIL_HEADERS.copy()
-    if headers:
-        request_headers.update(headers)
-    
-    try:
-        if method.upper() == 'GET':
-            response = requests.get(url, headers=request_headers, params=params)
-        elif method.upper() == 'POST':
-            response = requests.post(url, headers=request_headers, params=params, json=data)
-        elif method.upper() == 'PUT':
-            response = requests.put(url, headers=request_headers, params=params, json=data)
-        elif method.upper() == 'DELETE':
-            response = requests.delete(url, headers=request_headers, params=params)
-        elif method.upper() == 'PATCH':
-            response = requests.patch(url, headers=request_headers, params=params, json=data)
-        else:
-            return {"success": False, "error": "Unsupported HTTP method", "status_code": 400}
-        
-        return {
-            "success": response.ok,
-            "data": response.json() if response.content else {},
-            "status_code": response.status_code,
-            "headers": dict(response.headers)
-        }
-    except requests.exceptions.RequestException as e:
-        return {
-            "success": False,
-            "error": str(e),
-            "status_code": getattr(e.response, 'status_code', 500) if hasattr(e, 'response') else 500
-        }
-    except Exception as e:
-        return {"success": False, "error": str(e), "status_code": 500}
-
-def handle_lunyamwi_gmail_error(func):
-    """Decorator to handle Unipile API errors"""
-    def wrapper(*args, **kwargs):
-        try:
-            return func(*args, **kwargs)
-        except Exception as e:
-            return Response({
-                "error": f"An error occurred: {str(e)}",
-                "error_code": "internal_error"
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-    return wrapper
-
+from .utils import handle_lunyamwi_gmail_error, make_lunyamwi_gmail_request
 
 class GmailAuthURLView(APIView):
     """Generate Gmail OAuth URL"""

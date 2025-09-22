@@ -252,6 +252,12 @@ urlpatterns = [
     path('user-tag-medias-v2/', views.HikerUserTagMediasV2.as_view(), name='user-tag-medias-v2'),
     path('user-web-profile-info-v1/', views.HikerUserWebProfileInfoV1.as_view(), name='user-web-profile-info-v1'),
     path('userstream-by-id-v2/', views.HikerUserstreamByIdV2.as_view(), name='userstream-by-id-v2'),
-    path('userstream-by-username-v2/', views.HikerUserstreamByUsernameV2.as_view(), name='userstream-by-username-v2')
+    path('userstream-by-username-v2/', views.HikerUserstreamByUsernameV2.as_view(), name='userstream-by-username-v2'),
+    path("api/basic/", views.InstagramBasicView.as_view(), name="instagram-basic"),
+    path("api/publish/", views.InstagramContentPublishView.as_view(), name="instagram-publish"),
+    path("api/insights/", views.InstagramInsightsView.as_view(), name="instagram-insights"),
+    path("api/comments/", views.InstagramCommentsView.as_view(), name="instagram-comments"),
+    path("api/messages/", views.InstagramMessagesView.as_view(), name="instagram-messages"),
+    path("api/webhook/", views.InstagramWebhookView.as_view(), name="instagram-webhook"),
 ]
 

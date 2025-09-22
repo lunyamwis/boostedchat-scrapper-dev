@@ -76,7 +76,7 @@
           <div class="card mt-3 p-3">
             <h6 class="mb-2">Quick actions</h6>
             <div class="d-flex gap-2">
-              <a href="#" class="btn btn-sm btn-primary flex-fill">Re-run endpoint</a>
+              <a href="{% url 'endpoint_run' endpoint.pk %}" class="btn btn-sm btn-primary flex-fill">Run endpoint</a>
               <a href="{% url 'endpoint_list' %}" class="btn btn-sm btn-outline-danger flex-fill">Clear results</a>
             </div>
           </div>

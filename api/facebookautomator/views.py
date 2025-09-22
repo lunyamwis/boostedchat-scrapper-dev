@@ -30,12 +30,23 @@ APP_SECRET = os.getenv('FACEBOOK_APP_SECRET')
 GRAPH_API_BASE_URL = "https://graph.facebook.com/v18.0"
 
 # Helper function for Facebook API requests
-def make_facebook_request(method: str, endpoint: str, params: Dict = None, data: Dict = None, access_token: str = None) -> Dict:
+def make_facebook_request(method: str, endpoint: str, params: Dict = None, data: Dict = None, request = None) -> Dict:
     """Helper function to make requests to Facebook Graph API"""
+
     url = f"{GRAPH_API_BASE_URL}{endpoint}"
     
-    if not access_token:
-        access_token = PAGE_ACCESS_TOKEN
+    host = request.get_host().split(':')[0]  # hostname without port
+    main_domain = 'lunyamwi.org'
+    local_main = 'localhost'
+    
+    access_token = None
+    if host == main_domain or host == local_main:
+        # Plain main domain or localhost - render home
+        auth_header = request.headers.get("Authorization", "")
+        access_token = auth_header.replace("Bearer ", "", 1).strip() if auth_header.startswith("Bearer ") else None
+    elif host.endswith('.' + main_domain) or host.endswith('.' + local_main):
+        tenant = Client.objects.filter(user=request.user).last()
+        access_token = tenant.user.token_set.latest('created_at').access_token
     
     if params is None:
         params = {}
@@ -86,8 +97,6 @@ def webhook(request):
                     if 'message' in messaging_event:
                         message_text = messaging_event['message'].get('text')
                         if message_text:
-                            output_message = query_gpt(message_text,sender_id)
-                            # get tenant
                             page_id = entry.get('id','')
                             tenant_exists = Client.objects.filter(page_id=page_id)
                             tenant = None
@@ -96,6 +105,8 @@ def webhook(request):
 
                             # get token
                             token = tenant.user.token_set.latest('created_at').access_token
+                            output_message = query_gpt(message_text,sender_id, tenant.schema_name)
+                            # get tenant
                             send_message(sender_id, output_message, token)
 
             return Response({"success":True},status=status.HTTP_200_OK)
@@ -187,13 +198,15 @@ class FacebookUserView(APIView):
     def get(self, request, user_id="me"):
         """Get user profile"""
         fields = request.query_params.get('fields', 'id,name')
-        access_token = request.query_params.get('access_token', PAGE_ACCESS_TOKEN)
+        
         
         result = make_facebook_request(
+            request,
             "GET", 
             f"/{user_id}",
             params={'fields': fields},
-            access_token=access_token
+            request=request
+
         )
         
         return Response(result, status=result.get('status_code', 500))
@@ -204,12 +217,12 @@ class FacebookUserAccountsView(APIView):
     
     def get(self, request, user_id="me"):
         """Get user's accounts/pages"""
-        access_token = request.query_params.get('access_token', PAGE_ACCESS_TOKEN)
+        
         
         result = make_facebook_request(
             "GET",
             f"/{user_id}/accounts",
-            access_token=access_token
+            request=request
         )
         
         return Response(result, status=result.get('status_code', 500))
@@ -220,12 +233,12 @@ class FacebookUserPermissionsView(APIView):
     
     def get(self, request, user_id="me"):
         """Get user permissions"""
-        access_token = request.query_params.get('access_token', PAGE_ACCESS_TOKEN)
+        
         
         result = make_facebook_request(
             "GET",
             f"/{user_id}/permissions",
-            access_token=access_token
+            request=request
         )
         
         return Response(result, status=result.get('status_code', 500))
@@ -238,13 +251,13 @@ class FacebookPageView(APIView):
     def get(self, request, page_id):
         """Get page information"""
         fields = request.query_params.get('fields', 'id,name,about,category,fan_count,followers_count,website,phone,location')
-        access_token = request.query_params.get('access_token', PAGE_ACCESS_TOKEN)
+        
         
         result = make_facebook_request(
             "GET",
             f"/{page_id}",
             params={'fields': fields},
-            access_token=access_token
+            request=request
         )
         # result.update({"requested_path": request.path, "schema": request.tenant.schema_name})
         
@@ -252,13 +265,13 @@ class FacebookPageView(APIView):
     
     def post(self, request, page_id):
         """Update page information"""
-        access_token = request.query_params.get('access_token', PAGE_ACCESS_TOKEN)
+        
         
         result = make_facebook_request(
             "POST",
             f"/{page_id}",
             data=request.data,
-            access_token=access_token
+            request=request
         )
         
         return Response(result, status=result.get('status_code', 500))
@@ -273,7 +286,7 @@ class FacebookPageInsightsView(APIView):
         period = request.query_params.get('period', 'day')
         since = request.query_params.get('since')
         until = request.query_params.get('until')
-        access_token = request.query_params.get('access_token', PAGE_ACCESS_TOKEN)
+        
         
         params = {'metric': metric, 'period': period}
         if since:
@@ -285,7 +298,7 @@ class FacebookPageInsightsView(APIView):
             "GET",
             f"/{page_id}/insights",
             params=params,
-            access_token=access_token
+            request=request
         )
         
         return Response(result, status=result.get('status_code', 500))
@@ -296,14 +309,14 @@ class FacebookPageConversationsView(APIView):
     
     def get(self, request, page_id):
         """Get page conversations"""
-        access_token = request.query_params.get('access_token', PAGE_ACCESS_TOKEN)
+        
         limit = request.query_params.get('limit', 25)
         
         result = make_facebook_request(
             "GET",
             f"/{page_id}/conversations",
             params={'limit': limit},
-            access_token=access_token
+            request=request
         )
         
         return Response(result, status=result.get('status_code', 500))
@@ -317,26 +330,26 @@ class FacebookPostsView(APIView):
         """Get page posts"""
         fields = request.query_params.get('fields', 'id,message,created_time,likes.summary(true),comments.summary(true),shares')
         limit = request.query_params.get('limit', 25)
-        access_token = request.query_params.get('access_token', PAGE_ACCESS_TOKEN)
+        
         
         result = make_facebook_request(
             "GET",
             f"/{page_id}/posts",
             params={'fields': fields, 'limit': limit},
-            access_token=access_token
+            request=request
         )
         
         return Response(result, status=result.get('status_code', 500))
     
     def post(self, request, page_id):
         """Create a post"""
-        access_token = request.query_params.get('access_token', PAGE_ACCESS_TOKEN)
+        
         
         result = make_facebook_request(
             "POST",
             f"/{page_id}/feed",
             data=request.data,
-            access_token=access_token
+            request=request
         )
         
         return Response(result, status=result.get('status_code', 500))
@@ -348,38 +361,38 @@ class FacebookPostView(APIView):
     def get(self, request, post_id):
         """Get specific post"""
         fields = request.query_params.get('fields', 'id,message,created_time,likes.summary(true),comments.summary(true),shares')
-        access_token = request.query_params.get('access_token', PAGE_ACCESS_TOKEN)
+        
         
         result = make_facebook_request(
             "GET",
             f"/{post_id}",
             params={'fields': fields},
-            access_token=access_token
+            request=request
         )
         
         return Response(result, status=result.get('status_code', 500))
     
     def post(self, request, post_id):
         """Update post"""
-        access_token = request.query_params.get('access_token', PAGE_ACCESS_TOKEN)
+        
         
         result = make_facebook_request(
             "POST",
             f"/{post_id}",
             data=request.data,
-            access_token=access_token
+            request=request
         )
         
         return Response(result, status=result.get('status_code', 500))
     
     def delete(self, request, post_id):
         """Delete post"""
-        access_token = request.query_params.get('access_token', PAGE_ACCESS_TOKEN)
+        
         
         result = make_facebook_request(
             "DELETE",
             f"/{post_id}",
-            access_token=access_token
+            request=request
         )
         
         return Response(result, status=result.get('status_code', 500))
@@ -390,38 +403,38 @@ class FacebookPostLikesView(APIView):
     
     def get(self, request, post_id):
         """Get post likes"""
-        access_token = request.query_params.get('access_token', PAGE_ACCESS_TOKEN)
+        
         limit = request.query_params.get('limit', 25)
         
         result = make_facebook_request(
             "GET",
             f"/{post_id}/likes",
             params={'limit': limit},
-            access_token=access_token
+            request=request
         )
         
         return Response(result, status=result.get('status_code', 500))
     
     def post(self, request, post_id):
         """Like a post"""
-        access_token = request.query_params.get('access_token', PAGE_ACCESS_TOKEN)
+        
         
         result = make_facebook_request(
             "POST",
             f"/{post_id}/likes",
-            access_token=access_token
+            request=request
         )
         
         return Response(result, status=result.get('status_code', 500))
     
     def delete(self, request, post_id):
         """Unlike a post"""
-        access_token = request.query_params.get('access_token', PAGE_ACCESS_TOKEN)
+        
         
         result = make_facebook_request(
             "DELETE",
             f"/{post_id}/likes",
-            access_token=access_token
+            request=request
         )
         
         return Response(result, status=result.get('status_code', 500))
@@ -432,7 +445,7 @@ class FacebookPostCommentsView(APIView):
     
     def get(self, request, post_id):
         """Get post comments"""
-        access_token = request.query_params.get('access_token', PAGE_ACCESS_TOKEN)
+        
         limit = request.query_params.get('limit', 25)
         order = request.query_params.get('order', 'chronological')
         
@@ -440,20 +453,20 @@ class FacebookPostCommentsView(APIView):
             "GET",
             f"/{post_id}/comments",
             params={'limit': limit, 'order': order},
-            access_token=access_token
+            request=request
         )
         
         return Response(result, status=result.get('status_code', 500))
     
     def post(self, request, post_id):
         """Comment on post"""
-        access_token = request.query_params.get('access_token', PAGE_ACCESS_TOKEN)
+        
         
         result = make_facebook_request(
             "POST",
             f"/{post_id}/comments",
             data=request.data,
-            access_token=access_token
+            request=request
         )
         
         return Response(result, status=result.get('status_code', 500))
@@ -465,38 +478,38 @@ class FacebookCommentView(APIView):
     def get(self, request, comment_id):
         """Get comment"""
         fields = request.query_params.get('fields', 'id,message,created_time,from,likes.summary(true)')
-        access_token = request.query_params.get('access_token', PAGE_ACCESS_TOKEN)
+        
         
         result = make_facebook_request(
             "GET",
             f"/{comment_id}",
             params={'fields': fields},
-            access_token=access_token
+            request=request
         )
         
         return Response(result, status=result.get('status_code', 500))
     
     def post(self, request, comment_id):
         """Update comment"""
-        access_token = request.query_params.get('access_token', PAGE_ACCESS_TOKEN)
+        
         
         result = make_facebook_request(
             "POST",
             f"/{comment_id}",
             data=request.data,
-            access_token=access_token
+            request=request
         )
         
         return Response(result, status=result.get('status_code', 500))
     
     def delete(self, request, comment_id):
         """Delete comment"""
-        access_token = request.query_params.get('access_token', PAGE_ACCESS_TOKEN)
+        
         
         result = make_facebook_request(
             "DELETE",
             f"/{comment_id}",
-            access_token=access_token
+            request=request
         )
         
         return Response(result, status=result.get('status_code', 500))
@@ -507,7 +520,7 @@ class FacebookMessagesView(APIView):
     
     def post(self, request):
         """Send message via Messenger Platform"""
-        access_token = request.query_params.get('access_token', PAGE_ACCESS_TOKEN)
+        
         
         # Enhanced message sending with various message types
         payload = {
@@ -528,7 +541,7 @@ class FacebookMessagesView(APIView):
             "POST",
             "/me/messages",
             data=payload,
-            access_token=access_token
+            request=request
         )
         
         return Response(result, status=result.get('status_code', 500))
@@ -539,40 +552,40 @@ class FacebookMessengerProfileView(APIView):
     
     def get(self, request):
         """Get Messenger Profile"""
-        access_token = request.query_params.get('access_token', PAGE_ACCESS_TOKEN)
+        
         fields = request.query_params.get('fields', 'get_started,greeting,persistent_menu')
         
         result = make_facebook_request(
             "GET",
             "/me/messenger_profile",
             params={'fields': fields},
-            access_token=access_token
+            request=request
         )
         
         return Response(result, status=result.get('status_code', 500))
     
     def post(self, request):
         """Set Messenger Profile"""
-        access_token = request.query_params.get('access_token', PAGE_ACCESS_TOKEN)
+        
         
         result = make_facebook_request(
             "POST",
             "/me/messenger_profile",
             data=request.data,
-            access_token=access_token
+            request=request
         )
         
         return Response(result, status=result.get('status_code', 500))
     
     def delete(self, request):
         """Delete Messenger Profile fields"""
-        access_token = request.query_params.get('access_token', PAGE_ACCESS_TOKEN)
+        
         
         result = make_facebook_request(
             "DELETE",
             "/me/messenger_profile",
             data=request.data,
-            access_token=access_token
+            request=request
         )
         
         return Response(result, status=result.get('status_code', 500))
@@ -584,27 +597,27 @@ class FacebookPhotosView(APIView):
     
     def get(self, request, page_id):
         """Get page photos"""
-        access_token = request.query_params.get('access_token', PAGE_ACCESS_TOKEN)
+        
         limit = request.query_params.get('limit', 25)
         
         result = make_facebook_request(
             "GET",
             f"/{page_id}/photos",
             params={'limit': limit},
-            access_token=access_token
+            request=request
         )
         
         return Response(result, status=result.get('status_code', 500))
     
     def post(self, request, page_id):
         """Upload photo"""
-        access_token = request.query_params.get('access_token', PAGE_ACCESS_TOKEN)
+        
         
         result = make_facebook_request(
             "POST",
             f"/{page_id}/photos",
             data=request.data,
-            access_token=access_token
+            request=request
         )
         
         return Response(result, status=result.get('status_code', 500))
@@ -615,27 +628,27 @@ class FacebookVideosView(APIView):
     
     def get(self, request, page_id):
         """Get page videos"""
-        access_token = request.query_params.get('access_token', PAGE_ACCESS_TOKEN)
+        
         limit = request.query_params.get('limit', 25)
         
         result = make_facebook_request(
             "GET",
             f"/{page_id}/videos",
             params={'limit': limit},
-            access_token=access_token
+            request=request
         )
         
         return Response(result, status=result.get('status_code', 500))
     
     def post(self, request, page_id):
         """Upload video"""
-        access_token = request.query_params.get('access_token', PAGE_ACCESS_TOKEN)
+        
         
         result = make_facebook_request(
             "POST",
             f"/{page_id}/videos",
             data=request.data,
-            access_token=access_token
+            request=request
         )
         
         return Response(result, status=result.get('status_code', 500))
@@ -646,27 +659,27 @@ class FacebookAlbumsView(APIView):
     
     def get(self, request, page_id):
         """Get page albums"""
-        access_token = request.query_params.get('access_token', PAGE_ACCESS_TOKEN)
+        
         limit = request.query_params.get('limit', 25)
         
         result = make_facebook_request(
             "GET",
             f"/{page_id}/albums",
             params={'limit': limit},
-            access_token=access_token
+            request=request
         )
         
         return Response(result, status=result.get('status_code', 500))
     
     def post(self, request, page_id):
         """Create album"""
-        access_token = request.query_params.get('access_token', PAGE_ACCESS_TOKEN)
+        
         
         result = make_facebook_request(
             "POST",
             f"/{page_id}/albums",
             data=request.data,
-            access_token=access_token
+            request=request
         )
         
         return Response(result, status=result.get('status_code', 500))
@@ -677,27 +690,27 @@ class FacebookEventsView(APIView):
     
     def get(self, request, page_id):
         """Get page events"""
-        access_token = request.query_params.get('access_token', PAGE_ACCESS_TOKEN)
+        
         fields = request.query_params.get('fields', 'id,name,description,start_time,end_time,place')
         
         result = make_facebook_request(
             "GET",
             f"/{page_id}/events",
             params={'fields': fields},
-            access_token=access_token
+            request=request
         )
         
         return Response(result, status=result.get('status_code', 500))
     
     def post(self, request, page_id):
         """Create event"""
-        access_token = request.query_params.get('access_token', PAGE_ACCESS_TOKEN)
+        
         
         result = make_facebook_request(
             "POST",
             f"/{page_id}/events",
             data=request.data,
-            access_token=access_token
+            request=request
         )
         
         return Response(result, status=result.get('status_code', 500))
@@ -708,14 +721,14 @@ class FacebookEventView(APIView):
     
     def get(self, request, event_id):
         """Get event details"""
-        access_token = request.query_params.get('access_token', PAGE_ACCESS_TOKEN)
+        
         fields = request.query_params.get('fields', 'id,name,description,start_time,end_time,place,attending_count')
         
         result = make_facebook_request(
             "GET",
             f"/{event_id}",
             params={'fields': fields},
-            access_token=access_token
+            request=request
         )
         
         return Response(result, status=result.get('status_code', 500))
@@ -726,14 +739,14 @@ class FacebookGroupView(APIView):
     
     def get(self, request, group_id):
         """Get group details"""
-        access_token = request.query_params.get('access_token', PAGE_ACCESS_TOKEN)
+        
         fields = request.query_params.get('fields', 'id,name,description,privacy,member_count')
         
         result = make_facebook_request(
             "GET",
             f"/{group_id}",
             params={'fields': fields},
-            access_token=access_token
+            request=request
         )
         
         return Response(result, status=result.get('status_code', 500))
@@ -744,27 +757,27 @@ class FacebookGroupFeedView(APIView):
     
     def get(self, request, group_id):
         """Get group feed"""
-        access_token = request.query_params.get('access_token', PAGE_ACCESS_TOKEN)
+        
         limit = request.query_params.get('limit', 25)
         
         result = make_facebook_request(
             "GET",
             f"/{group_id}/feed",
             params={'limit': limit},
-            access_token=access_token
+            request=request
         )
         
         return Response(result, status=result.get('status_code', 500))
     
     def post(self, request, group_id):
         """Post to group"""
-        access_token = request.query_params.get('access_token', PAGE_ACCESS_TOKEN)
+        
         
         result = make_facebook_request(
             "POST",
             f"/{group_id}/feed",
             data=request.data,
-            access_token=access_token
+            request=request
         )
         
         return Response(result, status=result.get('status_code', 500))
@@ -775,25 +788,25 @@ class FacebookWebhookSubscriptionsView(APIView):
     
     def get(self, request, page_id):
         """Get webhook subscriptions"""
-        access_token = request.query_params.get('access_token', PAGE_ACCESS_TOKEN)
+        
         
         result = make_facebook_request(
             "GET",
             f"/{page_id}/subscriptions",
-            access_token=access_token
+            request=request
         )
         
         return Response(result, status=result.get('status_code', 500))
     
     def post(self, request, page_id):
         """Subscribe to webhooks"""
-        access_token = request.query_params.get('access_token', PAGE_ACCESS_TOKEN)
+        
         
         result = make_facebook_request(
             "POST",
             f"/{page_id}/subscriptions",
             data=request.data,
-            access_token=access_token
+            request=request
         )
         
         return Response(result, status=result.get('status_code', 500))
@@ -804,12 +817,12 @@ class FacebookLeadGenFormsView(APIView):
     
     def get(self, request, page_id):
         """Get lead forms"""
-        access_token = request.query_params.get('access_token', PAGE_ACCESS_TOKEN)
+        
         
         result = make_facebook_request(
             "GET",
             f"/{page_id}/leadgen_forms",
-            access_token=access_token
+            request=request
         )
         
         return Response(result, status=result.get('status_code', 500))
@@ -820,12 +833,12 @@ class FacebookLeadsView(APIView):
     
     def get(self, request, form_id):
         """Get leads from form"""
-        access_token = request.query_params.get('access_token', PAGE_ACCESS_TOKEN)
+        
         
         result = make_facebook_request(
             "GET",
             f"/{form_id}/leads",
-            access_token=access_token
+            request=request
         )
         
         return Response(result, status=result.get('status_code', 500))
@@ -836,13 +849,13 @@ class FacebookInstagramAccountView(APIView):
     
     def get(self, request, page_id):
         """Get connected Instagram account"""
-        access_token = request.query_params.get('access_token', PAGE_ACCESS_TOKEN)
+        
         
         result = make_facebook_request(
             "GET",
             f"/{page_id}",
             params={'fields': 'instagram_business_account'},
-            access_token=access_token
+            request=request
         )
         
         return Response(result, status=result.get('status_code', 500))
@@ -853,27 +866,27 @@ class FacebookInstagramMediaView(APIView):
     
     def get(self, request, instagram_account_id):
         """Get Instagram media"""
-        access_token = request.query_params.get('access_token', PAGE_ACCESS_TOKEN)
+        
         fields = request.query_params.get('fields', 'id,caption,media_type,media_url,timestamp')
         
         result = make_facebook_request(
             "GET",
             f"/{instagram_account_id}/media",
             params={'fields': fields},
-            access_token=access_token
+            request=request
         )
         
         return Response(result, status=result.get('status_code', 500))
     
     def post(self, request, instagram_account_id):
         """Create Instagram media"""
-        access_token = request.query_params.get('access_token', PAGE_ACCESS_TOKEN)
+        
         
         result = make_facebook_request(
             "POST",
             f"/{instagram_account_id}/media",
             data=request.data,
-            access_token=access_token
+            request=request
         )
         
         return Response(result, status=result.get('status_code', 500))
@@ -891,7 +904,7 @@ class FacebookDebugTokenView(APIView):
             "GET",
             "/debug_token",
             params={'input_token': input_token},
-            access_token=access_token
+            request=request
         )
         
         return Response(result, status=result.get('status_code', 500))
@@ -903,7 +916,7 @@ class FacebookBatchRequestView(APIView):
     
     def post(self, request):
         """Execute batch requests"""
-        access_token = request.query_params.get('access_token', PAGE_ACCESS_TOKEN)
+        
         
         batch_requests = request.data.get('batch', [])
         
@@ -911,7 +924,7 @@ class FacebookBatchRequestView(APIView):
             "POST",
             "/",
             data={'batch': json.dumps(batch_requests)},
-            access_token=access_token
+            request=request
         )
         
         return Response(result, status=result.get('status_code', 500))
