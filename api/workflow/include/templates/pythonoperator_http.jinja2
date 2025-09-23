@@ -54,7 +54,7 @@ def sequential_http(method="GET", endpoint="http://your-api/facebook/users/me/",
     for payload in payloads:
         resp = requests.request(
             method,
-            "{endpoint}",
+            f"https://graph.facebook.com/{GRAPH_API_VERSION}/{endpoint}",
             json=payload,
             headers=headers,
             params=payload if method.upper() == "GET" else None,

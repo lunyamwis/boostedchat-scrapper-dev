@@ -1886,8 +1886,10 @@ def generate_dag_script(workflow_id):
                 print(operator['connection_id'])
                 operator['http_conn_id'] = HttpOperatorConnectionModel.objects.get(id=operator['connection_id']).connection_id
                 endpoint = Endpoint.objects.get(id=operator['endpointurl_id'])
-                operator['endpoint'] = replace_url_kwargs(endpoint.url,endpoint.url_kwargs if endpoint.url_kwargs else {})
-                operator['method'] = endpoint.method
+                unclean_endpoint = replace_url_kwargs(endpoint.url,endpoint.url_kwargs if endpoint.url_kwargs else {})
+                operator['endpoint'] = unclean_endpoint.replace("/facebook/", "") if workflow.provider == 'facebook' else unclean_endpoint
+                print(operator['endpoint'])
+                operator['method'] = endpoint.method 
                 # Get the content type for the Endpoint model
                 endpoint_content_type = ContentType.objects.get_for_model(Endpoint)
                 # Query to get all custom fields and their values for the given end

@@ -48,10 +48,11 @@ operators:
 - connection_id: -OZxDOXms8MnQiVs0gbZ
   created_at: 2025-09-17 13:00:47.290773+00:00
   dag_id: -O_MkpsrzDTXVseJ1JaQ
-  data: null
+  data:
+  - page_name: country livers
   deleted_at: null
-  endpoint: /facebook/pages/100747912772086/
-  endpointurl_id: -O_GZQ5vSXhV9oWpfQ-A
+  endpoint: 100747912772086/posts/
+  endpointurl_id: -O_G_SKZXp3tg24JnHtc
   extra_options: null
   headers:
     Content-Type: application/json
@@ -61,6 +62,7 @@ operators:
   method: GET
   response_check: null
   task_id: generating
-  updated_at: 2025-09-17 13:00:47.290845+00:00
+  token: EAAIQmg0TgbsBPinetbvPKveTgjdlbtoBPTT7Vs85JniZCdSYUM4ZAwSi6r92q9mTR3EEVP0GTHQcpf7mCesw4b2sZBZAx6DflC8J84gacW8wnt6HsjrI6jdBLPu801CIbxFsvZAbPjNV6I5xmoK97ZCFJW8uivH7Dph02o36K3P4vmtZBg9TmtaddZBXFJJFIahZAfCQZD
+  updated_at: 2025-09-23 17:47:52.479498+00:00
   urls: null
   xcom_push: true
