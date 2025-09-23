@@ -16,7 +16,7 @@ from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny
 from api.helpers.models import Client
 from .forms import ScrapFacebookGroupForm, SendFirstMessageForm
-from .utils import query_gpt
+from .utils import query_gpt, validate_or_extend_token
 from .models import ChatSession
 from .prompts import system_prompt
 
@@ -45,26 +45,45 @@ def make_facebook_request(method: str, endpoint: str, params: Dict = None, data:
         auth_header = request.headers.get("Authorization", "")
         access_token = auth_header.replace("Bearer ", "", 1).strip() if auth_header.startswith("Bearer ") else None
     elif host.endswith('.' + main_domain) or host.endswith('.' + local_main):
-        tenant = Client.objects.filter(user=request.user).last()
-        access_token = tenant.user.token_set.latest('created_at').access_token
-    
+        subdomain = host.split(".")[0] if host else None
+        print(subdomain)  # 👉 "lunyamwi"
+
+        tenant = Client.objects.filter(schema_name=subdomain).last()
+        print(tenant)
+        page_name = None
+        # import pdb;pdb.set_trace()
+        if method.upper() in ['GET']:
+            page_name = request.GET['page_name']
+        else:
+            page_name = data.get('page_name') if data is not None else None
+        if page_name is not None:
+            if tenant.user.token_set.latest('created_at').facebook_tokens.filter(name__icontains=page_name).exists():
+                access_token = tenant.user.token_set.latest('created_at').facebook_tokens.filter(name__icontains=page_name).last().access_token
+        else:
+            access_token = tenant.user.token_set.latest('created_at').access_token
+
+        
     if params is None:
         params = {}
-    params['access_token'] = access_token
-    
+
+    # params['access_token'] = validate_or_extend_token(access_token)
+    valid_access_token = validate_or_extend_token(access_token)
+    headers = {'Content-Type': 'application/json', 'Accept': 'application/json','Authorization': f"Bearer {valid_access_token}"}
+
     try:
         if method.upper() == 'GET':
-            response = requests.get(url, params=params)
+            # import pdb;pdb.set_trace()
+            response = requests.get(url, params=params, headers=headers)
         elif method.upper() == 'POST':
-            response = requests.post(url, params=params, json=data)
+            response = requests.post(url, params=params, json=data, headers=headers)
         elif method.upper() == 'DELETE':
-            response = requests.delete(url, params=params)
+            response = requests.delete(url, params=params, headers=headers)
         elif method.upper() == 'PUT':
-            response = requests.put(url, params=params, json=data)
+            response = requests.put(url, params=params, json=data, headers=headers)
         else:
             return {"success": False, "error": "Unsupported HTTP method"}
         
-        response.raise_for_status()
+        # response.raise_for_status()
         return {"success": True, "data": response.json(), "status_code": response.status_code}
     except requests.exceptions.RequestException as e:
         return {"success": False, "error": str(e), "status_code": getattr(e.response, 'status_code', 500)}
@@ -196,12 +215,12 @@ class FacebookUserView(APIView):
     permission_classes = [AllowAny]
     
     def get(self, request, user_id="me"):
+        # import pdb;pdb.set_trace()
         """Get user profile"""
         fields = request.query_params.get('fields', 'id,name')
         
         
         result = make_facebook_request(
-            request,
             "GET", 
             f"/{user_id}",
             params={'fields': fields},

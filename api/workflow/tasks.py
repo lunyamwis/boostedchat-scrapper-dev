@@ -1888,8 +1888,6 @@ def generate_dag_script(workflow_id):
                 endpoint = Endpoint.objects.get(id=operator['endpointurl_id'])
                 operator['endpoint'] = replace_url_kwargs(endpoint.url,endpoint.url_kwargs if endpoint.url_kwargs else {})
                 operator['method'] = endpoint.method
-                tenant = Client.objects.get(schema_name=workflow.airflow_creds.schema_name)
-                operator['token'] = tenant.user.token_set.filter(provider=workflow.provider).latest('created_at').access_token
                 # Get the content type for the Endpoint model
                 endpoint_content_type = ContentType.objects.get_for_model(Endpoint)
                 # Query to get all custom fields and their values for the given end
@@ -1904,7 +1902,23 @@ def generate_dag_script(workflow_id):
                         "created_at": custom_field_value.created_at
                     })
 
-                operator['data'] = expand_comma_values(remove_timestamp(flatten_dict_list(merge_lists_by_timestamp(data_points))))
+                data_ = expand_comma_values(remove_timestamp(flatten_dict_list(merge_lists_by_timestamp(data_points))))
+                operator['data'] = data_
+                tenant = Client.objects.get(schema_name=workflow.airflow_creds.schema_name)
+                access_token = None
+                if workflow.provider == 'facebook':
+                    page_names = [item["page_name"] for item in data_ if "page_name" in item]
+                    print(page_names)
+                    page_name = None
+                    if page_names:
+                        page_name = page_names[0]
+                    if page_name is not None:
+                        if tenant.user.token_set.latest('created_at').facebook_tokens.filter(name__icontains=page_name).exists():
+                            access_token = tenant.user.token_set.latest('created_at').facebook_tokens.filter(name__icontains=page_name).last().access_token
+                    else:
+                        access_token = tenant.user.token_set.latest('created_at').access_token
+
+                operator['token'] = access_token
                 print(operator['data'])
                 
             except Exception as error:

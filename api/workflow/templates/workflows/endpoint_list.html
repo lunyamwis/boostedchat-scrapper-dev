@@ -7,7 +7,7 @@
     <ul>
         {% for endpoint in endpoints %}
             <li>
-                {{endpoint.base_url}}--{{ endpoint.url }}: {{ endpoint.data }}
+                {{endpoint.base_url}}--{{ endpoint.url }}: {{ endpoint.method }}
                 <a href="{% url 'endpoint_update' endpoint.pk %}">Edit</a>
                 <form action="{% url 'endpoint_delete' endpoint.pk %}" method="post" style="display:inline;">
                     {% csrf_token %}

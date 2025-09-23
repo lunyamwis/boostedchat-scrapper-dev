@@ -49,15 +49,10 @@ operators:
   created_at: 2025-09-22 14:19:14.653548+00:00
   dag_id: -O_lmjr525iJXTmHphvx
   data:
-  - comma_separated_value_strings: ad
-  - comma_separated_value_strings: pd
-  - comma_separated_value_strings: jd
-  - comma_separated_value_strings: ld
-  - comma_separated_value_strings: vd
-  - comma_separated_value_strings: mg
+  - page_name: country livers
   deleted_at: null
-  endpoint: /facebook/users/me/
-  endpointurl_id: -OZwfJtZGKclrDwdan_X
+  endpoint: /facebook/pages/100747912772086/posts/
+  endpointurl_id: -O_G_SKZXp3tg24JnHtc
   extra_options: null
   headers:
     Content-Type: application/json
@@ -67,7 +62,7 @@ operators:
   method: GET
   response_check: null
   task_id: tests
-  token: EAAIQmg0TgbsBO06VkoWJCDgLfExhF2CnAHM83azGRWwLqjpQ7yolJ5KuMUZCnQZAlQji1uMlFRjcbPLJ50ZBMZB7KXhqwfAHbrwicIAHM8U2ZAZAOwOzDDWZCHT065ZAlgZAycx9tM0ZB5DyIAthn3brAHpvMBsLEWcPZBuccblvlItn3hhQ31MraXgG2CZCsLIZD
-  updated_at: 2025-09-22 14:19:14.653585+00:00
+  token: EAAIQmg0TgbsBPjLMIt4b02tvoowh7jgEpemoib9xM5mawF0uZBMZBDGKoIQZAexmvSdIMZA3ZAKUjU4sghssXkxbj1ZBeBmzDC7k6zsyfnBSywzPKeZBPlZB7GharpfOyyvmrGWTq38goeKO0e12oZCcjFNDJlpBZAQ6v8DhAhcegZAlE2puu9ZBwE9829SmNhQZB4CLZBcGqMDa1XkiPHEZCJZAYZAulYgwPz16ZCceCGHppCpwZDZD
+  updated_at: 2025-09-23 11:16:51.692076+00:00
   urls: null
   xcom_push: true

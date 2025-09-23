@@ -45,38 +45,33 @@ from django.urls import reverse
 from .models import Endpoint
 from api.helpers.models import Client
 from .utils import replace_url_kwargs
+from api.facebookautomator.utils import validate_or_extend_token as validate_or_extend_facebook_token
 
 def run_endpoint(request, pk):
-    access_token = None
     host = request.get_host().split(':')[0]  # hostname without port
-    main_domain = "lunyamwi.org"
-    local_main = "localhost"
-    # import pdb;pdb.set_trace()
-    if host == main_domain or host == local_main:
-        # Plain main domain or localhost - render home
-        auth_header = request.headers.get("Authorization", "")
-        access_token = auth_header.replace("Bearer ", "", 1).strip() if auth_header.startswith("Bearer ") else None
-    elif host.endswith('.' + main_domain) or host.endswith('.' + local_main):
-        tenant = Client.objects.filter(user__id=request.user.id).last()
-        print(tenant)
-        access_token = tenant.user.token_set.latest('created_at').access_token
+    
     endpoint = get_object_or_404(Endpoint, pk=pk)
-    headers = {
-        "Authorization": f"Bearer {access_token}",
-        "Content-Type": "application/json"
-    }
+    
 
     url_ = replace_url_kwargs(endpoint.url,endpoint.url_kwargs if endpoint.url_kwargs else {})
+    full_url = f"{request.scheme}://{host}{url_}"
+    print(full_url,'-->',request.user.is_authenticated,request.tenant.schema_name)
+    field_values = [e.value for e in endpoint.custom_fields]
+    merge_ = {k: v for d in field_values for k, v in d.items()}
+    print(field_values)
+    print(merge_)
     try:
         resp = requests.request(
             method=endpoint.method,
-            url=f"{request.scheme}://{host}{url_}",
-            timeout=10,
-            data={e.field.name: e.value for e in endpoint.custom_fields.filter()},
-            params={e.field.name: e.value for e in endpoint.custom_fields.filter()},
-            headers=headers
+            url=full_url,
+            timeout=70,
+            data=merge_ if field_values else None,
+            params=merge_ if field_values else None,
+            # headers=headers
 
         )
+        print(resp.json())
+        # import pdb;pdb.set_trace()
         endpoint.results = resp.json()  # store JSON response
         endpoint.save()
     except Exception as e:

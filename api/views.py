@@ -61,7 +61,7 @@ from allauth.socialaccount.helpers import complete_social_login, render_authenti
 from allauth.socialaccount.providers.oauth2.client import OAuth2Error
 from django.core.exceptions import PermissionDenied
 from requests.exceptions import RequestException
-from api.authentication.models import Token,User
+from api.authentication.models import Token,User, FacebookToken
 from allauth.socialaccount.providers.base import AuthError
 from django.contrib.auth import get_user_model, authenticate, login
 from urllib.parse import unquote
@@ -225,6 +225,14 @@ class TenantOAuth2CallbackView(View):
 
             profile_response = requests.get(profile_url)
             profile_data = profile_response.json()
+
+            accounts_url = (
+                f"https://graph.facebook.com/me/accounts?"
+                f"access_token={access_token}"
+            )
+            accounts_response = requests.get(accounts_url)
+            accounts_data = accounts_response.json()
+            print("Accounts data:", accounts_data)
             try:
                 email = profile_data.get("email")
                 user = User.objects.get(email=email)
@@ -237,13 +245,31 @@ class TenantOAuth2CallbackView(View):
                     token.token_type = 'refresh'
                     token.provider = provider_name
                     token.save()
+                    for account in accounts_data.get("data", []):
+                        if not FacebookToken.objects.filter(account_id=account.get("id")).exists():
+                            FacebookToken.objects.create(
+                                access_token=account.get("access_token"),
+                                name=account.get("name"),
+                                account_id=account.get("id"),
+                                token=token
+                            )
+                        
                 else:
-                    Token.objects.update_or_create(
+                    token,_ = Token.objects.update_or_create(
                         user=user,
                         provider=provider_name,
                         access_token=access_token,
                         token_type="refresh"
                     )
+                    for account in accounts_data.get("data", []):
+                        if not FacebookToken.objects.filter(account_id=account.get("id")).exists():
+                            FacebookToken.objects.create(
+                                access_token=account.get("access_token"),
+                                name=account.get("name"),
+                                account_id=account.get("id"),
+                                token=token
+                            )
+                        
             except Exception as e:
                 logger.warning("Error saving Facebook tokens: %s", e)
 

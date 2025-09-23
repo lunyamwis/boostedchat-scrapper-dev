@@ -98,7 +98,7 @@ class CustomField(BaseModel):
     ])
 
     def __str__(self):
-        return self.name
+        return f"{self.name}-{self.data_type}"
 
 class CustomFieldValue(BaseModel):
     field = models.ForeignKey(CustomField, on_delete=models.CASCADE)
