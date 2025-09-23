@@ -44,6 +44,10 @@ def make_facebook_request(method: str, endpoint: str, params: Dict = None, data:
         # Plain main domain or localhost - render home
         auth_header = request.headers.get("Authorization", "")
         access_token = auth_header.replace("Bearer ", "", 1).strip() if auth_header.startswith("Bearer ") else None
+        logging.warning(request)
+        logging.warning(auth_header)
+        logging.warning(f"Access Token from Header: {access_token}")
+        print(access_token)
     elif host.endswith('.' + main_domain) or host.endswith('.' + local_main):
         subdomain = host.split(".")[0] if host else None
         print(subdomain)  # 👉 "lunyamwi"
@@ -58,16 +62,24 @@ def make_facebook_request(method: str, endpoint: str, params: Dict = None, data:
             page_name = data.get('page_name') if data is not None else None
         if page_name is not None:
             if tenant.user.token_set.latest('created_at').facebook_tokens.filter(name__icontains=page_name).exists():
-                access_token = tenant.user.token_set.latest('created_at').facebook_tokens.filter(name__icontains=page_name).last().access_token
-        else:
-            access_token = tenant.user.token_set.latest('created_at').access_token
 
-        
+                access_token_ = tenant.user.token_set.latest('created_at').facebook_tokens.filter(name__icontains=page_name).last()
+                # import pdb;pdb.set_trace()
+                # print(access_token_.access_token)
+                access_token = validate_or_extend_token(access_token_.access_token)
+                access_token_.access_token = access_token
+                access_token_.save()
+        else:
+            access_token_ = tenant.user.token_set.latest('created_at')
+            access_token = validate_or_extend_token(access_token_.access_token)
+            access_token_.access_token = access_token
+            access_token_.save()
+
     if params is None:
         params = {}
 
     # params['access_token'] = validate_or_extend_token(access_token)
-    valid_access_token = validate_or_extend_token(access_token)
+    valid_access_token = access_token
     headers = {'Content-Type': 'application/json', 'Accept': 'application/json','Authorization': f"Bearer {valid_access_token}"}
 
     try:

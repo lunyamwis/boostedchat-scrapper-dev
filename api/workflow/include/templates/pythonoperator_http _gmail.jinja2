@@ -30,21 +30,18 @@ def debug_token(input_token: str, app_access_token: str):
     print(r.json())
     return r.json()
 
-
 def validate_or_extend_token(token: str = None):
     print(f"{Variable.get('FACEBOOK_APP_ID')}|{Variable.get('FACEBOOK_APP_SECRET')}")
     debug_response = debug_token(token, f"{Variable.get('FACEBOOK_APP_ID')}|{Variable.get('FACEBOOK_APP_SECRET')}")
     debug_result = debug_response.get('data', {})
     is_valid = debug_result.get('is_valid', False)
-    expires_at = debug_result.get("expires_at", 0)
-    if expires_at and expires_at < time.time() + 6000:
-        print("Token is short being exchanged for a longer-lived token.")
+    if is_valid:
+        print("Token is valid: No need to extend.")
+        return token
+    else:
+        print("Token is invalid or expired: Extending token.")
         token_resp = exchange_short_for_long(Variable.get('FACEBOOK_APP_ID'), Variable.get('FACEBOOK_APP_SECRET'), token)
         return token_resp.get('access_token', None)
-    else:
-        print("Token is valid and does not need extension.")
-        return token
-    
     
 
 def sequential_http(method="GET", endpoint="http://your-api/facebook/users/me/", payloads=None, headers=None):
@@ -107,8 +104,8 @@ with DAG(
                 "method": "{{ operator.method }}",
                 "endpoint": "{{ operator.endpoint }}",
                 "payloads": [json.dumps({})],  # Empty payload
-                "headers":  {
-                    "Authorization": f"Bearer {validate_or_extend_token('{{ operator.token }}')}",
+                "headers": {
+                    "Authorization": "Bearer {{ operator.token }}",
                     "Content-Type": "application/json"
                 },
             }
