@@ -143,6 +143,8 @@ def webhook(request):
             # return {"message":"Verification failed","status":403}
 
     elif request.method == 'POST':
+        data = json.loads(request.body.decode('utf-8'))
+        logging.warning(data)
         logging.warning(request.data)
         request_data = request.data  # Access POST data via request.data
         logging.warning(request_data)

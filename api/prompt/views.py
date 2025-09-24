@@ -82,7 +82,7 @@ def add(request):
         form = PromptForm(request.POST)
         if form.is_valid():
             form.save()
-            return redirect('prompt_index')
+            return redirect('/prompt')
     else:
         form = PromptForm()
     return render(request, 'prompt/add.html', {'form': form})
