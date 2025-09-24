@@ -49,7 +49,7 @@ operators:
   created_at: 2025-09-17 13:00:47.290773+00:00
   dag_id: -O_MkpsrzDTXVseJ1JaQ
   data:
-  - page_name: country livers
+  - {}
   deleted_at: null
   endpoint: 100747912772086/posts/
   endpointurl_id: -O_G_SKZXp3tg24JnHtc
@@ -62,7 +62,30 @@ operators:
   method: GET
   response_check: null
   task_id: generating
-  token: EAAIQmg0TgbsBPinetbvPKveTgjdlbtoBPTT7Vs85JniZCdSYUM4ZAwSi6r92q9mTR3EEVP0GTHQcpf7mCesw4b2sZBZAx6DflC8J84gacW8wnt6HsjrI6jdBLPu801CIbxFsvZAbPjNV6I5xmoK97ZCFJW8uivH7Dph02o36K3P4vmtZBg9TmtaddZBXFJJFIahZAfCQZD
   updated_at: 2025-09-23 17:47:52.479498+00:00
+  urls: null
+  xcom_push: true
+- connection_id: -OZxDOXms8MnQiVs0gbZ
+  created_at: 2025-09-24 08:51:23.880601+00:00
+  dag_id: -O_MkpsrzDTXVseJ1JaQ
+  data:
+  - message: just luvin it
+  - {}
+  deleted_at: null
+  endpoint: 100747912772086_759215443572173/comments/
+  endpointurl_id: -O_HI9Go8I-0UPUWNYVI
+  extra_options: null
+  extra_params:
+  - page_name: country livers
+  headers:
+    Content-Type: application/json
+  http_conn_id: data_pipeline_connection
+  id: -O_uutG04FEQp6NnTxVV
+  log_response: false
+  method: POST
+  response_check: null
+  task_id: commenting
+  token: EAAIQmg0TgbsBPinetbvPKveTgjdlbtoBPTT7Vs85JniZCdSYUM4ZAwSi6r92q9mTR3EEVP0GTHQcpf7mCesw4b2sZBZAx6DflC8J84gacW8wnt6HsjrI6jdBLPu801CIbxFsvZAbPjNV6I5xmoK97ZCFJW8uivH7Dph02o36K3P4vmtZBg9TmtaddZBXFJJFIahZAfCQZD
+  updated_at: 2025-09-24 08:51:23.880633+00:00
   urls: null
   xcom_push: true

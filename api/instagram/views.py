@@ -106,6 +106,7 @@ from .serializers import (
 
 from urllib.parse import urlparse
 from auditlog.models import LogEntry
+from django.http import HttpResponse, JsonResponse
 from celery.result import AsyncResult
 from datetime import datetime, timedelta, time, timezone as timezone2
 from dateutil.relativedelta import relativedelta
@@ -167,7 +168,7 @@ GRAPH_API_BASE = "https://graph.facebook.com/v20.0"
 
 # views.py
 
-VERIFY_TOKEN = os.getenv('VERIFY_IG_TOKEN')     # webhook verify token (set in FB app dashboard)
+VERIFY_TOKEN = os.getenv('TOKEN')     # webhook verify token (set in FB app dashboard)
 # Page token connected to IG Business account
 
 
@@ -186,9 +187,10 @@ class InstagramWebhookView(APIView):
 
         if mode and token:
             if mode == "subscribe" and token == VERIFY_TOKEN:
-                return Response(challenge, status=status.HTTP_200_OK)
+                print(challenge)
+                return HttpResponse(challenge, status=200)
             else:
-                return Response("Verification token mismatch", status=status.HTTP_403_FORBIDDEN)
+                return HttpResponse("Verification failed", status=403)
 
         return Response("Bad Request", status=status.HTTP_400_BAD_REQUEST)
 

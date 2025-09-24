@@ -35,7 +35,7 @@ from api.workflow.serializers import (
     HttpOperatorConnectionModelSerializer, WorkflowModelSerializer, SimpleHttpOperatorModelSerializer, DagModelSerializer, AirflowCredsSerializer
 )
 from api.workflow.forms import (
-    CustomFieldForm, CustomFieldValueForm, EndpointForm, HttpOperatorConnectionForm, WorkflowModelForm, SimpleHttpOperatorModelForm, DagModelForm, SimpleHttpOperatorFormSet, DagFormSet, WorkflowRunnerForm, URLKwargsForm
+    CustomFieldForm, CustomFieldValueForm, EndpointForm, ExtraParamsForm, HttpOperatorConnectionForm, WorkflowModelForm, SimpleHttpOperatorModelForm, DagModelForm, SimpleHttpOperatorFormSet, DagFormSet, WorkflowRunnerForm, URLKwargsForm
 )
 
 # views.py
@@ -59,6 +59,7 @@ def run_endpoint(request, pk):
     field_values = [e.value for e in endpoint.custom_fields]
     merge_ = {k: v for d in field_values for k, v in d.items()}
     print(field_values)
+    merge_.update(endpoint.extra_params)
     print(merge_)
     try:
         resp = requests.request(
@@ -205,6 +206,21 @@ class URLKwargsCreateView(LoginRequiredMixin, CreateView):
         endpoint_id = self.kwargs['endpoint_id']
         endpoint = Endpoint.objects.get(id=endpoint_id)
         endpoint.url_kwargs = form.cleaned_data['url_kwargs']
+        endpoint.save()
+        return redirect('endpoint_list')
+
+
+class ExtraParamsCreateView(LoginRequiredMixin, CreateView):
+    model = Endpoint
+    form_class = ExtraParamsForm
+    template_name = 'workflows/extra_params_form.html'
+    success_url = reverse_lazy('endpoint_list')  # Redirect after creation
+
+    def form_valid(self, form):
+        # Associate the extra_params with an endpoint (or other model)
+        endpoint_id = self.kwargs['endpoint_id']
+        endpoint = Endpoint.objects.get(id=endpoint_id)
+        endpoint.extra_params = form.cleaned_data['extra_params']
         endpoint.save()
         return redirect('endpoint_list')
 

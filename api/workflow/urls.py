@@ -29,6 +29,7 @@ urlpatterns = [
     path('endpoints/update/<str:pk>/', views.EndpointUpdateView.as_view(), name='endpoint_update'),
     path('endpoints/test/<str:pk>/', views.EndpointDetailView.as_view(), name='endpoint_test'),
     path('endpoints/delete/<str:pk>/', views.EndpointDeleteView.as_view(), name='endpoint_delete'),
+    path('endpoints/extra/<str:endpoint_id>/', views.ExtraParamsCreateView.as_view(), name='extra_params_create'),
     path('endpoint/run/<str:pk>/',views.run_endpoint,name='endpoint_run'),
     path('', views.WorkflowList.as_view(), name='list_workflows'),
     path('workflow/create/', views.WorkflowCreate.as_view(), name='create_workflow'),

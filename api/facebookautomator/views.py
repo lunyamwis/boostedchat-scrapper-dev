@@ -15,6 +15,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import AllowAny
 from api.helpers.models import Client
+from api.authentication.models import User, Token, FacebookToken
 from .forms import ScrapFacebookGroupForm, SendFirstMessageForm
 from .utils import query_gpt, validate_or_extend_token
 from .models import ChatSession
@@ -40,6 +41,7 @@ def make_facebook_request(method: str, endpoint: str, params: Dict = None, data:
     local_main = 'localhost'
     
     access_token = None
+    query_params = {}
     if host == main_domain or host == local_main:
         # Plain main domain or localhost - render home
         auth_header = request.headers.get("Authorization", "")
@@ -47,7 +49,7 @@ def make_facebook_request(method: str, endpoint: str, params: Dict = None, data:
         logging.warning(request)
         logging.warning(auth_header)
         logging.warning(f"Access Token from Header: {access_token}")
-        print(access_token)
+        
     elif host.endswith('.' + main_domain) or host.endswith('.' + local_main):
         subdomain = host.split(".")[0] if host else None
         print(subdomain)  # 👉 "lunyamwi"
@@ -56,24 +58,31 @@ def make_facebook_request(method: str, endpoint: str, params: Dict = None, data:
         print(tenant)
         page_name = None
         # import pdb;pdb.set_trace()
+        print(data)
         if method.upper() in ['GET']:
-            page_name = request.GET['page_name']
+            page_name = params.get('page_name','') if params.get('page_name','') else None
         else:
-            page_name = data.get('page_name') if data is not None else None
+            page_name = data.get('page_name') if data is not None else params.get('page_name','')
         if page_name is not None:
             if tenant.user.token_set.latest('created_at').facebook_tokens.filter(name__icontains=page_name).exists():
 
-                access_token_ = tenant.user.token_set.latest('created_at').facebook_tokens.filter(name__icontains=page_name).last()
                 # import pdb;pdb.set_trace()
                 # print(access_token_.access_token)
+                access_token_ = FacebookToken.objects.filter(token__user__email=tenant.user.email).last()
                 access_token = validate_or_extend_token(access_token_.access_token)
                 access_token_.access_token = access_token
                 access_token_.save()
         else:
-            access_token_ = tenant.user.token_set.latest('created_at')
+            access_token_ = Token.objects.filter(user__email=tenant.user.email, provider='facebook').last()
             access_token = validate_or_extend_token(access_token_.access_token)
             access_token_.access_token = access_token
             access_token_.save()
+        
+        try:
+            query_params = params.copy()  # make a mutable copy
+            query_params.pop('page_name', None)  # remove safely, no error if missing
+        except Exception as e:
+            print(e)
 
     if params is None:
         params = {}
@@ -85,13 +94,13 @@ def make_facebook_request(method: str, endpoint: str, params: Dict = None, data:
     try:
         if method.upper() == 'GET':
             # import pdb;pdb.set_trace()
-            response = requests.get(url, params=params, headers=headers)
+            response = requests.get(url, params=query_params, headers=headers)
         elif method.upper() == 'POST':
-            response = requests.post(url, params=params, json=data, headers=headers)
+            response = requests.post(url, params=query_params, json=data, headers=headers)
         elif method.upper() == 'DELETE':
-            response = requests.delete(url, params=params, headers=headers)
+            response = requests.delete(url, params=query_params, headers=headers)
         elif method.upper() == 'PUT':
-            response = requests.put(url, params=params, json=data, headers=headers)
+            response = requests.put(url, params=query_params, json=data, headers=headers)
         else:
             return {"success": False, "error": "Unsupported HTTP method"}
         

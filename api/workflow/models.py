@@ -117,7 +117,8 @@ class Endpoint(BaseModel):
     method = models.CharField(max_length=10, choices=(('GET','GET'), ('POST','POST'),('PUT','PUT'),('DELETE','DELETE'),('PATCH','PATCH'),),default='GET')
     results = models.JSONField(null=True, blank=True)
     url_kwargs = models.JSONField(null=True, blank=True)
-    
+    extra_params = models.JSONField(null=True, blank=True)
+
     def __str__(self):
         return self.url
 
@@ -147,6 +148,7 @@ class SimpleHttpOperatorModel(BaseModel):
     endpointurl = models.ForeignKey(Endpoint,on_delete=models.CASCADE,null=True, blank=True)
     endpoint = models.CharField(max_length=255)
     method = models.CharField(max_length=20, choices=METHODS, default="POST")
+    token = models.CharField(max_length=2048,null=True, blank=True)
     data = models.JSONField(null=True,blank=True)
     headers = models.JSONField()
     response_check = models.CharField(max_length=1024,null=True,blank=True)

@@ -1906,19 +1906,29 @@ def generate_dag_script(workflow_id):
 
                 data_ = expand_comma_values(remove_timestamp(flatten_dict_list(merge_lists_by_timestamp(data_points))))
                 operator['data'] = data_
+                for operator in operators:
+                    if isinstance(operator.get("data"), list):
+                        for item in operator["data"]:
+                            item.pop("page_name", None)  # safe remove
+
+                operator['extra_params'] = [ endpoint.extra_params  if endpoint.extra_params else []]
                 tenant = Client.objects.get(schema_name=workflow.airflow_creds.schema_name)
                 access_token = None
                 if workflow.provider == 'facebook':
-                    page_names = [item["page_name"] for item in data_ if "page_name" in item]
+                    page_names = [item["page_name"] for item in operator['extra_params'] if "page_name" in item]
+                    
                     print(page_names)
+                    # import pdb;pdb.set_trace()
                     page_name = None
                     if page_names:
                         page_name = page_names[0]
-                    if page_name is not None:
-                        if tenant.user.token_set.latest('created_at').facebook_tokens.filter(name__icontains=page_name).exists():
-                            access_token = tenant.user.token_set.latest('created_at').facebook_tokens.filter(name__icontains=page_name).last().access_token
+                        if page_name is not None:
+                            if tenant.user.token_set.latest('created_at').facebook_tokens.filter(name__icontains=page_name).exists():
+                                access_token = tenant.user.token_set.latest('created_at').facebook_tokens.filter(name__icontains=page_name).last().access_token
                     else:
+                        # import pdb;pdb.set_trace()
                         access_token = tenant.user.token_set.latest('created_at').access_token
+
 
                 operator['token'] = access_token
                 print(operator['data'])
@@ -1930,6 +1940,7 @@ def generate_dag_script(workflow_id):
         for x in dags:
             x['http_conn_id'] = HttpOperatorConnectionModel.objects.get(id=x['connection_id']).connection_id
 
+        # import pdb;pdb.set_trace()
         data = {
             "dag":dags,
             "operators":operators,

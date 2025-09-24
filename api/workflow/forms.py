@@ -14,6 +14,13 @@ class URLKwargsForm(forms.ModelForm):
             "url_kwargs": forms.Textarea(attrs={"class": "form-control", "placeholder": "URL Kwargs (JSON format)", "rows": 5}),
         }
 
+class ExtraParamsForm(forms.ModelForm):
+    class Meta:
+        model = Endpoint
+        fields = ['extra_params']
+        widgets = {
+            "extra_params": forms.Textarea(attrs={"class": "form-control", "placeholder": "Extra Params (JSON format)", "rows": 5}),
+        }
 
 class DagModelForm(forms.ModelForm):
     class Meta:
