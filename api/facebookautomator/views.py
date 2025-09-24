@@ -138,13 +138,10 @@ def webhook(request):
                         message_text = messaging_event['message'].get('text')
                         if message_text:
                             page_id = entry.get('id','')
-                            tenant_exists = Client.objects.filter(page_id=page_id)
-                            tenant = None
-                            if tenant_exists.exists():
-                                tenant = tenant_exists.last()
+                            facebook_page_token = FacebookToken.objects.filter(account_id=page_id).last()
 
-                            # get token
-                            token = tenant.user.token_set.latest('created_at').access_token
+                            token = validate_or_extend_token(facebook_page_token.access_token)
+                            tenant = facebook_page_token.token.user.client_set.last()
                             output_message = query_gpt(message_text,sender_id, tenant.schema_name)
                             # get tenant
                             send_message(sender_id, output_message, token)
