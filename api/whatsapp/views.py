@@ -149,8 +149,9 @@ def webhook(request):
         request_data = request.data  # Access POST data via request.data
         logging.warning(request_data)
         # get tenant
-        phone_number_id = request_data['entry'][0]['id']
-        tenant_exists = Client.objects.filter(phone_number_id=phone_number_id)
+        
+        display_phone_number = request_data['entry'][0]['changes'][0]['value']['metadata']['display_phone_number']
+        tenant_exists = Client.objects.filter(phone_number_id=display_phone_number)
         tenant = None
         if tenant_exists.exists():
             tenant = tenant_exists.last()

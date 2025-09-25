@@ -81,3 +81,4 @@ class FacebookToken(models.Model):
     access_token = models.CharField(max_length=2048, blank=True, null=True)
     name = models.CharField(max_length=255, blank=True, null=True)
     account_id = models.CharField(max_length=255, blank=True, null=True)
+
