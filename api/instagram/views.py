@@ -221,6 +221,8 @@ class InstagramWebhookView(APIView):
                                 tenant = tenant_exists.last()
 
                             # get token
+                            logging.warning("Received message: %s", message_text)
+                            logging.warning("Sender ID: %s", sender_id)
                             output_message = query_gpt(message_text,sender_id,tenant.schema_name if tenant else 'public')
                             validated_token = validate_or_extend_token(token.facebook_token.access_token)
 
