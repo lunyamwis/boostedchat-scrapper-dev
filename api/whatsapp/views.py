@@ -392,7 +392,7 @@ def send_message(message, phone_number, message_option, name, token,schema_name)
             }
         )
     elif message_option == "CHATBOT":
-        output_message = query_gpt(message,phone_number,schema_name)["choices"][0]["message"]["content"]
+        output_message = query_gpt(message,phone_number,schema_name)
         payload = json.dumps(
             {
                 "messaging_product": "whatsapp",
@@ -764,7 +764,7 @@ def webhook_whapi(request):
         print("Groups to react to:", [g.name for g in groups])
         groups_to_react_to = [g.name for g in groups]
         if group_name in groups_to_react_to:
-            generated_message = query_gpt(message, number,schema_name)["choices"][0]["message"]["content"]
+            generated_message = query_gpt(message, number,schema_name)
             time.sleep(15)  # Simulate typing delay
             make_whapi_request("POST", "/messages/text", data = {
                 "typing_time": 0,
@@ -772,7 +772,7 @@ def webhook_whapi(request):
                 "body": generated_message
             })
         elif ChatSession.objects.filter(phone=number).filter(stop=False).exists():
-            response = query_gpt(message, number,schema_name)["choices"][0]["message"]["content"]
+            response = query_gpt(message, number,schema_name)
             time.sleep(15)  # Simulate typing delay
             make_whapi_request("POST", "/messages/text", data = {
                 "typing_time": 0,
