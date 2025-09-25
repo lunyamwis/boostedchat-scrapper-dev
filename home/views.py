@@ -32,7 +32,7 @@ def home(request):
         form = TenantSignupForm(request.POST)
         if form.is_valid():
             User.objects.create_user(
-                username=form.cleaned_data['email'],
+                username=form.cleaned_data['instagram_username'],
                 email=form.cleaned_data['email'],
                 password=form.cleaned_data['password1']
             )

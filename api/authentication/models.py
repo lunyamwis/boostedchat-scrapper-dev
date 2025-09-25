@@ -66,16 +66,18 @@ class Token(models.Model):
     id = models.UUIDField(default=uuid.uuid4, primary_key=True)
     user = models.ForeignKey(User, on_delete=models.CASCADE, null=False)
     access_token = models.CharField(max_length=2048, null=False)
+    instagram_access_token = models.CharField(max_length=2048, null=True, blank=True)
     refresh_token = models.CharField(max_length=2048, null=True, blank=True)
     provider = models.CharField(max_length=100, null=False, choices=[
         ('google', 'Google'),
         ('facebook', 'Facebook'),
-        # Add other providers as needed
+        ('instagram', 'Instagram'),
     ])
     created_at = models.DateTimeField(auto_now_add=True)
     is_active = models.BooleanField(default=True)
     token_type = models.CharField(max_length=50, null=False)  # e.g., 'access', 'refresh', 'password_reset'
     expires_at = models.DateTimeField(null=True, blank=True)
+    instagram_account_id = models.CharField(max_length=255, null=True, blank=True)
     
 class FacebookToken(models.Model):
     token = models.ForeignKey(Token, on_delete=models.CASCADE, null=True, blank=True, related_name="facebook_tokens")

@@ -103,7 +103,83 @@ class TenantOAuth2CallbackView(View):
 
     def get(self, request, *args, **kwargs):
         provider_name = kwargs.get("provider")
-        if provider_name == "google":
+        if provider_name == 'instagram':
+            code = unquote(request.GET.get("code", ""))
+            redirect_uri = "https://lunyamwi.org/oauth/callback/instagram/"
+            client_id = os.getenv("INSTAGRAM_CLIENT_ID", "")
+            client_secret = os.getenv("INSTAGRAM_CLIENT_SECRET", "")
+            
+            if not code:
+                raise PermissionDenied("Missing authorization code")
+            
+            if not client_id or not client_secret:
+                raise PermissionDenied("INSTAGRAM_CLIENT_ID or INSTAGRAM_CLIENT_SECRET not configured")
+            
+            token_url = "https://api.instagram.com/oauth/access_token"
+            data = {
+                "client_id": client_id,
+                "client_secret": client_secret,
+                "grant_type": "authorization_code",
+                "redirect_uri": redirect_uri,
+                "code": code
+            }
+            
+            response = requests.post(token_url, data=data)
+            if response.status_code != 200:
+                raise PermissionDenied("Failed to exchange code for tokens")
+
+            if response.status_code == 200:
+                tokens = response.json()
+                logger.debug("[CALLBACK] Tokens received: %s", tokens)
+                try:
+                    user_info_url = f"https://graph.instagram.com/me?fields=id,username,account_type&access_token={tokens['access_token']}"
+                    user_info_resp = requests.get(user_info_url)
+                    user_info = user_info_resp.json()
+                    username = user_info.get("username")
+                    logger.debug("[CALLBACK] User info: %s", user_info)
+                    
+                except RequestException as e:
+                    print("Failed to fetch user info: %s", e)
+                user = None
+
+                try:
+                    user = User.objects.get(username=username)
+                    
+                    token_exists = Token.objects.filter(user=user)
+                    if token_exists.exists():
+                        instagram_token_exists = token_exists.filter(provider=provider_name)
+
+                        if instagram_token_exists.exists():
+                            token = instagram_token_exists.latest('created_at')
+                    
+
+                            token.instagram_access_token = tokens.get("access_token")
+                            token.provider = provider_name
+                            token.save()
+                            logger.info("Instagram token already exists for user: %s", user.email)
+                        else:
+                            logger.info("No Instagram token found for user: %s", user.email)
+                            Token.objects.update_or_create(
+                                user=user,
+                                instagram_account_id=user_info.get("id"),
+                                provider=provider_name,
+                                instagram_access_token=tokens.get("access_token"),
+                                token_type=tokens.get("token_type", "access")
+                            )
+                except Exception as e:
+                    logger.warning("Error saving Instagram tokens: %s", e)
+                tenant_name = Client.objects.filter(user=user).last()
+                
+                # user = authenticate(request, username=user.username, password=user.password)
+                # if user:
+                    # login(request, user)
+                try:    
+                    login(request, user, backend='django.contrib.auth.backends.ModelBackend')
+                except Exception as e:
+                    logger.warning("Error logging in user: %s", e)
+                return redirect(f"https://{tenant_name.schema_name}.lunyamwi.org/workflow/")
+
+        elif provider_name == "google":
             code = unquote(request.GET.get("code", ""))
             redirect_uri = "https://lunyamwi.org/oauth/callback/google/"
             client_id = os.getenv("GMAIL_CLIENT_ID", "")
