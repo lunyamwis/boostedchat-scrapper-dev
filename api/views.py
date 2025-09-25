@@ -330,7 +330,7 @@ class TenantOAuth2CallbackView(View):
                                 token=token
                             )
                             
-                            url = f"https://graph.facebook.com/v20.0/{account.get("id")}"
+                            url = f'https://graph.facebook.com/v20.0/{account.get("id")}'
                             params = {
                                 "fields": "instagram_business_account",
                                 "access_token": account.get("access_token")
@@ -362,7 +362,7 @@ class TenantOAuth2CallbackView(View):
                                 account_id=account.get("id"),
                                 token=token
                             )
-                            url = f"https://graph.facebook.com/v20.0/{account.get("id")}"
+                            url = f'https://graph.facebook.com/v20.0/{account.get("id")}'
                             params = {
                                 "fields": "instagram_business_account",
                                 "access_token": account.get("access_token")
