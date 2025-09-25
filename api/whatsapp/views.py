@@ -425,6 +425,11 @@ def send_message(message, phone_number, message_option, name, token,schema_name)
 
     resp = requests.request("POST", WHATSAPP_URL, headers=headers, data=payload)
     print(resp.json())
+    print("Send Message Response:", resp.json())
+    print("Status Code:", resp.status_code)
+    logging.debug("Send Message Response: %s", resp.json())
+    logging.warning("Send Message Warning: %s", resp.json())
+
     print("MESSAGE SENT")
 
 
