@@ -214,7 +214,7 @@ class InstagramWebhookView(APIView):
                             # get tenant
                             instagram_account_id = entry.get('id','')
 
-                            token = InstagramToken.objects.filter(instagram_account_id=instagram_account_id).latest('created_at')
+                            token = InstagramToken.objects.filter(instagram_account_id=instagram_account_id).last()
                             tenant_exists = Client.objects.filter(user=token.facebook_token.token.user)
                             tenant = None 
                             if tenant_exists.exists():
