@@ -334,12 +334,12 @@ def send_batch_whatsapp_text_(numbers,names,message):
 
 
 @shared_task
-def send_batch_whatsapp_text(numbers,names,message):
+def send_batch_whatsapp_text(numbers,names,message,token):
     message = ' '.join(message.split())
     for i,number in enumerate(numbers):
         
         headers = {
-            "Authorization": f"Bearer {API_TOKEN}",
+            "Authorization": f"Bearer {token}",
             "Content-Type": "application/json"
         }
         parameters = {

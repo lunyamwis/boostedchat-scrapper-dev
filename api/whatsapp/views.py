@@ -25,7 +25,7 @@ from api.helpers.models import Client
 from api.prompt.models import Prompt
 from .prompts import solarama_prompt
 from .tasks import send_batch_whatsapp_text
-from .utils import query_gpt
+from .utils import query_gpt, validate_or_extend_token
 from .constants import GROUPS_TO_REACT_TO
 
 load_dotenv()
@@ -116,6 +116,9 @@ class SendBatchWhatsAppView(APIView):
             if len(numbers) != len(names):
                 return Response({"error": "Numbers and names lists must be of equal length"}, status=status.HTTP_400_BAD_REQUEST)
 
+            # get tenant
+            tenant = None
+
             send_batch_whatsapp_text.delay(numbers, names, paragraphs)
             return Response({"message": "Task initiated successfully"}, status=status.HTTP_202_ACCEPTED)
         except Exception as e:
@@ -157,7 +160,7 @@ def webhook(request):
             tenant = tenant_exists.last()
 
         # get token
-        token = tenant.user.token_set.latest('created_at').access_token
+        token = validate_or_extend_token(tenant.user.token_set.latest('created_at').access_token)
 
         if (request_data['entry'][0]['changes'][0]['value'].get('messages') is not None):
             name = request_data['entry'][0]['changes'][0]['value']['contacts'][0]['profile']['name']
@@ -165,7 +168,7 @@ def webhook(request):
             if (request_data['entry'][0]['changes'][0]['value']['messages'][0].get('text') is not None):
                 message = request_data['entry'][0]['changes'][0]['value']['messages'][0]['text']['body']
                 user_phone_number = request_data['entry'][0]['changes'][0]['value']['contacts'][0]['wa_id']
-                user_message_processor(message, user_phone_number, name, token)
+                user_message_processor(message, user_phone_number, name, token, tenant.schema_name)
 
             elif (request_data['entry'][0]['changes'][0]['value']['messages'][0]['interactive']['nfm_reply']['response_json'] is not None):
                 # Process flow reply
@@ -292,9 +295,9 @@ def extract_string_from_reply(user_input):
     return user_prompt
 
 
-def user_message_processor(message, phonenumber, name, token):
+def user_message_processor(message, phonenumber, name, token, schema_name):
     
-    send_message(message, phonenumber, "CHATBOT", name, token)
+    send_message(message, phonenumber, "CHATBOT", name, token, schema_name)
     # We are not using this for now, we don't want to intercept the
     # type of messages the client sends. we want to process all messages
     
@@ -318,7 +321,7 @@ def user_message_processor(message, phonenumber, name, token):
     
 
 
-def send_message(message, phone_number, message_option, name, token):
+def send_message(message, phone_number, message_option, name, token,schema_name):
     print(phone_number)
     greetings_text_body = (
         "\nHello "
@@ -378,7 +381,7 @@ def send_message(message, phone_number, message_option, name, token):
             }
         )
     elif message_option == "CHATBOT":
-        output_message = query_gpt(message,phone_number)["choices"][0]["message"]["content"]
+        output_message = query_gpt(message,phone_number,schema_name)["choices"][0]["message"]["content"]
         payload = json.dumps(
             {
                 "messaging_product": "whatsapp",
@@ -736,8 +739,11 @@ def webhook_whapi(request):
         return Response({"message": "Webhook GET request received"}, status=status.HTTP_200_OK)
     elif request.method == 'POST':
         print(request.data)
+        # print(request.body)
+        data = json.loads(request.body.decode('utf-8'))
+        logging.warning(data)
         # Example usage:
-
+        schema_name = 'lunyamwi'
         number = extract_from_number(request.data)
         group_name = extract_group_name(request.data)
         message = extract_message_body(request.data)
@@ -747,7 +753,7 @@ def webhook_whapi(request):
         print("Groups to react to:", [g.name for g in groups])
         groups_to_react_to = [g.name for g in groups]
         if group_name in groups_to_react_to:
-            generated_message = query_gpt(message, number)["choices"][0]["message"]["content"]
+            generated_message = query_gpt(message, number,schema_name)["choices"][0]["message"]["content"]
             time.sleep(15)  # Simulate typing delay
             make_whapi_request("POST", "/messages/text", data = {
                 "typing_time": 0,
@@ -755,7 +761,7 @@ def webhook_whapi(request):
                 "body": generated_message
             })
         elif ChatSession.objects.filter(phone=number).filter(stop=False).exists():
-            response = query_gpt(message, number)["choices"][0]["message"]["content"]
+            response = query_gpt(message, number,schema_name)["choices"][0]["message"]["content"]
             time.sleep(15)  # Simulate typing delay
             make_whapi_request("POST", "/messages/text", data = {
                 "typing_time": 0,
