@@ -365,7 +365,7 @@ def query_gpt(user_input,identifier=None,schema_name=None):
         chat_session.add_message("system", gpt_response)
         logging.warn(str(["time elapsed", res.elapsed.total_seconds()]))
 
-        return res.json()
+        return gpt_response
 
 def get_access_token():
     return os.getenv("ACCESS_TOKEN")
