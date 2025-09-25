@@ -202,6 +202,7 @@ class InstagramWebhookView(APIView):
         """
         body = request.data
         print(body)
+        print(request.body.decode('utf-8'))
 
         if body.get("object") == "instagram":
             for entry in body.get("entry", []):
