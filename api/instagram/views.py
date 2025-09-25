@@ -133,6 +133,7 @@ from api.dialogflow.helpers.get_prompt_responses import get_gpt_response
 
 from django_celery_beat.models import CrontabSchedule, PeriodicTask
 from api.dialogflow.helpers.intents import detect_intent
+from api.authentication.models import Token, User
 from api.sales_rep.models import SalesRep
 
 from .utils import generate_time_slots,login_user,query_gpt
@@ -199,6 +200,7 @@ class InstagramWebhookView(APIView):
         Handle new messages sent to the Instagram account
         """
         body = request.data
+        print(body)
 
         if body.get("object") == "instagram":
             for entry in body.get("entry", []):
@@ -210,16 +212,17 @@ class InstagramWebhookView(APIView):
 
                         if message_text:
                             # get tenant
-                            output_message = query_gpt(message_text,sender_id)
-                            page_id = entry.get('id','')
-                            tenant_exists = Client.objects.filter(page_id=page_id)
-                            tenant = None
+                            instagram_account_id = entry.get('id','')
+
+                            token = Token.objects.filter(instagram_account_id=instagram_account_id).latest('created_at')
+                            tenant_exists = Client.objects.filter(user=token.user)
+                            tenant = None 
                             if tenant_exists.exists():
                                 tenant = tenant_exists.last()
 
                             # get token
-                            token = tenant.user.token_set.latest('created_at').access_token
-                            self.send_instagram_message(sender_id, output_message, token)
+                            output_message = query_gpt(message_text,sender_id,tenant.schema_name if tenant else 'public')
+                            self.send_instagram_message(sender_id, output_message, token.instagram_access_token)
                             # Auto-reply
                             
 
