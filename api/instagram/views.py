@@ -238,7 +238,7 @@ class InstagramWebhookView(APIView):
         """
         Send a reply using the Messenger Send API
         """
-        url = f"https://graph.facebook.com/v20.0/{ig_id}/messages"
+        url = f"https://graph.facebook.com/v20.0/me/messages"
         params = {"access_token": token}
         headers = {"Content-Type": "application/json"}
         if not isinstance(text, str):
