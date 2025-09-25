@@ -224,7 +224,7 @@ class InstagramWebhookView(APIView):
                             output_message = query_gpt(message_text,sender_id,tenant.schema_name if tenant else 'public')
                             validated_token = validate_or_extend_token(token.facebook_token.access_token)
 
-                            self.send_instagram_message(sender_id, output_message, token.facebook_token.account_id, validated_token)
+                            self.send_instagram_message(sender_id, output_message, token.instagram_account_id, validated_token)
                             # Auto-reply
                             
 
@@ -232,13 +232,19 @@ class InstagramWebhookView(APIView):
 
         return Response(status=status.HTTP_404_NOT_FOUND)
 
-    def send_instagram_message(self, recipient_id, text, page_id, token):
+    def send_instagram_message(self, recipient_id, text, ig_id, token):
         """
         Send a reply using the Messenger Send API
         """
-        url = f"https://graph.facebook.com/v20.0/{page_id}/messages"
+        url = f"https://graph.facebook.com/v20.0/{ig_id}/messages"
         params = {"access_token": token}
         headers = {"Content-Type": "application/json"}
+        if not isinstance(text, str):
+            text = str(text)
+
+        # Ensure UTF-8
+        text = text.encode("utf-8", errors="ignore").decode("utf-8")
+
         data = {
             "recipient": {"id": recipient_id},
             "message": {"text": text}
@@ -249,7 +255,7 @@ class InstagramWebhookView(APIView):
         print("Status Code:", response.text)
         logging.debug("Send Message Response: %s", response.json())
         logging.warning("Send Message Warning: %s", response.json())
-        
+
         return response.json()
 
 
