@@ -20,7 +20,7 @@ class User(BaseModel, AbstractBaseUser, PermissionsMixin):
         verbose_name_plural = "users"
 
     uid = models.UUIDField(unique=True, editable=False, default=uuid.uuid4, verbose_name="Public identifier")
-    username = models.CharField(max_length=255, null=True, blank=True)
+    username = models.CharField(max_length=255, null=True, blank=True, unique=True)
     email = models.EmailField(unique=True)
     first_name = models.CharField(max_length=30, blank=True)
     last_name = models.CharField(max_length=50, blank=True)
@@ -85,3 +85,8 @@ class FacebookToken(models.Model):
     name = models.CharField(max_length=255, blank=True, null=True)
     account_id = models.CharField(max_length=255, blank=True, null=True)
 
+
+class InstagramToken(models.Model):
+    facebook_token = models.ForeignKey(FacebookToken, on_delete=models.CASCADE, null=True, blank=True, related_name="instagram_tokens")
+    instagram_account_id = models.CharField(max_length=255, blank=True, null=True)
+    

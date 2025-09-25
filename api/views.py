@@ -61,7 +61,7 @@ from allauth.socialaccount.helpers import complete_social_login, render_authenti
 from allauth.socialaccount.providers.oauth2.client import OAuth2Error
 from django.core.exceptions import PermissionDenied
 from requests.exceptions import RequestException
-from api.authentication.models import Token,User, FacebookToken
+from api.authentication.models import Token,User, FacebookToken, InstagramToken
 from allauth.socialaccount.providers.base import AuthError
 from django.contrib.auth import get_user_model, authenticate, login
 from urllib.parse import unquote
@@ -323,13 +323,30 @@ class TenantOAuth2CallbackView(View):
                     token.save()
                     for account in accounts_data.get("data", []):
                         if not FacebookToken.objects.filter(account_id=account.get("id")).exists():
-                            FacebookToken.objects.create(
+                            facebook_token = FacebookToken.objects.create(
                                 access_token=account.get("access_token"),
                                 name=account.get("name"),
                                 account_id=account.get("id"),
                                 token=token
                             )
-                        
+                            
+                            url = f"https://graph.facebook.com/v20.0/{account.get("id")}"
+                            params = {
+                                "fields": "instagram_business_account",
+                                "access_token": account.get("access_token")
+                            }
+
+                            resp = requests.get(url, params=params).json()
+                            print(resp)
+
+                            instagram_account_id = resp.get("instagram_business_account", {}).get("id")
+                            print("Instagram Account ID:", instagram_account_id)
+
+                            InstagramToken.objects.create(
+                                instagram_account_id=instagram_account_id,
+                                facebook_token=facebook_token
+                            )
+
                 else:
                     token,_ = Token.objects.update_or_create(
                         user=user,
@@ -344,6 +361,22 @@ class TenantOAuth2CallbackView(View):
                                 name=account.get("name"),
                                 account_id=account.get("id"),
                                 token=token
+                            )
+                            url = f"https://graph.facebook.com/v20.0/{account.get("id")}"
+                            params = {
+                                "fields": "instagram_business_account",
+                                "access_token": account.get("access_token")
+                            }
+
+                            resp = requests.get(url, params=params).json()
+                            print(resp)
+
+                            instagram_account_id = resp.get("instagram_business_account", {}).get("id")
+                            print("Instagram Account ID:", instagram_account_id)
+
+                            InstagramToken.objects.create(
+                                instagram_account_id=instagram_account_id,
+                                facebook_token=facebook_token
                             )
                         
             except Exception as e:

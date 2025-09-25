@@ -133,7 +133,7 @@ from api.dialogflow.helpers.get_prompt_responses import get_gpt_response
 
 from django_celery_beat.models import CrontabSchedule, PeriodicTask
 from api.dialogflow.helpers.intents import detect_intent
-from api.authentication.models import Token, User
+from api.authentication.models import Token, User, FacebookToken, InstagramToken
 from api.sales_rep.models import SalesRep
 
 from .utils import generate_time_slots,login_user,query_gpt
@@ -202,8 +202,6 @@ class InstagramWebhookView(APIView):
         """
         body = request.data
         print(body)
-        print(request.body.decode('utf-8'))
-
         if body.get("object") == "instagram":
             for entry in body.get("entry", []):
                 for messaging_event in entry.get("messaging", []):
@@ -216,15 +214,15 @@ class InstagramWebhookView(APIView):
                             # get tenant
                             instagram_account_id = entry.get('id','')
 
-                            token = Token.objects.filter(instagram_account_id=instagram_account_id).latest('created_at')
-                            tenant_exists = Client.objects.filter(user=token.user)
+                            token = InstagramToken.objects.filter(instagram_account_id=instagram_account_id).latest('created_at')
+                            tenant_exists = Client.objects.filter(user=token.facebook_token.token.user)
                             tenant = None 
                             if tenant_exists.exists():
                                 tenant = tenant_exists.last()
 
                             # get token
                             output_message = query_gpt(message_text,sender_id,tenant.schema_name if tenant else 'public')
-                            validated_token = validate_or_extend_token(token.access_token)
+                            validated_token = validate_or_extend_token(token.facebook_token.access_token)
 
                             self.send_instagram_message(sender_id, output_message, validated_token)
                             # Auto-reply
