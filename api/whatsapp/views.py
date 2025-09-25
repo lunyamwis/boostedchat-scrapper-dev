@@ -171,7 +171,8 @@ def webhook(request):
         user.save()
 
         # get token
-        token = validate_or_extend_token(tenant.user.token_set.latest('created_at').access_token)
+        token_object = Token.objects.filter(user=tenant.user).filter(provider='facebook').latest('created_at')
+        token = validate_or_extend_token(token_object.access_token)
 
         if (request_data['entry'][0]['changes'][0]['value'].get('messages') is not None):
             name = request_data['entry'][0]['changes'][0]['value']['contacts'][0]['profile']['name']
