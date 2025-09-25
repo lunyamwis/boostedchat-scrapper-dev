@@ -159,8 +159,9 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from django.conf import settings
-from .utils import get_access_token
+from .utils import get_access_token,validate_or_extend_token
 from api.helpers.models import Client
+
 
 LUNYAMWI_INSTAGRAM_BASE_URL = os.getenv("LUNYAMWI_INSTAGRAM_BASE_URL", "")
 LUNYAMWI_INSTAGRAM_API_KEY = os.getenv("LUNYAMWI_INSTAGRAM_API_KEY", "")
@@ -222,7 +223,9 @@ class InstagramWebhookView(APIView):
 
                             # get token
                             output_message = query_gpt(message_text,sender_id,tenant.schema_name if tenant else 'public')
-                            self.send_instagram_message(sender_id, output_message, token.instagram_access_token)
+                            validated_token = validate_or_extend_token(token.access_token)
+
+                            self.send_instagram_message(sender_id, output_message, validated_token)
                             # Auto-reply
                             
 

@@ -369,3 +369,64 @@ def query_gpt(user_input,identifier=None,schema_name=None):
 
 def get_access_token():
     return os.getenv("ACCESS_TOKEN")
+import time
+
+GRAPH_API_VERSION = "v16.0"   # use the Graph version you target
+FB_OAUTH_ENDPOINT = f"https://graph.facebook.com/{GRAPH_API_VERSION}/oauth/access_token"
+
+def exchange_short_for_long(app_id: str, app_secret: str, short_lived_token: str):
+    params = {
+        "grant_type": "fb_exchange_token",
+        "client_id": app_id,
+        "client_secret": app_secret,
+        "fb_exchange_token": short_lived_token
+    }
+    r = requests.get(FB_OAUTH_ENDPOINT, params=params, timeout=10)
+    # r.raise_for_status()
+    return r.json()  # contains access_token and expires_in
+
+
+def exchange_ig_short_for_long(app_id: str, app_secret: str, short_lived_token: str):
+    params = {
+        "grant_type": "ig_exchange_token",
+        "client_id": app_id,
+        "client_secret": app_secret,
+        "access_token": short_lived_token
+    }
+    r = requests.get(FB_OAUTH_ENDPOINT, params=params, timeout=10)
+    # r.raise_for_status()
+    return r.json()  # contains access_token and expires_in
+
+def debug_token(input_token: str, app_access_token: str):
+    # app_access_token: "<APP_ID>|<APP_SECRET>" or an app token obtained securely
+    url = f"https://graph.facebook.com/{GRAPH_API_VERSION}/debug_token"
+    params = {"input_token": input_token, "access_token": app_access_token}
+    r = requests.get(url, params=params, timeout=10)
+    # r.raise_for_status()
+    return r.json()
+
+
+def validate_or_extend_ig_token(token: str = None):
+    debug_response = debug_token(token, f"{os.getenv('FACEBOOK_APP_ID')}|{os.getenv('FACEBOOK_APP_SECRET')}")
+    debug_result = debug_response.get('data', {})
+    expires_at = debug_result.get("expires_at", 0)
+    if expires_at and expires_at < time.time() + 6000:
+        print("Token is short being exchanged for a longer-lived token.")
+        token_resp = exchange_ig_short_for_long(os.getenv('FACEBOOK_APP_ID'), os.getenv('FACEBOOK_APP_SECRET'), token)
+        return token_resp.get('access_token', None)
+    else:
+        print("Token is valid and does not need extension.")
+        return token
+
+def validate_or_extend_token(token: str = None):
+    debug_response = debug_token(token, f"{os.getenv('FACEBOOK_APP_ID')}|{os.getenv('FACEBOOK_APP_SECRET')}")
+    debug_result = debug_response.get('data', {})
+    expires_at = debug_result.get("expires_at", 0)
+    if expires_at and expires_at < time.time() + 6000:
+        print("Token is short being exchanged for a longer-lived token.")
+        token_resp = exchange_short_for_long(os.getenv('FACEBOOK_APP_ID'), os.getenv('FACEBOOK_APP_SECRET'), token)
+        return token_resp.get('access_token', None)
+    else:
+        print("Token is valid and does not need extension.")
+        return token
+    
