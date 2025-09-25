@@ -24,7 +24,7 @@ def query_gpt(prompt,phone_number=None, schema_name=None):
                         {"role": "user", "content": prompt},
                     ]
                 chat_session = ChatSession.objects.create(
-                    phone_number=phone_number,
+                    phone=phone_number,
                     conversation_history=conversation_history
                 )
         body = {

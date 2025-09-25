@@ -22,6 +22,7 @@ from rest_framework.permissions import AllowAny
 
 from api.whatsapp.models import ChatSession, Group
 from api.helpers.models import Client
+from api.authentication.models import Token, FacebookToken
 from api.prompt.models import Prompt
 from .prompts import solarama_prompt
 from .tasks import send_batch_whatsapp_text
@@ -117,9 +118,14 @@ class SendBatchWhatsAppView(APIView):
                 return Response({"error": "Numbers and names lists must be of equal length"}, status=status.HTTP_400_BAD_REQUEST)
 
             # get tenant
-            tenant = None
+            host = request.get_host().split(':')[0]  # hostname without port
+            subdomain = host.split(".")[0] if host else None
+            print(subdomain)  # 👉 "lunyamwi"
 
-            send_batch_whatsapp_text.delay(numbers, names, paragraphs)
+            tenant = Client.objects.filter(schema_name=subdomain).last()
+            unvalidated_token = Token.objects.filter(user=tenant.user).last().access_token
+            token = validate_or_extend_token(unvalidated_token)
+            send_batch_whatsapp_text(numbers, names, paragraphs, token)
             return Response({"message": "Task initiated successfully"}, status=status.HTTP_202_ACCEPTED)
         except Exception as e:
             logging.warning({"error": f"An error occurred - {str(e)}"})

@@ -59,7 +59,7 @@ def run_endpoint(request, pk):
     field_values = [e.value for e in endpoint.custom_fields]
     merge_ = {k: v for d in field_values for k, v in d.items()}
     print(field_values)
-    merge_.update(endpoint.extra_params)
+    merge_.update(endpoint.extra_params if endpoint.extra_params else {})
     print(merge_)
     try:
         resp = requests.request(
