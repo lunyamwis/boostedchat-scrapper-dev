@@ -11,6 +11,7 @@ SENDER = os.getenv('SENDER').strip()
 ENDPOINT = os.getenv('ENDPOINT').strip()
 API_TOKEN = os.getenv('API_TOKEN').strip()
 URL = BASE_URL + API_VERSION + SENDER + ENDPOINT
+print(URL)
 
 def cut_string_to_max_length(input_string, max_length=912):
     if len(input_string) > max_length:
@@ -383,6 +384,7 @@ def send_batch_whatsapp_text(numbers,names,message,token):
         session.headers.update(headers)
         try:
             response = session.post(URL, json=parameters)
+            print(URL)
             data = json.loads(response.text)
             print(f"data: {data}")
         except (ConnectionError, Timeout, TooManyRedirects) as e:

@@ -22,6 +22,7 @@ from rest_framework.permissions import AllowAny
 
 from api.whatsapp.models import ChatSession, Group
 from api.helpers.models import Client
+from api.authentication.models import User
 from api.authentication.models import Token, FacebookToken
 from api.prompt.models import Prompt
 from .prompts import solarama_prompt
@@ -160,10 +161,14 @@ def webhook(request):
         # get tenant
         
         display_phone_number = request_data['entry'][0]['changes'][0]['value']['metadata']['display_phone_number']
+        phone_number_id_ = request_data['entry'][0]['changes'][0]['value']['metadata']['phone_number_id']
         tenant_exists = Client.objects.filter(phone_number_id=display_phone_number)
         tenant = None
         if tenant_exists.exists():
             tenant = tenant_exists.last()
+        user = User.objects.get(id=tenant.user.id)
+        user.whatsapp_phone_number_id = phone_number_id_
+        user.save()
 
         # get token
         token = validate_or_extend_token(tenant.user.token_set.latest('created_at').access_token)

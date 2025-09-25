@@ -37,6 +37,7 @@ class User(BaseModel, AbstractBaseUser, PermissionsMixin):
     status = models.TextField()
     gmail_account_id = models.CharField(max_length=255, null=True, blank=True)
     linked_in_account_id = models.CharField(max_length=255, null=True, blank=True)
+    whatsapp_phone_number_id = models.CharField(max_length=255, null=True, blank=True)
 
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = []
