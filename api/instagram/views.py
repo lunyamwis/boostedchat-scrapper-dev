@@ -161,6 +161,7 @@ from rest_framework import status
 from django.conf import settings
 from .utils import get_access_token,validate_or_extend_token
 from api.helpers.models import Client
+from api.facebookautomator.views import make_facebook_request
 
 
 LUNYAMWI_INSTAGRAM_BASE_URL = os.getenv("LUNYAMWI_INSTAGRAM_BASE_URL", "")
@@ -173,7 +174,44 @@ GRAPH_API_BASE = "https://graph.facebook.com/v20.0"
 VERIFY_TOKEN = os.getenv('TOKEN')     # webhook verify token (set in FB app dashboard)
 # Page token connected to IG Business account
 
+class InstagramBusinessBasicView(APIView):
+    """Instagram Business basic profile & media"""
+    permission_classes = [AllowAny]
 
+    def get(self, request, instagram_account_id):
+        """Get Instagram Business account profile info"""
+        # Default fields: id, username, profile_picture_url
+        fields = request.query_params.get(
+            "fields", "id,username,profile_picture_url,threads_user_id"
+        )
+
+        result = make_facebook_request(
+            "GET",
+            f"/{instagram_account_id}",
+            params={"fields": fields},
+            request=request
+        )
+        return Response(result, status=result.get('status_code', 500))
+
+
+# class InstagramBusinessMediaView(APIView):
+#     """Instagram Business media list"""
+#     permission_classes = [AllowAny]
+
+#     def get(self, request, instagram_account_id):
+#         """Get media list for Instagram Business account"""
+#         fields = request.query_params.get(
+#             "fields", "id,caption,media_type,media_url,timestamp"
+#         )
+
+#         result = make_facebook_request(
+#             "GET",
+#             f"/{instagram_account_id}/media",
+#             params={"fields": fields},
+#             request=request
+#         )
+#         return Response(result, status=result.get('status_code', 500))
+    
 class InstagramWebhookView(APIView):
     """
     Instagram Webhook for Direct Messaging
@@ -274,49 +312,101 @@ class InstagramBasicView(APIView):
         return Response(resp.json(), status=resp.status_code)
 
 
+
 class InstagramContentPublishView(APIView):
-    """Publish content to Instagram account"""
-    def post(self, request, *args, **kwargs):
-        token = get_access_token("facebook")
-        ig_account_id = request.data.get("ig_account_id")
-        image_url = request.data.get("image_url")
-        caption = request.data.get("caption", "")
+    """Publish content to Instagram feed"""
+    permission_classes = [AllowAny]
 
-        if not (token and ig_account_id and image_url):
-            return Response({"error": "Missing required fields"}, status=status.HTTP_400_BAD_REQUEST)
+    def post(self, request, instagram_account_id):
+        """
+        Create a new Instagram feed post.
+        Requires: instagram_content_publish permission
+        """
 
-        # Step 1: Create media object
-        url = f"{GRAPH_API_BASE}/{ig_account_id}/media"
-        params = {"image_url": image_url, "caption": caption, "access_token": token}
-        creation_resp = requests.post(url, data=params).json()
+        # Required params: image_url or video_url, caption (optional)
+        result = make_facebook_request(
+            "POST",
+            f"/{instagram_account_id}/media",
+            data=request.data,
+            request=request
+        )
 
-        if "id" not in creation_resp:
-            return Response(creation_resp, status=status.HTTP_400_BAD_REQUEST)
+        if "id" in result:
+            # After creating media, publish it
+            creation_id = result["id"]
+            publish_result = make_facebook_request(
+                "POST",
+                f"/{instagram_account_id}/media_publish",
+                data={"creation_id": creation_id},
+                request=request
+            )
+            return Response(publish_result, status=publish_result.get("status_code", 500))
 
-        # Step 2: Publish media
-        publish_url = f"{GRAPH_API_BASE}/{ig_account_id}/media_publish"
-        publish_resp = requests.post(publish_url, data={
-            "creation_id": creation_resp["id"],
-            "access_token": token
-        })
+        return Response(result, status=result.get("status_code", 500))
 
-        return Response(publish_resp.json(), status=publish_resp.status_code)
+# class InstagramContentPublishView(APIView):
+#     """Publish content to Instagram account"""
+#     def post(self, request, *args, **kwargs):
+#         token = get_access_token("facebook")
+#         ig_account_id = request.data.get("ig_account_id")
+#         image_url = request.data.get("image_url")
+#         caption = request.data.get("caption", "")
+
+#         if not (token and ig_account_id and image_url):
+#             return Response({"error": "Missing required fields"}, status=status.HTTP_400_BAD_REQUEST)
+
+#         # Step 1: Create media object
+#         url = f"{GRAPH_API_BASE}/{ig_account_id}/media"
+#         params = {"image_url": image_url, "caption": caption, "access_token": token}
+#         creation_resp = requests.post(url, data=params).json()
+
+#         if "id" not in creation_resp:
+#             return Response(creation_resp, status=status.HTTP_400_BAD_REQUEST)
+
+#         # Step 2: Publish media
+#         publish_url = f"{GRAPH_API_BASE}/{ig_account_id}/media_publish"
+#         publish_resp = requests.post(publish_url, data={
+#             "creation_id": creation_resp["id"],
+#             "access_token": token
+#         })
+
+#         return Response(publish_resp.json(), status=publish_resp.status_code)
 
 
 class InstagramInsightsView(APIView):
-    """Get insights for Instagram account"""
-    def get(self, request, *args, **kwargs):
-        token = get_access_token("facebook")
-        ig_account_id = request.query_params.get("ig_account_id")
+    """Fetch Instagram insights (account or media)"""
+    permission_classes = [AllowAny]
 
-        url = f"{GRAPH_API_BASE}/{ig_account_id}/insights"
-        params = {
-            "metric": "impressions,reach,profile_views",
-            "period": "day",
-            "access_token": token
-        }
-        resp = requests.get(url, params=params)
-        return Response(resp.json(), status=resp.status_code)
+    def get(self, request, instagram_account_id=None, media_id=None):
+        """
+        If media_id is provided -> fetch media insights
+        Otherwise -> fetch account insights
+        """
+        if media_id:
+            metrics = request.query_params.get(
+                "metrics", "impressions,reach,engagement,saved"
+            )
+            result = make_facebook_request(
+                "GET",
+                f"/{media_id}/insights",
+                params={"metric": metrics},
+                request=request
+            )
+        else:
+            metrics = request.query_params.get(
+                "metrics", "website_clicks,profile_views,accounts_engaged,total_interactions,comments,shares,saves,replies,follows_and_unfollows"
+            )
+            period = request.query_params.get("period", "day")
+            metric_type = request.query_params.get("metric_type", "total_value")
+            result = make_facebook_request(
+                "GET",
+                f"/{instagram_account_id}/insights",
+                params={"metric": metrics, "period": period, "metric_type": metric_type},
+                request=request
+            )
+
+        return Response(result, status=result.get("status_code", 500))
+
 
 
 class InstagramCommentsView(APIView):

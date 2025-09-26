@@ -62,9 +62,12 @@ def make_facebook_request(method: str, endpoint: str, params: Dict = None, data:
         if method.upper() in ['GET']:
             page_name = params.get('page_name','') if params.get('page_name','') else None
         else:
+            # import pdb;pdb.set_trace()
             page_name = data.get('page_name') if data is not None else params.get('page_name','')
+
+        print("page------",page_name)
         if page_name is not None:
-            if tenant.user.token_set.latest('created_at').facebook_tokens.filter(name__icontains=page_name).exists():
+            if tenant.user.token_set.filter(provider='facebook').latest('created_at').facebook_tokens.filter(name__icontains=page_name).exists():
 
                 # import pdb;pdb.set_trace()
                 # print(access_token_.access_token)
@@ -78,11 +81,18 @@ def make_facebook_request(method: str, endpoint: str, params: Dict = None, data:
             access_token_.access_token = access_token
             access_token_.save()
         
-        try:
-            query_params = params.copy()  # make a mutable copy
-            query_params.pop('page_name', None)  # remove safely, no error if missing
-        except Exception as e:
-            print(e)
+        if params:
+            try:
+                query_params = params.copy()  # make a mutable copy
+                query_params.pop('page_name', None)  # remove safely, no error if missing
+            except Exception as e:
+                print(e)
+        else:
+            try:
+                query_params = {}
+                # data.pop('page_name', None)  # remove safely, no error if missing
+            except Exception as e:
+                print(e)
 
     if params is None:
         params = {}
@@ -247,6 +257,75 @@ class FacebookUserView(APIView):
         )
         
         return Response(result, status=result.get('status_code', 500))
+
+
+class FacebookAdsView(APIView):
+    """Facebook Ads Management"""
+    permission_classes = [AllowAny]
+
+    def get(self, request, ad_account_id):
+        """
+        Retrieve ad campaigns from a Facebook Ad Account
+        """
+        fields = request.query_params.get(
+            'fields',
+            'id,name,status,objective,daily_budget,lifetime_budget'
+        )
+        
+        result = make_facebook_request(
+            "GET",
+            f"/act_{ad_account_id}/campaigns",
+            params={"fields": fields},
+            request=request
+        )
+
+        return Response(result, status=result.get('status_code', 500))
+    
+    def post(self, request, ad_account_id):
+        """
+        Create a new ad campaign
+        Example body:
+        {
+            "name": "Test Campaign",
+            "objective": "LINK_CLICKS",
+            "status": "PAUSED",
+            "special_ad_categories": []
+        }
+        """
+        result = make_facebook_request(
+            "POST",
+            f"/act_{ad_account_id}/campaigns",
+            data=request.data,
+            request=request
+        )
+        
+        return Response(result, status=result.get('status_code', 500))
+
+
+class FacebookLeadsView(APIView):
+    """Facebook Leads Retrieval"""
+    permission_classes = [AllowAny]
+
+    def get(self, request, page_id):
+        """
+        Retrieve leads for a Page’s leadgen forms
+        """
+        fields = request.query_params.get(
+            'fields',
+            'id,created_time,field_data'
+        )
+        
+        result = make_facebook_request(
+            "GET",
+            f"/{page_id}/leadgen_forms",
+            params={"fields": f"id,name,leads{{{fields}}}"},
+            request=request
+        )
+
+        return Response(result, status=result.get('status_code', 500))
+
+
+
 
 class FacebookUserAccountsView(APIView):
     """Get user's pages/accounts"""
@@ -864,22 +943,6 @@ class FacebookLeadGenFormsView(APIView):
         
         return Response(result, status=result.get('status_code', 500))
 
-class FacebookLeadsView(APIView):
-    """Leads management"""
-    permission_classes = [AllowAny]
-    
-    def get(self, request, form_id):
-        """Get leads from form"""
-        
-        
-        result = make_facebook_request(
-            "GET",
-            f"/{form_id}/leads",
-            request=request
-        )
-        
-        return Response(result, status=result.get('status_code', 500))
-
 class FacebookInstagramAccountView(APIView):
     """Instagram account management"""
     permission_classes = [AllowAny]
@@ -964,4 +1027,41 @@ class FacebookBatchRequestView(APIView):
             request=request
         )
         
+        return Response(result, status=result.get('status_code', 500))
+    
+
+class FacebookCatalogView(APIView):
+    """Facebook Catalog management"""
+    permission_classes = [AllowAny]
+
+    def get(self, request, catalog_id):
+        """Get catalog details or products in catalog"""
+        fields = request.query_params.get('fields', 'id,name,product_count')
+
+        result = make_facebook_request(
+            "GET",
+            f"/{catalog_id}",
+            params={'fields': fields},
+            request=request
+        )
+        return Response(result, status=result.get('status_code', 500))
+
+    def post(self, request, catalog_id):
+        """Add product to catalog"""
+        # Expects request.data to contain product info in Meta Graph API format
+        result = make_facebook_request(
+            "POST",
+            f"/{catalog_id}/products",
+            data=request.data,
+            request=request
+        )
+        return Response(result, status=result.get('status_code', 500))
+
+    def delete(self, request, catalog_id, product_item_id):
+        """Delete product from catalog"""
+        result = make_facebook_request(
+            "DELETE",
+            f"/{catalog_id}/products/{product_item_id}",
+            request=request
+        )
         return Response(result, status=result.get('status_code', 500))

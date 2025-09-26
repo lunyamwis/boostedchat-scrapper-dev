@@ -31,6 +31,20 @@ urlpatterns = [
     path('<str:form_id>/leads/', views.FacebookLeadsView.as_view(), name='facebook_leads'),
     path('<str:page_id>/instagram-account/', views.FacebookInstagramAccountView.as_view(), name='facebook_instagram_account'),
     path('instagram/<str:instagram_account_id>/media/', views.FacebookInstagramMediaView.as_view(), name='facebook_instagram_media'),
+    path(
+        "<str:catalog_id>/",
+        views.FacebookCatalogView.as_view(),
+        name="facebook-catalog-detail",
+    ),
+    path(
+        "<str:catalog_id>/products/<str:product_item_id>/",
+        views.FacebookCatalogView.as_view(),
+        name="facebook-catalog-product-delete",
+    ),
     path('debug-token/', views.FacebookDebugTokenView.as_view(), name='facebook_debug_token'),
     path('batch/', views.FacebookBatchRequestView.as_view(), name='facebook_batch'),
+    path('<str:ad_account_id>/campaigns/', views.FacebookAdsView.as_view(), name='facebook_ads'),
+    path('<str:page_id>/leadgen_forms', views.FacebookLeadsView.as_view(), name='facebook_lead_ads'),
+
+
 ]

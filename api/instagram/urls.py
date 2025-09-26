@@ -255,9 +255,25 @@ urlpatterns = [
     path('userstream-by-username-v2/', views.HikerUserstreamByUsernameV2.as_view(), name='userstream-by-username-v2'),
     path("api/basic/", views.InstagramBasicView.as_view(), name="instagram-basic"),
     path("api/publish/", views.InstagramContentPublishView.as_view(), name="instagram-publish"),
-    path("api/insights/", views.InstagramInsightsView.as_view(), name="instagram-insights"),
+    path("<str:instagram_account_id>/insights/", views.InstagramInsightsView.as_view(), name="instagram-insights"),
     path("api/comments/", views.InstagramCommentsView.as_view(), name="instagram-comments"),
     path("api/messages/", views.InstagramMessagesView.as_view(), name="instagram-messages"),
     path("api/webhook/", views.InstagramWebhookView.as_view(), name="instagram-webhook"),
+    path(
+        "<str:instagram_account_id>/",
+        views.InstagramBusinessBasicView.as_view(),
+        name="instagram-business-basic",
+    ),
+    # path(
+    #     "<str:instagram_account_id>/media/",
+    #     views.InstagramBusinessMediaView.as_view(),
+    #     name="instagram-business-media",
+    # ),
+    path(
+        "<str:instagram_account_id>/media/",
+        views.InstagramContentPublishView.as_view(),
+        name="instagram-business-media",
+    ),
+
 ]
 
