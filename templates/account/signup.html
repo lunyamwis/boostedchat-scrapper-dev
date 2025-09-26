@@ -60,14 +60,20 @@
                     <div class="text-center mb-3">
                         {% providers_media_js %}
                         <div class="d-flex justify-content-center gap-3">
-                            <!-- <a href="/accounts/facebook/login/?process=login" class="btn btn-outline-secondary d-flex align-items-center"> -->
-                                <!-- <img src="{% static 'img/2023_Facebook_icon.png' %}" alt="Facebook" width="20" height="20" class="me-2"> -->
-                                <!-- {% trans "Sign up with" %} Facebook -->
-                            <!-- </a> -->
-                            <!-- <a href="/accounts/google/login/?process=login" class="btn btn-outline-secondary d-flex align-items-center"> -->
-                                <!-- <img src="https://fonts.gstatic.com/s/i/productlogos/googleg/v6/24px.svg" alt="Google" width="20" height="20" class="me-2"> -->
-                                <!-- {% trans "Sign up with" %} Google -->
-                            <!-- </a> -->
+                            <div class="d-flex justify-content-center gap-3">
+                            <a href="/accounts/facebook/login/?process=login" class="btn btn-outline-secondary d-flex align-items-center">
+                                <img src="https://upload.wikimedia.org/wikipedia/commons/0/05/Facebook_Logo_(2019).png" alt="Facebook" width="20" height="20" class="me-2">
+                                {% trans "Login with" %} Facebook
+                            </a>
+                            <a href="/accounts/google/login/?process=login" class="btn btn-outline-secondary d-flex align-items-center">
+                                <img src="https://fonts.gstatic.com/s/i/productlogos/googleg/v6/24px.svg" alt="Google" width="20" height="20" class="me-2">
+                                {% trans "Login with" %} Google
+                            </a>
+                            <a href="https://www.instagram.com/oauth/authorize?force_reauth=true&client_id=823025563724498&redirect_uri=https://lunyamwi.org/oauth/callback/instagram/&response_type=code&scope=instagram_business_basic%2Cinstagram_business_manage_messages%2Cinstagram_business_manage_comments%2Cinstagram_business_content_publish%2Cinstagram_business_manage_insights" class="btn btn-outline-secondary d-flex align-items-center">
+                                <img src="https://upload.wikimedia.org/wikipedia/commons/e/e7/Instagram_logo_2016.svg" alt="Instagram" width="20" height="20" class="me-2">
+                                {% trans "Login with" %} Instagram
+                            </a>
+                        </div>
                             
                         </div>
                     </div>

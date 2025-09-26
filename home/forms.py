@@ -21,7 +21,7 @@ class TenantSignupForm(forms.Form):
         label="Instagram Username",
         max_length=150,
         widget=forms.TextInput(attrs={'class': 'form-control', 'id': 'instagramUsername', 'required': True, 'placeholder': 'your_instagram_username'}),
-        help_text="This will be used to link your Instagram Business account."
+        help_text="This will be used to link your Instagram Business account that is connected to your Facebook page."
     )
     email = forms.EmailField(
         label="Email address",

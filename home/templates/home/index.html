@@ -119,6 +119,13 @@
       <div class="text-danger small">{{ form.full_name.errors }}</div>
       {% endif %}
     </div>
+    <div class="mb-3">
+      <label for="{{ form.instagram_username.id_for_label }}" class="form-label">{{ form.instagram_username.label }}</label>
+      {{ form.instagram_username|add_class:"form-control" }}
+      {% if form.instagram_username.errors %}
+      <div class="text-danger small">{{ form.instagram_username.errors }}</div>
+      {% endif %}
+    </div>
 
     <div class="mb-3">
       <label for="{{ form.email.id_for_label }}" class="form-label">{{ form.email.label }}</label>
