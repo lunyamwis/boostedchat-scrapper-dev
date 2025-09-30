@@ -69,14 +69,16 @@ def generate_video(prompt: str, out_path="output.mp4"):
         frames.append(str(img_path))
 
     # --- 3. TTS: Narration ---
-    audio_path = out_dir / f"narration_{str(uuid.uuid4())}.mp3"
+    audio_path_ = out_dir / f"narration_{str(uuid.uuid4())}.mp3"
+    audio_path = Path(audio_path_)
+    audio_path.parent.mkdir(parents=True, exist_ok=True)
     # with client.audio.speech.with_streaming_response.create(
     #     model="gpt-4o-mini-tts",
     #     voice="alloy",
     #     input=script_text
     # ) as response:
     #     response.stream_to_file(audio_path)
-    print(f"Narration saved: {audio_path}")
+    # print(f"Narration saved: {audio_path}")
 
     # --- 4. Assemble Video with FFmpeg ---
     frame_list_file = out_dir / f"frames_{str(uuid.uuid4())}.txt"
@@ -95,7 +97,7 @@ def generate_video(prompt: str, out_path="output.mp4"):
         "ffmpeg", "-y",
         "-f", "concat", "-safe", "0",
         "-i", str(frame_list_file),
-        # "-i", str(audio_path),
+        "-i", str(audio_path),
         "-vf", (
             "scale=1920:1080:force_original_aspect_ratio=decrease,"
             "pad=1920:1080:(ow-iw)/2:(oh-ih)/2"
