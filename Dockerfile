@@ -2,7 +2,10 @@ FROM python:3.10
 
 # adding ffmpeg
 
-RUN apt-get -y update && apt-get install -y ffmpeg 
+RUN apt-get update && \
+    apt-get install -y ffmpeg && \
+    rm -rf /var/lib/apt/lists/*
+
 
 # set display port to avoid crash
 ENV DISPLAY=:99
