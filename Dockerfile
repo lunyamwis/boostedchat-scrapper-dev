@@ -2,7 +2,7 @@ FROM python:3.10-slim
 
 # adding ffmpeg and slim
 
-RUN apt-get update && \
+RUN apt-get -y update && \
     apt-get install -y ffmpeg && \
     rm -rf /var/lib/apt/lists/*
 
