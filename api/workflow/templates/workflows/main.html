@@ -62,6 +62,21 @@
               </a>
             </li>
             <li class="nav-item">
+              <a href="{% url 'chat_interface' provider='linkedin' %}" class="nav-link">
+                LinkedIn Chat
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="{% url 'chat_interface' provider='whatsapp' %}" class="nav-link">
+                WhatsApp Chat
+              </a>
+            </li>
+            <li class="nav-item">
+              <a href="{% url 'chat_groups' provider='whatsapp' %}" class="nav-link">
+                WhatsApp Chat Groups
+              </a>
+            </li>
+            <li class="nav-item">
               <a href="/accounts/logout" class="nav-link">Logout</a>
             </li>
             <li class="nav-item">

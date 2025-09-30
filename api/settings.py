@@ -137,7 +137,7 @@ TENANT_APPS = [
     'api.workflow',
     'api.instagram','api.scout','api.prompt',
     'api.analyst','api.sales_rep','api.whatsapp',
-    'api.facebookautomator','api.linkedin','api.gmail'
+    'api.facebookautomator','api.linkedin','api.gmail','api.chat'
 ]
 INSTALLED_APPS = SHARED_APPS + [app for app in TENANT_APPS if app not in SHARED_APPS]
 TENANT_MODEL = "helpers.Client"
@@ -486,9 +486,9 @@ LOGGING = {
     },
 }
 
-SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-SESSION_COOKIE_DOMAIN = ".lunyamwi.org"
-SESSION_COOKIE_SAMESITE='None'
-SESSION_COOKIE_SECURE = True
-CSRF_COOKIE_SECURE = True
-ACCOUNT_DEFAULT_HTTP_PROTOCOL = "https"
+# SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+# SESSION_COOKIE_DOMAIN = ".lunyamwi.org"
+# SESSION_COOKIE_SAMESITE='None'
+# SESSION_COOKIE_SECURE = True
+# CSRF_COOKIE_SECURE = True
+# ACCOUNT_DEFAULT_HTTP_PROTOCOL = "https"

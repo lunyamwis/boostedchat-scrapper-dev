@@ -37,6 +37,7 @@ urlpatterns = [
     path('helpers/', include('api.helpers.urls')),  # Include the URLs from the helpers app
     path('', include('home.urls')),  # Include the URLs from the home app
     path('billing/', include('billing.urls')),  # Include the URLs from the billing app
+    path('chat/', include('api.chat.urls')),  # Include the URLs from the chat app
     # path("oauth/callback/<str:provider>/", views.oauth_callback, name="oauth_callback"),
     path("oauth/callback/<str:provider>/", views.TenantOAuth2CallbackView.as_view(), name="oauth_callback"),
     # path('accounts/<str:provider>/login/callback/', views.oauth_callback2, name='socialaccount_callback_custom'),

@@ -1,0 +1,17 @@
+{% extends 'workflows/main.html' %}
+
+{% block title %}Add Chat Group{% endblock %}
+
+{% block content %}
+<h1>Add Chat Group</h1>
+
+<form method="post">
+    {% csrf_token %}
+    <div class="form-group">
+        <label for="groupName">Group Name</label>
+        <input type="text" class="form-control" id="groupName" name="groupName" required>
+    </div>
+    
+    <button type="submit" class="btn btn-primary">Create Group</button>
+</form>
+{% endblock %}

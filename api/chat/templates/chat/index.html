@@ -1,0 +1,34 @@
+{% extends 'workflows/main.html' %}
+
+
+{% block title %}Chat Interface{% endblock %}
+
+{% block content %}
+<h1>Chat Interface</h1>
+
+<ul>
+    {% for session in chat_sessions %}
+        {% if provider == 'linkedin' %}
+        <li>
+            Session ID: {{ session.identifier }} - 
+            Status: {% if session.stop %}Stopped{% else %}Active{% endif %}
+            Conversations: {{ session.conversation_history }} --------- Session stopped: {{session.stop}} -------
+
+            <a href="{% url 'stop_chat_session' provider=provider session_id=session.identifier%}">Stop Session</a>||
+            <a href="{% url 'continue_chat_session' provider=provider session_id=session.identifier%}">Continue Session</a>
+        </li>
+        {% elif provider == 'whatsapp' %}
+        <li>
+            Phone: {{ session.phone }} -
+            Status: {% if session.stop %}Stopped{% else %}Active{% endif %}
+            Conversations: {{ session.conversation_history }} ----------- Session stopped: {{session.stop}} ------
+
+            <a href="{% url 'stop_chat_session' provider=provider session_id=session.phone%}">Stop Session</a> ||
+            <a href="{% url 'continue_chat_session' provider=provider session_id=session.phone%}">Continue Session</a>
+        </li>
+        {% endif %}
+    {% empty %}
+        <li>No chat sessions available.</li>
+    {% endfor %}
+</ul>
+{% endblock %}

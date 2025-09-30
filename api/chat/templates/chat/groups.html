@@ -1,0 +1,21 @@
+{% extends 'workflows/main.html' %}
+
+{% block title %}Chat Groups{% endblock %}
+
+{% block content %}
+<h1>Chat Groups</h1>
+<p>Manage your chat groups here.</p>
+<p><a href="{% url 'add_group' provider=provider %}" class="btn btn-primary">Add Group</a></p>
+<ul>
+    {% for group in groups %}
+        <li>
+            Group Name: {{ group.name }} - Status: {% if group.listen %}Listening{% else %}Not Listening{% endif %}
+
+            <a href="{% url 'continue_group_listen' provider=provider group_id=group.id %}">Continue Listening</a> ||
+            <a href="{% url 'stop_group_listen' provider=provider group_id=group.id %}">Stop Listening</a>
+        </li>
+    {% empty %}
+        <li>No chat groups available.</li>
+    {% endfor %}
+</ul>
+{% endblock %}
