@@ -2,6 +2,7 @@ import uuid
 from django.db import models, connections
 from django.shortcuts import get_object_or_404
 from api.helpers.models import BaseModel
+from django.contrib.postgres.fields import ArrayField  # needs PostgreSQL
 # Create your models here.
 
 
@@ -186,3 +187,36 @@ class ChatHistory(BaseModel):
     username_from = models.CharField(max_length=255)
     username_to= models.CharField(max_length=255)
     content = models.TextField()
+
+
+
+
+class GeneratedImage(BaseModel):
+    prompt = models.TextField()
+    image = models.ImageField(upload_to='generated_images/')
+    def __str__(self):
+        return f"Image for prompt: {self.id}..."
+
+    
+class GeneratedVideo(BaseModel):
+    prompt = models.TextField()
+    video = models.FileField(upload_to='generated_videos/')
+    def __str__(self):
+        return f"Video for prompt: {self.id}..."
+
+
+
+
+class Document(models.Model):
+    category = models.CharField(max_length=255, choices=(
+        ('Bible', 'BIBLE'),
+        ('SOP', 'SOP')
+    ), default='general')
+    title = models.CharField(max_length=255)
+    file = models.FileField(upload_to='documents/')
+    text = models.TextField()
+    embedding = ArrayField(models.FloatField(), size=1536)  # for text-embedding-3-small
+    created_at = models.DateTimeField(auto_now_add=True)
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    reference = models.CharField(max_length=255, null=True, blank=True)

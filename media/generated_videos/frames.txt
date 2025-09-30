@@ -1,0 +1,13 @@
+file '/home/martin/Documents/media/generated_videos/frame_1.png'
+duration 2
+file '/home/martin/Documents/media/generated_videos/frame_2.png'
+duration 2
+file '/home/martin/Documents/media/generated_videos/frame_3.png'
+duration 2
+file '/home/martin/Documents/media/generated_videos/frame_4.png'
+duration 2
+file '/home/martin/Documents/media/generated_videos/frame_5.png'
+duration 2
+file '/home/martin/Documents/media/generated_videos/frame_6.png'
+duration 2
+file '/home/martin/Documents/media/generated_videos/frame_6.png'

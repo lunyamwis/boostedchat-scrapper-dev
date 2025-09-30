@@ -63,6 +63,7 @@ from typing import List,Optional
 from crewai.flow.flow import Flow, and_, listen, start
 import asyncio
 import inspect
+import uuid
 
 
 openai_api_key = os.getenv('OPENAI_API_KEY')
@@ -70,6 +71,102 @@ os.environ["OPENAI_MODEL_NAME"] = 'gpt-4-1106-preview'
 os.environ["SERPER_API_KEY"] = os.getenv('SERPER_API_KEY')
 db_url = f"postgresql://{os.getenv('POSTGRES_USERNAME')}:{os.getenv('POSTGRES_PASSWORD')}@{os.getenv('POSTGRES_HOST')}:{os.getenv('POSTGRES_PORT')}/{os.getenv('POSTGRES_DBNAME')}"
 print(db_url)
+
+from django.shortcuts import render
+from django.views import View
+from django.http import JsonResponse
+from openai import OpenAI
+import base64, os
+from django.conf import settings
+from django.core.files.base import ContentFile
+from .models import GeneratedImage, GeneratedVideo
+from .tasks import generate_video
+
+client = OpenAI()
+
+# class ImageMakerHome(View):
+def image_maker(request):
+    images = GeneratedImage.objects.all().order_by('-created_at')[:10]
+
+    if request.method == 'POST':
+        prompt = request.POST.get("prompt", "A cute cat playing piano")
+        response = client.images.generate(
+            model="dall-e-3",
+            prompt=prompt,
+            size="1024x1024"
+        )
+        image_b64 = getattr(response.data[0], "b64_json", None)
+        image_url = getattr(response.data[0], "url", None)
+
+        if image_b64:
+            # Decode base64
+            image_bytes = base64.b64decode(image_b64)
+        elif image_url:
+            # Download image from URL
+            r = requests.get(image_url)
+            r.raise_for_status()
+            image_bytes = r.content
+        else:
+            return JsonResponse({"error": "No image returned"}, status=500)
+
+        # Save image to model
+        image_file = ContentFile(image_bytes, name=f"generated_{str(uuid.uuid4())}.png")
+        generated = GeneratedImage.objects.create(prompt=prompt, image=image_file)
+
+        return render(request, "imagemaker/index.html", {"image": generated})
+    return render(request, "imagemaker/index.html", {"images": images})
+
+
+
+def video_maker(request):
+    videos = GeneratedVideo.objects.all().order_by('-created_at')[:10]
+
+    if request.method == "POST":
+        prompt = request.POST.get("prompt", "A cute cat playing piano")
+
+        # Create unique filename inside MEDIA_ROOT/videos/
+        filename = f"output_{uuid.uuid4()}.mp4"
+        output_path = os.path.join(settings.MEDIA_ROOT, "generated_videos", filename)
+
+        # Run your pipeline to generate video
+        generate_video.delay(prompt, out_path=output_path)
+
+        # Save only relative path for Django FileField
+        rel_path = os.path.join("generated_videos", filename)
+        generated = GeneratedVideo.objects.create(prompt=prompt, video=rel_path)
+
+        return render(request, "videomaker/index.html", {"video": generated})
+
+    return render(request, "videomaker/index.html", {"videos": videos})
+
+
+
+
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.decorators import method_decorator
+
+@method_decorator(csrf_exempt, name="dispatch")
+class ImageGeneratorView(View):
+    def post(self, request):
+        prompt = request.POST.get("prompt", "A cute cat playing piano")
+        response = client.images.generate(
+            model="dall-e-3",
+            prompt=prompt,
+            size="1024x1024"
+        )
+        image_b64 = response.data[0].b64_json
+        image_bytes = base64.b64decode(image_b64)
+
+        os.makedirs(settings.MEDIA_ROOT, exist_ok=True)
+        file_path = os.path.join(settings.MEDIA_ROOT, "generated.png")
+        with open(file_path, "wb") as f:
+            f.write(image_bytes)
+
+        return JsonResponse({"prompt": prompt, "image_url": f"/media/generated.png"})
+
+
+
+
 
 def index(request):
     # with schema_context(os.getenv("SCHEMA_NAME")):

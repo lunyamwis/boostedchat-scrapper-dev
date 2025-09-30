@@ -137,7 +137,7 @@ TENANT_APPS = [
     'api.workflow',
     'api.instagram','api.scout','api.prompt',
     'api.analyst','api.sales_rep','api.whatsapp',
-    'api.facebookautomator','api.linkedin','api.gmail','api.chat'
+    'api.facebookautomator','api.linkedin','api.gmail','api.chat',
 ]
 INSTALLED_APPS = SHARED_APPS + [app for app in TENANT_APPS if app not in SHARED_APPS]
 TENANT_MODEL = "helpers.Client"
@@ -464,6 +464,8 @@ ACCOUNT_LOGOUT_REDIRECT_URL = '/accounts/login/'
 SOCIALACCOUNT_STORE_TOKENS=True
 SOCIALACCOUNT_ADAPTER = "api.authentication.adapters.TenantAwareAdapter"
 ADAPTER = "api.authentication.adapters.TenantAwareAdapter"
+MEDIA_URL = "/media/"
+MEDIA_ROOT ='/usr/src/app/media'
 
 LOGGING = {
     "version": 1,

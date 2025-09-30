@@ -1,0 +1,13 @@
+file '/home/martin/Documents/media/generated_videos/cc9a8965-8171-4e1a-8118-a98c8e919715/frame_1_b148cb7e-e4d0-4afb-ae45-f32dc8c28b24.png'
+duration 2
+file '/home/martin/Documents/media/generated_videos/cc9a8965-8171-4e1a-8118-a98c8e919715/frame_2_1d9d8c0c-86b9-4b5a-bcf3-3732ce56d984.png'
+duration 2
+file '/home/martin/Documents/media/generated_videos/cc9a8965-8171-4e1a-8118-a98c8e919715/frame_3_93c98eb9-3f5a-4224-ae0b-62286779f3e2.png'
+duration 2
+file '/home/martin/Documents/media/generated_videos/cc9a8965-8171-4e1a-8118-a98c8e919715/frame_4_1ddd0d99-942b-4cf3-b216-35f0cfc3913b.png'
+duration 2
+file '/home/martin/Documents/media/generated_videos/cc9a8965-8171-4e1a-8118-a98c8e919715/frame_5_d7fdfe30-be46-4310-8c75-5885def862e7.png'
+duration 2
+file '/home/martin/Documents/media/generated_videos/cc9a8965-8171-4e1a-8118-a98c8e919715/frame_6_926103f9-ee53-4e1d-829e-e48333214478.png'
+duration 2
+file '/home/martin/Documents/media/generated_videos/cc9a8965-8171-4e1a-8118-a98c8e919715/frame_6_926103f9-ee53-4e1d-829e-e48333214478.png'

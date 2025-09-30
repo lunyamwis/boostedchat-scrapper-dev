@@ -1,6 +1,6 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import PromptViewSet, RoleViewSet, index, add, getAgent,update, detail, delete, saveResponse, generateResponse, agentSetup,fetch_logs,fetch_logs_api,SetupAgent
+from .views import PromptViewSet, RoleViewSet, index, add, getAgent,update, detail, delete, saveResponse, generateResponse, agentSetup,fetch_logs,fetch_logs_api,SetupAgent, image_maker, ImageGeneratorView,video_maker
 
 router = DefaultRouter()
 router.register(r"prompts", PromptViewSet, basename="prompts")
@@ -21,5 +21,8 @@ urlpatterns = [
     path("getAgent/",getAgent.as_view()),
     path('logs/', fetch_logs, name='fetch_logs'),
     path('api/fetch-logs/', fetch_logs_api, name='fetch_logs_api'),
+    path("imagemaker/", image_maker, name="imagemaker-home"),
+    path("generate/", ImageGeneratorView.as_view(), name="generate-image"),
+    path("videomaker/", video_maker, name="videomaker-home"),
     path("", include(router.urls))
 ]
