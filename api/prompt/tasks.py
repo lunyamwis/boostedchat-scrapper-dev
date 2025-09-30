@@ -107,7 +107,7 @@ def generate_video(prompt: str, out_path="output.mp4"):
     subprocess.run(cmd, check=True)
 
     print(f"🎬 Video saved at {out_path}")
-    return out_path
+    # return out_path
 
 
 
