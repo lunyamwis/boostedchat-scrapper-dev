@@ -1,5 +1,7 @@
 FROM python:3.10
 
+# adding ffmpeg
+
 RUN apt-get -y update && apt-get install -y ffmpeg 
 
 # set display port to avoid crash
