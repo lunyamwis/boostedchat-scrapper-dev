@@ -2,10 +2,10 @@ FROM python:3.10-slim
 
 # adding ffmpeg and slim
 
-# RUN apt-get -y update && \
-#     apt-get install -y ffmpeg && \
-#     rm -rf /var/lib/apt/lists/*
-RUN apt-get -y update 
+RUN apt-get -y update && \
+    apt-get install -y ffmpeg && \
+    rm -rf /var/lib/apt/lists/*
+# RUN apt-get -y update 
 
 
 # set display port to avoid crash
