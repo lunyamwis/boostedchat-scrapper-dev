@@ -15,10 +15,6 @@ client = OpenAI(api_key=os.environ["OPENAI_API_KEY"])
 
 @shared_task
 def generate_video(prompt: str, out_path="output.mp4"):
-    """
-    DIY pipeline: GPT (script) + DALL·E (frames) + TTS (voiceover) + FFmpeg (video assembly).
-    Handles both `b64_json` and `url` image responses.
-    """
     out_dir = Path("media/generated_videos/" + str(uuid.uuid4()) + "/")
     out_dir.mkdir(exist_ok=True)
 
@@ -42,45 +38,26 @@ def generate_video(prompt: str, out_path="output.mp4"):
         img_resp = client.images.generate(
             model="gpt-image-1",
             prompt=line.strip(),
-            size="1536x1024"  # widescreen landscape
+            size="1536x1024"
         )
 
         img_path = out_dir / f"frame_{i}_{str(uuid.uuid4())}.png"
 
-        # Try URL first, fall back to base64
         if hasattr(img_resp.data[0], "url") and img_resp.data[0].url:
-            img_url = img_resp.data[0].url
-            r = requests.get(img_url)
+            r = requests.get(img_resp.data[0].url)
             r.raise_for_status()
             with open(img_path, "wb") as f:
                 f.write(r.content)
-            print(f"✅ Saved frame {i} from URL: {img_url}")
-
         elif hasattr(img_resp.data[0], "b64_json") and img_resp.data[0].b64_json:
-            image_base64 = img_resp.data[0].b64_json
-            image_bytes = base64.b64decode(image_base64)
+            image_bytes = base64.b64decode(img_resp.data[0].b64_json)
             with open(img_path, "wb") as f:
                 f.write(image_bytes)
-            print(f"✅ Saved frame {i} from base64")
-
         else:
             raise ValueError("No valid image data found in response")
 
         frames.append(str(img_path))
 
-    # --- 3. TTS: Narration ---
-    audio_path_ = out_dir / f"narration_{str(uuid.uuid4())}.mp3"
-    audio_path = Path(audio_path_)
-    audio_path.parent.mkdir(parents=True, exist_ok=True)
-    # with client.audio.speech.with_streaming_response.create(
-    #     model="gpt-4o-mini-tts",
-    #     voice="alloy",
-    #     input=script_text
-    # ) as response:
-    #     response.stream_to_file(audio_path)
-    # print(f"Narration saved: {audio_path}")
-
-    # --- 4. Assemble Video with FFmpeg ---
+    # --- 3. Assemble Video with FFmpeg (no audio) ---
     frame_list_file = out_dir / f"frames_{str(uuid.uuid4())}.txt"
     with open(frame_list_file, "w") as f:
         for frame in frames:
@@ -89,28 +66,26 @@ def generate_video(prompt: str, out_path="output.mp4"):
             f.write("duration 2\n")
         last_frame = Path(frames[-1]).resolve()
         f.write(f"file '{last_frame}'\n")
-    
-    
+
     out_path = Path(out_path)
     out_path.parent.mkdir(parents=True, exist_ok=True)
+
+    # FFmpeg command without audio
     cmd = [
         "ffmpeg", "-y",
         "-f", "concat", "-safe", "0",
         "-i", str(frame_list_file),
-        "-i", str(audio_path),
         "-vf", (
             "scale=1920:1080:force_original_aspect_ratio=decrease,"
             "pad=1920:1080:(ow-iw)/2:(oh-ih)/2"
         ),
-        "-c:v", "libx264", "-c:a", "aac",
+        "-c:v", "libx264",
         "-pix_fmt", "yuv420p",
-        out_path
+        str(out_path)
     ]
     subprocess.run(cmd, check=True)
 
     print(f"🎬 Video saved at {out_path}")
-    # return out_path
-
 
 
 @shared_task
