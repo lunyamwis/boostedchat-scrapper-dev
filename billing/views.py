@@ -128,10 +128,10 @@ class PaystackWebhookView(APIView):
                         </p>
 
                         <p>Warm regards,<br>
-                        The <strong>[Your Tool Name]</strong> Team</p>
+                        The <strong>Lunyamwi</strong> Team</p>
 
                         <div class="footer">
-                        &copy; {2025} [Your Tool Name]. All rights reserved.
+                        &copy; {2025} Lunyamwi. All rights reserved.
                         </div>
                     </div>
                     </body>
