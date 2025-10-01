@@ -65,13 +65,13 @@ class TenantSignupForm(forms.Form):
     whatsapp_channel_id = forms.CharField(
         label="WhatsApp Channel ID",
         max_length=255,
-        widget=forms.TextInput(attrs={'class': 'form-control', 'id': 'whatsappChannelId', 'required': False, 'placeholder': 'Your WhatsApp Channel ID (*Enterprise Users Only*)'}),
+        widget=forms.TextInput(attrs={'class': 'form-control', 'id': 'whatsappChannelId', 'required': False, 'placeholder': 'Your WhatsApp Channel ID'}),
         help_text="This is the ID of your WhatsApp Business API channel."
     )
     whatsapp_channel_token = forms.CharField(
         label="WhatsApp Channel Token",
         max_length=2048,
-        widget=forms.TextInput(attrs={'class': 'form-control', 'id': 'whatsappChannelToken', 'required': False, 'placeholder': 'Your WhatsApp Channel Token (*Enterprise Users Only*)'}),
+        widget=forms.TextInput(attrs={'class': 'form-control', 'id': 'whatsappChannelToken', 'required': False, 'placeholder': 'Your WhatsApp Channel Token'}),
         help_text="This is the token of your WhatsApp Business API channel."
     )
 
