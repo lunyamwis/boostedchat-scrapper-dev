@@ -36,7 +36,7 @@ def handle_tenant_created(sender, tenant, **kwargs):
         acreds.save()
     else:
         print("Failed to get Airflow token:", resp.text)
-
+    
     subscription_link_mapper = {
         '2000': 'https://paystack.shop/pay/0yiroqug8w',
         '5000': 'https://paystack.shop/pay/m43w86jxvo',
@@ -44,10 +44,53 @@ def handle_tenant_created(sender, tenant, **kwargs):
         '20000': 'https://paystack.shop/pay/unw4mh897x',
         '50000': 'https://paystack.shop/pay/r-uteymt-4',
     }
+
     # send credentials email
     email_data = {
         "to": [tenant.user.email],
-        "subject": "Subscription Link",
-        "body": f"Hello {tenant.name},\n\n Your subscription link is: {subscription_link_mapper.get(tenant.subscription, 'No subscription plan selected')}\n\nThank you!",
+        "subject": "Welcome to Lunyamwi 🎉 – Complete Your Subscription",
+        "body": f"""
+        Hello {tenant.name},
+
+        Welcome to Lunyamwi! 🎉 We're excited to help you automate your social media and grow your brand.
+
+        Here are your subscription details:
+        -------------------------------------------------
+        Selected Plan: {tenant.subscription} KES / month
+        Subscription Link: {subscription_link_mapper.get(tenant.subscription, 'No subscription plan selected')}
+        -------------------------------------------------
+
+        ✅ What you get with this plan:
+        - Automated responding on supported platforms
+        - Social media listening & analytics
+        - Content scheduling & posting
+        - Performance tracking
+
+        💡 Need to upgrade or switch plans?
+        You can always choose a different plan using the links below:
+        - Micro (2,000 KES): {subscription_link_mapper['2000']}
+        - Starter (5,000 KES): {subscription_link_mapper['5000']}
+        - Basic (10,000 KES): {subscription_link_mapper['10000']}
+        - Professional (20,000 KES): {subscription_link_mapper['20000']}
+        - Enterprise (50,000 KES): {subscription_link_mapper['50000']}
+
+        📞 Need help?
+        Our support team is here for you. Simply reply to this email or visit our Help Center.
+
+        We’re thrilled to have you on board and can’t wait to see your success 🚀.
+
+        Warm regards,  
+        The Lunyamwi Team
+        """,
     }
-    send_mail(subject=email_data["subject"], message=email_data["body"], from_email="lutherlunyamwi@gmail.com", recipient_list=email_data["to"])
+
+    send_mail(
+        subject=email_data["subject"], 
+        message=email_data["body"], 
+        from_email="lutherlunyamwi@gmail.com", 
+        recipient_list=email_data["to"]
+    )
+
+
+
+    

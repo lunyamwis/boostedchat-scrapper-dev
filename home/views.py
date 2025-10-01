@@ -44,7 +44,12 @@ def home(request):
                 whatsapp_channel_id=form.cleaned_data['whatsapp_channel_id'],
                 whatsapp_channel_token=form.cleaned_data['whatsapp_channel_token']
             )
-            messages.success(request, 'Tenant created successfully! Please check your email for the subscription link. and allow up to 10 minutes for the tenant to be fully set up. and then you can log in using your email and password that will be sent to you via email.')
+            messages.success(
+                request,
+                "🎉 Tenant created successfully! Please check your email for your subscription link. "
+                "Setup may take up to 10 minutes. Once completed, you can log in with the same email and password you registered with."
+            )
+
             return redirect('home')
 
     host = request.get_host().split(':')[0]  # hostname without port

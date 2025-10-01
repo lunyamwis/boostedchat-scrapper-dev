@@ -46,9 +46,32 @@ class PaystackWebhookView(APIView):
                 # Send confirmation email
                 email_data = {
                     "to": [customer_email],
-                    "subject": "Subscription Confirmed",
-                    "body": f"Hello {tenant.name},\n\n Your subscription has been confirmed. Please log in to your account at https://{domain.domain}.\n\nThank you!",
+                    "subject": "🎉 Subscription Confirmed – Welcome to Lunyamwi",
+                    "body": f"""
+                        Hello {tenant.name},
+
+                        Great news! Your subscription has been successfully confirmed. 🎉  
+
+                        You can now log in to your account here:
+                        👉 https://{domain.domain}
+
+                        🔑 Login details:
+                        - Use the **same email and password** you registered with when getting started.
+
+                        💡 Next Steps:
+                        - Once logged in, you’ll be able to access your dashboard, set up automation workflows, and explore all your plan features.
+                        - If this is your first time, please allow up to 10 minutes for the system to fully set up your account.
+
+                        📞 Need help?
+                        Our support team is ready to assist you. Simply reply to this email or visit our Help Center.
+
+                        We’re excited to have you on board and can’t wait to see your brand grow 🚀.
+
+                        Warm regards,  
+                        The Lunyamwi Team
+                    """,
                 }
+
                 send_mail(
                     email_data["subject"],
                     email_data["body"],
@@ -56,6 +79,8 @@ class PaystackWebhookView(APIView):
                     email_data["to"],
                     fail_silently=False,
                 )
+
+                
         else:
             print("Event is not subscription.create")
         return Response({"status": "success"}, status=200)
