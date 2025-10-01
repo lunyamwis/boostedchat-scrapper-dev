@@ -40,7 +40,9 @@ def home(request):
                 domain_name=form.cleaned_data['domain_name'], 
                 email=form.cleaned_data['email'], 
                 subscription=form.cleaned_data['subscription_plan'],
-                phone_number=form.cleaned_data['phone_number']
+                phone_number=form.cleaned_data['phone_number'],
+                whatsapp_channel_id=form.cleaned_data['whatsapp_channel_id'],
+                whatsapp_channel_token=form.cleaned_data['whatsapp_channel_token']
             )
             messages.success(request, 'Tenant created successfully! Please check your email for the subscription link. and allow up to 10 minutes for the tenant to be fully set up. and then you can log in using your email and password that will be sent to you via email.')
             return redirect('home')

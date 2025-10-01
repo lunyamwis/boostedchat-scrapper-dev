@@ -51,6 +51,8 @@ class Client(TenantMixin):
     phone_number_id = models.CharField(max_length=20,null=True,blank=True)
     instagram_business_account_id = models.CharField(max_length=255, null=True,blank=True)
     page_id = models.CharField(max_length=255, null=True,blank=True)
+    whatsapp_channel_id = models.CharField(max_length=255, null=True,blank=True)
+    whatsapp_channel_token = models.CharField(max_length=2048, null=True,blank=True)
 
     def __str__(self) -> str:
         return self.name

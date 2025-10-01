@@ -35,11 +35,6 @@ load_dotenv()
 # Whapi.cloud Configuration
 WHAPI_BASE_URL = os.getenv("WHAPI_BASE_URL", "https://example.com")
 WHAPI_TOKEN = os.getenv("WHAPI_TOKEN","test_token")  # Add this to your .env file
-WHAPI_HEADERS = {
-    "accept": "application/json",
-    "Authorization": f"Bearer {WHAPI_TOKEN}",
-    "Content-Type": "application/json"
-}
 
 
 
@@ -597,10 +592,15 @@ def generate_test_phone_number():
 
 # Helper function for making Whapi requests
 
-def make_whapi_request(method: str, endpoint: str, params: Dict = None, data: Dict = None, headers: Dict = None) -> Dict:
+def make_whapi_request(method: str, endpoint: str, params: Dict = None, data: Dict = None, headers: Dict = None, token: str = None) -> Dict:
     """Helper function to make requests to Unipile API"""
     url = f"{WHAPI_BASE_URL}{endpoint}"
     # print(url)
+    WHAPI_HEADERS = {
+        "accept": "application/json",
+        "Authorization": f"Bearer {token}",
+        "Content-Type": "application/json"
+    }
 
     request_headers = WHAPI_HEADERS.copy()
     if headers:
@@ -760,7 +760,7 @@ def webhook_whapi(request):
         # data = json.loads(request.body.decode('utf-8'))
         logging.warning(request.data)
         # Example usage:
-        schema_name = 'lunyamwi'
+        tenant = Client.objects.get(whatsapp_channel_id=request.data.get('channel_id'))
         number = extract_from_number(request.data)
         group_name = extract_group_name(request.data)
         message = extract_message_body(request.data)
@@ -770,22 +770,22 @@ def webhook_whapi(request):
         print("Groups to react to:", [g.name for g in groups])
         groups_to_react_to = [g.name for g in groups]
         if group_name in groups_to_react_to:
-            generated_message = query_gpt(message, number,schema_name)
+            generated_message = query_gpt(message, number, tenant.schema_name)
             time.sleep(15)  # Simulate typing delay
             make_whapi_request("POST", "/messages/text", data = {
                 "typing_time": 0,
                 "to": number,
                 "body": generated_message
-            })
+            }, token=tenant.whatsapp_channel_token)
         elif ChatSession.objects.filter(phone=number).filter(stop=False).exists():
-            response = query_gpt(message, number,schema_name)
+            response = query_gpt(message, number, tenant.schema_name)
             time.sleep(15)  # Simulate typing delay
             make_whapi_request("POST", "/messages/text", data = {
                 "typing_time": 0,
                 "to": number,
                 "body": response
-            })
-        
+            }, token=tenant.whatsapp_channel_token)
+
         # Process the webhook data here
         # You can call your processing function or save the data to the database
         # For example:
