@@ -45,40 +45,109 @@ class PaystackWebhookView(APIView):
                 print("Tenant updated:", tenant)
                 # Send confirmation email
                 email_data = {
-                    "to": [customer_email],
-                    "subject": "🎉 Subscription Confirmed – Welcome to Lunyamwi",
-                    "body": f"""
-                        Hello {tenant.name},
-
-                        Great news! Your subscription has been successfully confirmed. 🎉  
-
-                        You can now log in to your account here:
-                        👉 https://{domain.domain}
-
-                        🔑 Login details:
-                        - Use the **same email and password** you registered with when getting started.
-
-                        💡 Next Steps:
-                        - Once logged in, you’ll be able to access your dashboard, set up automation workflows, and explore all your plan features.
-                        - If this is your first time, please allow up to 10 minutes for the system to fully set up your account.
-
-                        📞 Need help?
-                        Our support team is ready to assist you. Simply reply to this email or visit our Help Center.
-
-                        We’re excited to have you on board and can’t wait to see your brand grow 🚀.
-
-                        Warm regards,  
-                        The Lunyamwi Team
-                    """,
+                    "to": [tenant.user.email],
+                    "subject": "🎉 Your Subscription is Confirmed – Welcome to Lunyamwi!"
                 }
+                email_body = f"""
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                    <meta charset="UTF-8" />
+                    <style>
+                        body {{
+                        font-family: Arial, sans-serif;
+                        background-color: #f9f9f9;
+                        color: #333333;
+                        padding: 20px;
+                        }}
+                        .container {{
+                        max-width: 600px;
+                        margin: auto;
+                        background: #ffffff;
+                        border-radius: 8px;
+                        padding: 25px;
+                        box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+                        }}
+                        h2 {{
+                        color: #2c3e50;
+                        }}
+                        p {{
+                        line-height: 1.6;
+                        }}
+                        .btn {{
+                        display: inline-block;
+                        margin-top: 20px;
+                        padding: 12px 20px;
+                        background-color: #007bff;
+                        color: #ffffff !important;
+                        text-decoration: none;
+                        border-radius: 5px;
+                        font-weight: bold;
+                        }}
+                        .footer {{
+                        margin-top: 25px;
+                        font-size: 12px;
+                        color: #888888;
+                        text-align: center;
+                        }}
+                    </style>
+                    </head>
+                    <body>
+                    <div class="container">
+                        <h2>🎉 Subscription Confirmed</h2>
+                        <p>Hello {tenant.name},</p>
+                        <p>
+                        Great news! Your subscription has been successfully confirmed.
+                        </p>
+                        <p>
+                        You can now log in to your account using the same email and password you registered with.
+                        </p>
+
+                        <p style="text-align: center;">
+                        <a href="https://{domain.domain}" class="btn">Log in to Your Account</a>
+                        </p>
+
+                        <h3>🔑 Login Details</h3>
+                        <ul>
+                        <li>Use the <strong>same email and password</strong> you registered with.</li>
+                        </ul>
+
+                        <h3>💡 Next Steps</h3>
+                        <ul>
+                        <li>Once logged in, you’ll be able to access your dashboard, set up automation workflows, and explore all your plan features.</li>
+                        <li>If this is your first time, please allow up to 10 minutes for the system to fully set up your account.</li>
+                        </ul>
+
+                        <h3>📞 Need Help?</h3>
+                        <p>
+                        Our support team is ready to assist you. Simply reply to this email or visit our Help Center.
+                        </p>
+
+                        <p>
+                        We’re excited to have you on board and can’t wait to see your brand grow 🚀.
+                        </p>
+
+                        <p>Warm regards,<br>
+                        The <strong>[Your Tool Name]</strong> Team</p>
+
+                        <div class="footer">
+                        &copy; {2025} [Your Tool Name]. All rights reserved.
+                        </div>
+                    </div>
+                    </body>
+                    </html>
+                    """
+
 
                 send_mail(
-                    email_data["subject"],
-                    email_data["body"],
-                    "lutherlunyamwi@gmail.com",
-                    email_data["to"],
+                    subject=email_data["subject"],
+                    message="This is the plain-text fallback for email clients that don’t support HTML.",
+                    from_email="lutherlunyamwi@gmail.com",
+                    recipient_list=email_data["to"],
+                    html_message=email_body,
                     fail_silently=False,
                 )
+
 
                 
         else:
