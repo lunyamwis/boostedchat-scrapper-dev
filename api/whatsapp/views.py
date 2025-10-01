@@ -757,8 +757,8 @@ def webhook_whapi(request):
     elif request.method == 'POST':
         print(request.data)
         # print(request.body)
-        data = json.loads(request.body.decode('utf-8'))
-        logging.warning(data)
+        # data = json.loads(request.body.decode('utf-8'))
+        logging.warning(request.data)
         # Example usage:
         schema_name = 'lunyamwi'
         number = extract_from_number(request.data)
