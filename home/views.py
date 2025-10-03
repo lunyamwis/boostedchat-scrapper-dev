@@ -11,6 +11,7 @@ from .tasks import create_tenant
 from django.shortcuts import redirect, render
 from rest_framework.decorators import api_view
 from django.http import JsonResponse
+from blog.models import BlogPost
 
 def debug_request(request):
     return JsonResponse({
@@ -28,6 +29,7 @@ def get_auth_code(requests):
 @schema_context('public')
 def home(request):
     form = TenantSignupForm()
+    posts = BlogPost.objects.order_by('-created_at')[:3]  # latest 3 posts
     if request.method == 'POST':
         form = TenantSignupForm(request.POST)
         if form.is_valid():
@@ -58,11 +60,11 @@ def home(request):
     
     if host == main_domain or host == local_main:
         # Plain main domain or localhost - render home
-        return render(request, 'home/index.html', {'form': form})
+        return render(request, 'home/index.html', {'form': form, 'posts': posts})
     elif host.endswith('.' + main_domain) or host.endswith('.' + local_main):
         # Subdomain on production domain or local subdomain - redirect
         return redirect('accounts/login')  # replace with your subdomain view
     else:
         # fallback
-        return render(request, 'home/index.html', {'form': form})
+        return render(request, 'home/index.html', {'form': form, 'posts': posts})
 

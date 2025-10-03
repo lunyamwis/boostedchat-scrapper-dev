@@ -1,0 +1,41 @@
+{% extends "blog/base.html" %}
+{% load static %}
+
+{% block content %}
+<section class="py-5 bg-light">
+  <div class="container">
+    <!-- Section Heading -->
+    <div class="row mb-5">
+      <div class="col text-center">
+        <h2 class="fw-bold display-6">Our Blog</h2>
+        <p class="text-muted">Browse insights, tips, and updates from our team.</p>
+      </div>
+    </div>
+
+    <!-- Blog Posts -->
+    <div class="row g-4">
+      {% for post in posts %}
+      <div class="col-md-6 col-lg-4">
+        <div class="card h-100 shadow-sm border-0 rounded-3 overflow-hidden">
+          <div class="ratio ratio-16x9">
+            <img src="{{ post.thumbnail.url }}" class="card-img-top object-fit-cover" alt="{{ post.title }}">
+          </div>
+          <div class="card-body d-flex flex-column">
+            <small class="text-uppercase text-muted">{{ post.created_at|date:"M d, Y" }}</small>
+            <h5 class="card-title mt-2">{{ post.title }}</h5>
+            <p class="card-text text-muted">{{ post.excerpt|truncatewords:20 }}</p>
+            <div class="mt-auto">
+              <a href="{% url 'blog_detail' post.slug %}" class="btn btn-outline-primary btn-sm">Read More →</a>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% empty %}
+      <div class="col text-center">
+        <p class="text-muted">No blog posts available yet.</p>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endblock %}

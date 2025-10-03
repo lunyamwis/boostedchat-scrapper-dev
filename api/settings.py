@@ -130,6 +130,7 @@ SHARED_APPS = [
     'api.helpers',
     'billing',
     'home',
+    'blog',
     
 ]
 
