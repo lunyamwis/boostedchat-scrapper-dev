@@ -60,10 +60,10 @@ def make_facebook_request(method: str, endpoint: str, params: Dict = None, data:
         # import pdb;pdb.set_trace()
         print(data)
         if method.upper() in ['GET']:
-            page_name = params.get('page_name','') if params.get('page_name','') else None
+            page_name = params.get('page_name','') 
         else:
             # import pdb;pdb.set_trace()
-            page_name = data.get('page_name') if data is not None else params.get('page_name','')
+            page_name = data.get('page_name') 
 
         print("page------",page_name)
         if page_name is not None:
