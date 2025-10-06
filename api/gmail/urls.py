@@ -15,5 +15,10 @@ urlpatterns = [
     path('accounts/<str:account_id>/drafts/', views.GmailCreateDraftView.as_view(), name='gmail_create_draft'),
     path('accounts/<str:account_id>/webhooks/', views.GmailWebhooksView.as_view(), name='gmail_webhooks'),
     path('accounts/<str:account_id>/webhooks/<str:webhook_id>/', views.GmailWebhookView.as_view(), name='gmail_webhook'),
-    
+    path('messages/', views.GmailMessageListView.as_view(), name='gmail-messages'),
+    path('messages/send/', views.GmailSendMessageView.as_view(), name='gmail-send'),
+    path('messages/auto-reply/', views.GmailAutoReplyView.as_view(), name='gmail-auto-reply'),
+    path('campaigns/', views.CampaignView.as_view(), name='gmail-campaigns'),
+    path('webhook/gmail/', views.GmailAPIWebhookView.as_view(), name='gmail-webhook'),
+
 ]

@@ -56,7 +56,7 @@ os.environ["DJANGO_ALLOW_ASYNC_UNSAFE"] = "true"
 SECRET_KEY = 'django-insecure-utr163745j!iq*)7h-+g6_!y+z$mkmcx3x2ouv$gq$8-42)yn+'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = os.getenv('DEBUG',False)
 
 
 ALLOWED_HOSTS = [
@@ -488,10 +488,10 @@ LOGGING = {
         },
     },
 }
-
-SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-SESSION_COOKIE_DOMAIN = ".lunyamwi.org"
-SESSION_COOKIE_SAMESITE='None'
-SESSION_COOKIE_SECURE = True
-CSRF_COOKIE_SECURE = True
-ACCOUNT_DEFAULT_HTTP_PROTOCOL = "https"
+if not DEBUG:
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    SESSION_COOKIE_DOMAIN = ".lunyamwi.org"
+    SESSION_COOKIE_SAMESITE='None'
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    ACCOUNT_DEFAULT_HTTP_PROTOCOL = "https"

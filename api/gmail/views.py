@@ -21,6 +21,8 @@ from urllib.parse import unquote
 from email.mime.base import MIMEBase
 from email import encoders
 from .utils import handle_lunyamwi_gmail_error, make_lunyamwi_gmail_request
+from api.authentication.models import Token
+from api.helpers.models import Client
 
 class GmailAuthURLView(APIView):
     """Generate Gmail OAuth URL"""
@@ -376,4 +378,151 @@ class GmailWebhookView(APIView):
         result = make_lunyamwi_gmail_request("DELETE", f"/webhooks/{webhook_id}", params=params)
         return Response(result, status=result.get('status_code', 500))
 
+
+
+
+
+class GmailMessageListView(APIView):
+    """Fetch recent Gmail messages"""
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        print(request.user)
+        host = request.get_host().split(':')[0]  # hostname without port
+        subdomain = host.split(".")[0] if host else None
+        tenant = Client.objects.filter(schema_name=subdomain).last()
+        access_token = Token.objects.filter(user=tenant.user, provider='google').latest('created_at').access_token  # Example
+        headers = {"Authorization": f"Bearer {access_token}"}
+        url = "https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=5"
+        resp = requests.get(url, headers=headers)
+        return Response(resp.json())
+    
+
+class GmailSendMessageView(APIView):
+    """Send or reply to a Gmail message"""
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        host = request.get_host().split(':')[0]  # hostname without port
+        subdomain = host.split(".")[0] if host else None
+        tenant = Client.objects.filter(schema_name=subdomain).last()
+        access_token = Token.objects.filter(user=tenant.user, provider='google').latest('created_at').access_token  # Example
+        data = request.data
+        to = data.get("to")
+        subject = data.get("subject")
+        message_text = data.get("message")
+
+        message = f"To: {to}\r\nSubject: {subject}\r\n\r\n{message_text}"
+        raw_message = base64.urlsafe_b64encode(message.encode("utf-8")).decode("utf-8")
+
+        url = "https://gmail.googleapis.com/gmail/v1/users/me/messages/send"
+        headers = {"Authorization": f"Bearer {access_token}", "Content-Type": "application/json"}
+        payload = {"raw": raw_message}
+        resp = requests.post(url, headers=headers, json=payload)
+
+        return Response(resp.json(), status=resp.status_code)
+
+
+class CampaignView(APIView):
+    """Launch a small Gmail-based campaign"""
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        subject = request.data.get("subject")
+        body = request.data.get("body")
+        recipients = request.data.get("recipients", [])
+        if isinstance(recipients, str):
+            import ast 
+            recipients = ast.literal_eval(recipients)
+        host = request.get_host().split(':')[0]  # hostname without port
+        subdomain = host.split(".")[0] if host else None
+        tenant = Client.objects.filter(schema_name=subdomain).last()
+        access_token = Token.objects.filter(user=tenant.user, provider='google').latest('created_at').access_token  # Example
+
+        results = []
+        for to in recipients:
+            message = f"To: {to}\r\nSubject: {subject}\r\n\r\n{body}"
+            raw_message = base64.urlsafe_b64encode(message.encode("utf-8")).decode("utf-8")
+            headers = {"Authorization": f"Bearer {access_token}", "Content-Type": "application/json"}
+            url = "https://gmail.googleapis.com/gmail/v1/users/me/messages/send"
+            resp = requests.post(url, headers=headers, json={"raw": raw_message})
+            results.append({"email": to, "status": resp.status_code})
+
+        return Response({"campaign_results": results})
+
+
+
+# views.py
+from .chatbot_logic import generate_auto_reply
+
+class GmailAutoReplyView(APIView):
+    """Reads the latest message and sends an automatic reply"""
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        host = request.get_host().split(':')[0]  # hostname without port
+        subdomain = host.split(".")[0] if host else None
+        tenant = Client.objects.filter(schema_name=subdomain).last()
+        access_token = Token.objects.filter(user=tenant.user, provider='google').latest('created_at').access_token  # Example
+        headers = {"Authorization": f"Bearer {access_token}"}
+
+        # Step 1: Get the latest message
+        msg_list_url = "https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=1"
+        msg_list = requests.get(msg_list_url, headers=headers).json()
+        if "messages" not in msg_list:
+            return Response({"detail": "No messages found"}, status=404)
+
+        msg_id = msg_list["messages"][0]["id"]
+
+        # Step 2: Get the message details (snippet or body)
+        msg_detail_url = f"https://gmail.googleapis.com/gmail/v1/users/me/messages/{msg_id}?format=full"
+        msg_detail = requests.get(msg_detail_url, headers=headers).json()
+
+        # Extract plain text part (simplified example)
+        snippet = msg_detail.get("snippet", "")
+        reply_text = generate_auto_reply(snippet)
+
+        # Extract sender email
+        headers_list = msg_detail["payload"]["headers"]
+        sender = next(h["value"] for h in headers_list if h["name"].lower() == "from")
+
+        # Step 3: Compose reply
+        subject = "Re: " + next((h["value"] for h in headers_list if h["name"].lower() == "subject"), "(no subject)")
+        message = f"To: {sender}\r\nSubject: {subject}\r\n\r\n{reply_text}"
+        raw_message = base64.urlsafe_b64encode(message.encode("utf-8")).decode("utf-8")
+
+        # Step 4: Send reply
+        send_url = "https://gmail.googleapis.com/gmail/v1/users/me/messages/send"
+        send_resp = requests.post(send_url, headers=headers, json={"raw": raw_message})
+
+        return Response({
+            "replied_to": sender,
+            "reply_text": reply_text,
+            "status": send_resp.status_code
+        })
+    
+
+# views.py
+import base64
+import json
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
+class GmailAPIWebhookView(APIView):
+    """Handles Gmail push notifications (users.watch)."""
+    def post(self, request):
+        message = request.data.get("message", {})
+        data_b64 = message.get("data")
+
+        if data_b64:
+            data_json = base64.b64decode(data_b64).decode("utf-8")
+            payload = json.loads(data_json)
+            print("📨 Gmail Push Data:", payload)
+            
+            # Here you could fetch the new message:
+            # gmail = build("gmail", "v1", credentials=creds)
+            # msg = gmail.users().messages().get(userId="me", id=payload["emailAddress"]).execute()
+            # generate_auto_reply(msg)
+
+        return Response({"status": "received"}, status=200)
 

@@ -68,3 +68,7 @@ def home(request):
         # fallback
         return render(request, 'home/index.html', {'form': form, 'posts': posts})
 
+
+
+def privacy_gmail(request):
+    return render(request, 'home/privacy_gmail.html')
