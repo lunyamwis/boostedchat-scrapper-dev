@@ -5,6 +5,7 @@ from django.core.mail import send_mail
 from django_tenants.signals import post_schema_sync
 from api.helpers.models import Client
 from api.workflow.models import WorkflowModel, AirflowCreds
+from django_tenants.utils import schema_context
 
 
 @receiver(post_schema_sync)
@@ -17,11 +18,13 @@ def handle_tenant_created(sender, tenant, **kwargs):
     tenant = Client.objects.get(schema_name=tenant)
 
     airflow_base_url = "https://airflow.lunyamwi.org"
-    acreds = AirflowCreds()
-    acreds.airflow_base_url = airflow_base_url
-    acreds.username = os.getenv("AIRFLOW_USERNAME","airflow")
-    acreds.password = os.getenv("AIRFLOW_PASSWORD","airflow")
-    acreds.save()
+    with schema_context(tenant.schema_name):
+        acreds = AirflowCreds()
+        acreds.airflow_base_url = airflow_base_url
+        acreds.schema_name = tenant.schema_name
+        acreds.username = os.getenv("AIRFLOW_USERNAME","airflow")
+        acreds.password = os.getenv("AIRFLOW_PASSWORD","airflow")
+        acreds.save()
     headers = {"Content-Type": "application/json", "Accept": "application/json"}
     token = None        
     resp = requests.post(
