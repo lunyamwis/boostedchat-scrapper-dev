@@ -25,20 +25,20 @@ def handle_tenant_created(sender, tenant, **kwargs):
         acreds.username = os.getenv("AIRFLOW_USERNAME","airflow")
         acreds.password = os.getenv("AIRFLOW_PASSWORD","airflow")
         acreds.save()
-    headers = {"Content-Type": "application/json", "Accept": "application/json"}
-    token = None        
-    resp = requests.post(
-        f"{airflow_base_url}/auth/token",
-        json={"username": acreds.username, "password": acreds.password},
-        headers=headers
-    )
-    
-    if resp.status_code in [200, 201]:
-        token = resp.json()["access_token"]
-        acreds.airflow_token = token
-        acreds.save()
-    else:
-        print("Failed to get Airflow token:", resp.text)
+        headers = {"Content-Type": "application/json", "Accept": "application/json"}
+        token = None        
+        resp = requests.post(
+            f"{airflow_base_url}/auth/token",
+            json={"username": acreds.username, "password": acreds.password},
+            headers=headers
+        )
+        
+        if resp.status_code in [200, 201]:
+            token = resp.json()["access_token"]
+            acreds.airflow_token = token
+            acreds.save()
+        else:
+            print("Failed to get Airflow token:", resp.text)
     
     subscription_link_mapper = {
         '2000': 'https://paystack.shop/pay/0yiroqug8w',
