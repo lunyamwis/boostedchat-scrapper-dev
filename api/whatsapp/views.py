@@ -857,6 +857,7 @@ def webhook_whapi(request):
                 logging.warning(f"Chat session for {number} is stopped. No response will be sent.")
                 return Response({"message": "Chat stopped"}, status=status.HTTP_200_OK)  # 🚫 EARLY EXIT HERE
 
+            # New session
             if not ChatSession.objects.filter(phone=number).exists():
                 # New session — start responding
                 response = query_gpt(message, number, tenant.schema_name)
@@ -869,15 +870,16 @@ def webhook_whapi(request):
                 return Response({"message": "Response sent"}, status=status.HTTP_200_OK)
 
             # If session exists and not stopped, you might still want to respond
-            logging.info(f"Active session for {number}, continuing conversation.")
-            response = query_gpt(message, number, tenant.schema_name)
-            time.sleep(15)
-            make_whapi_request("POST", "/messages/text", data={
-                "typing_time": 0,
-                "to": number,
-                "body": response
-            }, token=tenant.whatsapp_channel_token)
-            return Response({"message": "Continued response sent"}, status=status.HTTP_200_OK)
+            if ChatSession.objects.filter(phone=number, stop=False).exists():
+                logging.info(f"Active session for {number}, continuing conversation.")
+                response = query_gpt(message, number, tenant.schema_name)
+                time.sleep(15)
+                make_whapi_request("POST", "/messages/text", data={
+                    "typing_time": 0,
+                    "to": number,
+                    "body": response
+                }, token=tenant.whatsapp_channel_token)
+                return Response({"message": "Continued response sent"}, status=status.HTTP_200_OK)
 
     # Invalid method
     return Response({"message": "Method not allowed"}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
