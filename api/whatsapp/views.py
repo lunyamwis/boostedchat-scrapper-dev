@@ -760,31 +760,42 @@ def webhook_whapi(request):
         # data = json.loads(request.body.decode('utf-8'))
         logging.warning(request.data)
         # Example usage:
-        tenant = Client.objects.get(whatsapp_channel_id=request.data.get('channel_id'))
-        number = extract_from_number(request.data)
-        group_name = extract_group_name(request.data)
-        message = extract_message_body(request.data)
-        print("Message:", message)
-        print("From number:", number)
-        groups = Group.objects.filter(listen=True)
-        print("Groups to react to:", [g.name for g in groups])
-        groups_to_react_to = [g.name for g in groups]
-        if group_name in groups_to_react_to:
-            generated_message = query_gpt(message, number, tenant.schema_name)
-            time.sleep(15)  # Simulate typing delay
-            make_whapi_request("POST", "/messages/text", data = {
-                "typing_time": 0,
-                "to": number,
-                "body": generated_message
-            }, token=tenant.whatsapp_channel_token)
-        elif ChatSession.objects.filter(phone=number).filter(stop=False).exists():
-            response = query_gpt(message, number, tenant.schema_name)
-            time.sleep(15)  # Simulate typing delay
-            make_whapi_request("POST", "/messages/text", data = {
-                "typing_time": 0,
-                "to": number,
-                "body": response
-            }, token=tenant.whatsapp_channel_token)
+        is_tenant_existing = Client.objects.filter(whatsapp_channel_id=request.data.get('channel_id'))
+        if is_tenant_existing.exists():
+            tenant = Client.objects.get(whatsapp_channel_id=request.data.get('channel_id'))
+            number = extract_from_number(request.data)
+            group_name = extract_group_name(request.data)
+            message = extract_message_body(request.data)
+            print("Message:", message)
+            print("From number:", number)
+            groups = Group.objects.filter(listen=True)
+            print("Groups to react to:", [g.name for g in groups])
+            groups_to_react_to = [g.name for g in groups]
+            if group_name in groups_to_react_to:
+                generated_message = query_gpt(message, number, tenant.schema_name)
+                time.sleep(15)  # Simulate typing delay
+                make_whapi_request("POST", "/messages/text", data = {
+                    "typing_time": 0,
+                    "to": number,
+                    "body": generated_message
+                }, token=tenant.whatsapp_channel_token)
+            elif ChatSession.objects.filter(phone=number).filter(stop=False).exists():
+                response = query_gpt(message, number, tenant.schema_name)
+                time.sleep(15)  # Simulate typing delay
+                make_whapi_request("POST", "/messages/text", data = {
+                    "typing_time": 0,
+                    "to": number,
+                    "body": response
+                }, token=tenant.whatsapp_channel_token)
+            elif number:
+                response = query_gpt(message, number, tenant.schema_name)
+                time.sleep(15)  # Simulate typing delay
+                make_whapi_request("POST", "/messages/text", data = {
+                    "typing_time": 0,
+                    "to": number,
+                    "body": response
+                }, token=tenant.whatsapp_channel_token)
+
 
         # Process the webhook data here
         # You can call your processing function or save the data to the database
