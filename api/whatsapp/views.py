@@ -779,14 +779,14 @@ def webhook_whapi(request):
                     "to": number,
                     "body": generated_message
                 }, token=tenant.whatsapp_channel_token)
-            elif ChatSession.objects.filter(phone=number).filter(stop=False).exists():
-                response = query_gpt(message, number, tenant.schema_name)
-                time.sleep(15)  # Simulate typing delay
-                make_whapi_request("POST", "/messages/text", data = {
-                    "typing_time": 0,
-                    "to": number,
-                    "body": response
-                }, token=tenant.whatsapp_channel_token)
+            # elif ChatSession.objects.filter(phone=number).filter(stop=False).exists():
+            #     response = query_gpt(message, number, tenant.schema_name)
+            #     time.sleep(15)  # Simulate typing delay
+            #     make_whapi_request("POST", "/messages/text", data = {
+            #         "typing_time": 0,
+            #         "to": number,
+            #         "body": response
+            #     }, token=tenant.whatsapp_channel_token)
             elif number:
                 if ChatSession.objects.filter(phone=number).filter(stop=True).exists():
                     pass
