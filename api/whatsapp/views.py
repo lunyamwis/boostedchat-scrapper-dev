@@ -789,15 +789,16 @@ def webhook_whapi(request):
             #     }, token=tenant.whatsapp_channel_token)
             elif number:
                 if ChatSession.objects.filter(phone=number).filter(stop=True).exists():
-                    pass
+                    print("Chat session is stopped. No response will be sent.")
                 else:
-                    response = query_gpt(message, number, tenant.schema_name)
-                    time.sleep(15)  # Simulate typing delay
-                    make_whapi_request("POST", "/messages/text", data = {
-                        "typing_time": 0,
-                        "to": number,
-                        "body": response
-                    }, token=tenant.whatsapp_channel_token)
+                    if not ChatSession.objects.filter(phone=number).exists():
+                        response = query_gpt(message, number, tenant.schema_name)
+                        time.sleep(15)  # Simulate typing delay
+                        make_whapi_request("POST", "/messages/text", data = {
+                            "typing_time": 0,
+                            "to": number,
+                            "body": response
+                        }, token=tenant.whatsapp_channel_token)
 
 
         # Process the webhook data here
