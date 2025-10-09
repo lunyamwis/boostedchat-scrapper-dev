@@ -4,11 +4,9 @@ from django.core.exceptions import ValidationError
 from django.contrib.auth.password_validation import validate_password
 
 SUBSCRIPTION_CHOICES = [
-    ('2000', '2,000 KES'),
-    ('5000', '5,000 KES'),
+    ('7000', '7,000 KES'),
     ('10000', '10,000 KES'),
-    ('20000', '20,000 KES'),
-    ('50000', '50,000 KES'),
+    ('15000', '15,000 KES'),
 ]
 
 class TenantSignupForm(forms.Form):
