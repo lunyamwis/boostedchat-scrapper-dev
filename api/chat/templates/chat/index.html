@@ -18,6 +18,8 @@
             <a href="{% url 'continue_chat_session' provider=provider session_id=session.identifier%}">Continue Session</a>
         </li>
         {% elif provider == 'whatsapp' %}
+        <p>WhatsApp Sessions</p>
+        <a href="{% url 'switch_off_bot' provider=provider %}">Switch Off Bot</a>  <!-- Link to switch off the bot -->
         <li>
             Phone: {{ session.phone }} -
             Status: {% if session.stop %}Stopped{% else %}Active{% endif %}

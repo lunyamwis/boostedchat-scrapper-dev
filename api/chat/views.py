@@ -1,6 +1,7 @@
 from django.shortcuts import render, redirect
 from api.linkedin.models import ChatSession as LinkedInChatSession
 from api.whatsapp.models import ChatSession as WhatsAppChatSession, Group as WhatsAppGroup
+from api.whatsapp.models import Session as WhatsAppSession
 
 # Create your views here.
 
@@ -92,3 +93,11 @@ def stop_group_listen(request, provider, group_id):
         except WhatsAppGroup.DoesNotExist:
             pass
     return redirect('chat_groups', provider=provider)
+
+
+def switch_off_bot(request, provider):
+    if provider == 'whatsapp':
+        session, created = WhatsAppSession.objects.get_or_create(id=1)
+        session.switch_off = True
+        session.save()
+    return redirect('chat_interface', provider=provider)

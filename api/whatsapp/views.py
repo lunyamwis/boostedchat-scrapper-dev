@@ -20,7 +20,7 @@ from django_tenants.utils import schema_context
 from django.http import JsonResponse, HttpResponse
 from rest_framework.permissions import AllowAny
 
-from api.whatsapp.models import ChatSession, Group
+from api.whatsapp.models import ChatSession, Group, Session
 from api.helpers.models import Client
 from api.authentication.models import User
 from api.authentication.models import Token, FacebookToken
@@ -748,66 +748,6 @@ def extract_message_body(message_data):
         return None
 
 
-# @api_view(['GET', 'POST'])
-# # @schema_context(os.getenv('SCHEMA_NAME'))
-# def webhook_whapi(request):
-#     if request.method == 'GET':
-#         print(request.GET)
-#         return Response({"message": "Webhook GET request received"}, status=status.HTTP_200_OK)
-#     elif request.method == 'POST':
-#         print(request.data)
-#         # print(request.body)
-#         # data = json.loads(request.body.decode('utf-8'))
-#         logging.warning(request.data)
-#         # Example usage:
-#         is_tenant_existing = Client.objects.filter(whatsapp_channel_id=request.data.get('channel_id'))
-#         if is_tenant_existing.exists():
-#             with schema_context(is_tenant_existing.last().schema_name):
-#                 tenant = Client.objects.get(whatsapp_channel_id=request.data.get('channel_id'))
-#                 number = extract_from_number(request.data)
-#                 group_name = extract_group_name(request.data)
-#                 message = extract_message_body(request.data)
-#                 print("Message:", message)
-#                 print("From number:", number)
-#                 groups = Group.objects.filter(listen=True)
-#                 print("Groups to react to:", [g.name for g in groups])
-#                 groups_to_react_to = [g.name for g in groups]
-#                 if group_name in groups_to_react_to:
-#                     generated_message = query_gpt(message, number, tenant.schema_name)
-#                     time.sleep(15)  # Simulate typing delay
-#                     make_whapi_request("POST", "/messages/text", data = {
-#                         "typing_time": 0,
-#                         "to": number,
-#                         "body": generated_message
-#                     }, token=tenant.whatsapp_channel_token)
-#                 # elif ChatSession.objects.filter(phone=number).filter(stop=False).exists():
-#                 #     response = query_gpt(message, number, tenant.schema_name)
-#                 #     time.sleep(15)  # Simulate typing delay
-#                 #     make_whapi_request("POST", "/messages/text", data = {
-#                 #         "typing_time": 0,
-#                 #         "to": number,
-#                 #         "body": response
-#                 #     }, token=tenant.whatsapp_channel_token)
-#                 elif number:
-#                     if ChatSession.objects.filter(phone=number).filter(stop=True).exists():
-#                         logging.warning("Chat session is stopped. No response will be sent.")
-#                     else:
-#                         if not ChatSession.objects.filter(phone=number).exists():
-#                             response = query_gpt(message, number, tenant.schema_name)
-#                             time.sleep(15)  # Simulate typing delay
-#                             make_whapi_request("POST", "/messages/text", data = {
-#                                 "typing_time": 0,
-#                                 "to": number,
-#                                 "body": response
-#                             }, token=tenant.whatsapp_channel_token)
-
-
-#         # Process the webhook data here
-#         # You can call your processing function or save the data to the database
-#         # For example:
-#         # process_webhook_data(request.data)
-#         return Response({"message": "Webhook POST request received"}, status=status.HTTP_200_OK)
-#     return Response({"message": "Method not allowed"}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
 
 
 @api_view(['GET', 'POST'])
@@ -826,6 +766,8 @@ def webhook_whapi(request):
                 logging.warning("Tenant not found for channel_id.")
                 return Response({"error": "Unknown tenant"}, status=status.HTTP_400_BAD_REQUEST)
 
+            
+            
             tenant = tenant_qs.first()
             number = extract_from_number(request.data)
             group_name = extract_group_name(request.data)
@@ -835,6 +777,11 @@ def webhook_whapi(request):
 
             groups_to_react_to = list(Group.objects.filter(listen=True).values_list('name', flat=True))
             logging.info(f"Groups to react to: {groups_to_react_to}")
+
+            # Check if tenant has switched off the bot
+            if Session.objects.filter(switch_off=True).exists():
+                logging.warning("Tenant has switched off the bot.")
+                return Response({"message": "Bot is switched off"}, status=status.HTTP_200_OK)
 
             # 1️⃣ Group-level messages
             if group_name in groups_to_react_to:

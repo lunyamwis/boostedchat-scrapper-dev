@@ -10,10 +10,13 @@ class Group(models.Model):
         return self.name
 
 
+
+
 class ChatSession(models.Model):
     phone = models.CharField(max_length=20, unique=True)
     conversation_history = models.JSONField(default=list)
     stop = models.BooleanField(default=False)
+    
 
     def __str__(self):
         return self.phone
@@ -23,3 +26,5 @@ class ChatSession(models.Model):
         self.save()
 
 
+class Session(models.Model):
+    switch_off = models.BooleanField(default=False)

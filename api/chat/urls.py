@@ -8,4 +8,5 @@ urlpatterns = [
     path('<str:provider>/groups/', views.chat_groups, name='chat_groups'),
     path('<str:provider>/groups/<int:group_id>/continue/', views.continue_group_listen, name='continue_group_listen'),
     path('<str:provider>/groups/<int:group_id>/stop/', views.stop_group_listen, name='stop_group_listen'),
+    path('<str:provider>/switch_off_bot/', views.switch_off_bot, name='switch_off_bot'),  # New URL pattern for switching off the bot
 ]
