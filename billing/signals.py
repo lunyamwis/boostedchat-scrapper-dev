@@ -41,11 +41,9 @@ def handle_tenant_created(sender, tenant, **kwargs):
             print("Failed to get Airflow token:", resp.text)
     
     subscription_link_mapper = {
-        '2000': 'https://paystack.shop/pay/0yiroqug8w',
-        '5000': 'https://paystack.shop/pay/m43w86jxvo',
+        '7000': 'https://paystack.shop/pay/m43w86jxvo',
         '10000': 'https://paystack.shop/pay/gkdvhh0-1n',
         '20000': 'https://paystack.shop/pay/unw4mh897x',
-        '50000': 'https://paystack.shop/pay/r-uteymt-4',
     }
 
     from django.core.mail import EmailMultiAlternatives

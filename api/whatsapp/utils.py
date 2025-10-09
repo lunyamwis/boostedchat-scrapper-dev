@@ -28,10 +28,14 @@ def query_gpt(prompt,phone_number=None, schema_name=None):
                     conversation_history=conversation_history
                 )
         body = {
-            "model": "gpt-4-1106-preview",
+            "model": "gpt-4o-mini",  # ✅ changed from gpt-4-1106-preview
             "messages": chat_session.conversation_history,
         }
-        header = {"Authorization": "Bearer " + os.getenv("OPENAI_API_KEY").strip()}
+
+        header = {
+            "Authorization": f"Bearer {os.getenv('OPENAI_API_KEY').strip()}",
+            "Content-Type": "application/json",
+        }
 
         res = requests.post("https://api.openai.com/v1/chat/completions", json=body, headers=header)
         # save the response to the database
