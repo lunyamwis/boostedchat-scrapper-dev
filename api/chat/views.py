@@ -101,3 +101,11 @@ def switch_off_bot(request, provider):
         session.switch_off = True
         session.save()
     return redirect('chat_interface', provider=provider)
+
+
+def switch_on_bot(request, provider):
+    if provider == 'whatsapp':
+        session, created = WhatsAppSession.objects.get_or_create(id=1)
+        session.switch_off = False
+        session.save()
+    return redirect('chat_interface', provider=provider)

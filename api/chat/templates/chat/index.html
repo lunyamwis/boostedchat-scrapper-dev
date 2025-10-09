@@ -6,7 +6,8 @@
 {% block content %}
 <h1>Chat Interface</h1>
 <p>WhatsApp Sessions</p>
-<a href="{% url 'switch_off_bot' provider=provider %}">Switch Off Bot</a>  <!-- Link to switch off the bot -->
+<a href="{% url 'switch_off_bot' provider=provider %}">Switch Off Bot</a> || <!-- Link to switch off the bot -->
+<a href="{% url 'switch_on_bot' provider=provider %}">Switch On Bot</a>  <!-- Link to switch on the bot -->
 <ul>
     {% for session in chat_sessions %}
         {% if provider == 'linkedin' %}
