@@ -346,11 +346,7 @@
     <h2 class="fw-bold display-6 text-primary mb-2">🚀 Get Started</h2>
     <p class="text-muted fs-5">Fill out the form below to create your account and launch your journey.</p>
   </div>
-  {% if form.non_field_errors %}
-    <div class="alert alert-danger">
-      {{ form.non_field_errors }}
-    </div>
-  {% endif %}
+  
   {% if messages %}
     <div class="container mb-4">
       {% for message in messages %}
@@ -365,6 +361,11 @@
   <div class="card shadow-lg border-0 rounded-4 mx-auto p-4 p-md-5" style="max-width: 900px; background: #ffffff;">
     <form method="POST" action="" class="row g-4">
       {% csrf_token %}
+      {% if form.non_field_errors %}
+        <div class="alert alert-danger">
+          {{ form.non_field_errors }}
+        </div>
+      {% endif %}
 
       <!-- Left Column -->
       <div class="col-md-6">
