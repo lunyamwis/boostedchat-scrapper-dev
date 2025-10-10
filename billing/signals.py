@@ -80,11 +80,9 @@ def handle_tenant_created(sender, tenant, **kwargs):
         <h3 style="color: #2c3e50;">💡 Upgrade or Switch Plans:</h3>
         <p>You can always choose a different plan anytime using the links below:</p>
         <ul>
-        <li><a href="{subscription_link_mapper['2000']}">Micro (2,000 KES)</a></li>
-        <li><a href="{subscription_link_mapper['5000']}">Starter (5,000 KES)</a></li>
+        <li><a href="{subscription_link_mapper['7000']}">Starter (7,000 KES)</a></li>
         <li><a href="{subscription_link_mapper['10000']}">Basic (10,000 KES)</a></li>
-        <li><a href="{subscription_link_mapper['20000']}">Professional (20,000 KES)</a></li>
-        <li><a href="{subscription_link_mapper['50000']}">Enterprise (50,000 KES)</a></li>
+        <li><a href="{subscription_link_mapper['15000']}">Professional (15,000 KES)</a></li>
         </ul>
 
         <h3 style="color: #2c3e50;">📞 Need Help?</h3>
