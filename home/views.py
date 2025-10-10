@@ -26,18 +26,22 @@ def debug_request(request):
 def get_auth_code(requests):
     pass
 
+
 @schema_context('public')
 def home(request):
-    form = TenantSignupForm()
     posts = BlogPost.objects.order_by('-created_at')[:3]  # latest 3 posts
+
     if request.method == 'POST':
         form = TenantSignupForm(request.POST)
         if form.is_valid():
+            # ✅ Create user
             User.objects.create_user(
                 username=form.cleaned_data['email'],
                 email=form.cleaned_data['email'],
                 password=form.cleaned_data['password1']
             )
+
+            # ✅ Trigger tenant creation
             create_tenant.delay(
                 domain_name=form.cleaned_data['domain_name'], 
                 email=form.cleaned_data['email'], 
@@ -46,27 +50,32 @@ def home(request):
                 whatsapp_channel_id=form.cleaned_data['whatsapp_channel_id'],
                 whatsapp_channel_token=form.cleaned_data['whatsapp_channel_token']
             )
+
             messages.success(
                 request,
                 "🎉 Tenant created successfully! Please check your email for your subscription link. "
                 "Setup may take up to 10 minutes. Once completed, you can log in with the same email and password you registered with."
             )
+            return redirect('home')  # ✅ Only redirect after success
+        else:
+            # ❌ Invalid form → fall through to re-render below
+            messages.error(request, "Please correct the errors below and try again.")
+    else:
+        form = TenantSignupForm()
 
-            return redirect('home')
-
+    # ✅ This part renders the page for both GET and invalid POST
     host = request.get_host().split(':')[0]  # hostname without port
     main_domain = 'lunyamwi.org'
     local_main = 'localhost'
     
+    context = {'form': form, 'posts': posts}
+
     if host == main_domain or host == local_main:
-        # Plain main domain or localhost - render home
-        return render(request, 'home/index.html', {'form': form, 'posts': posts})
+        return render(request, 'home/index.html', context)
     elif host.endswith('.' + main_domain) or host.endswith('.' + local_main):
-        # Subdomain on production domain or local subdomain - redirect
-        return redirect('accounts/login')  # replace with your subdomain view
+        return redirect('accounts/login')
     else:
-        # fallback
-        return render(request, 'home/index.html', {'form': form, 'posts': posts})
+        return render(request, 'home/index.html', context)
 
 
 

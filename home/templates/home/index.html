@@ -346,7 +346,11 @@
     <h2 class="fw-bold display-6 text-primary mb-2">🚀 Get Started</h2>
     <p class="text-muted fs-5">Fill out the form below to create your account and launch your journey.</p>
   </div>
-
+  {% if form.non_field_errors %}
+    <div class="alert alert-danger">
+      {{ form.non_field_errors }}
+    </div>
+  {% endif %}
   {% if messages %}
     <div class="container mb-4">
       {% for message in messages %}
