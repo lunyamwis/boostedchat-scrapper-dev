@@ -71,7 +71,7 @@ def handle_tenant_created(sender, tenant, **kwargs):
 
         <h3 style="color: #2c3e50;">✅ What’s included:</h3>
         <ul>
-        <li>Automated responding on LinkedIn, Facebook, WhatsApp, Instagram & Email</li>
+        <li>Automated responding on Whatsapp</li>
         <li>Social media listening & analytics</li>
         <li>Content scheduling & posting</li>
         <li>Performance tracking & reporting</li>
