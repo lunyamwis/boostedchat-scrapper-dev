@@ -34,7 +34,7 @@
     .whatsapp-float {
       position: fixed;
       bottom: 25px;
-      left: 25px;
+      right: 25px;
       background-color: #25d366; /* WhatsApp green */
       color: white;
       font-size: 38px;
@@ -389,26 +389,36 @@
           {% endif %}
         </div>
 
-        <div class="mb-3">
+        <div class="mb-3 position-relative">
           <label for="{{ form.password1.id_for_label }}" class="form-label fw-semibold">
             <i class="bi bi-lock-fill me-1 text-primary"></i>{{ form.password1.label }}
           </label>
-          {{ form.password1|add_class:"form-control form-control-lg" }}
+          <div class="input-group">
+            {{ form.password1|add_class:"form-control form-control-lg" }}
+            <button type="button" class="btn btn-outline-secondary toggle-password" tabindex="-1">
+              <i class="bi bi-eye"></i>
+            </button>
+          </div>
           {% if form.password1.errors %}
-            <div class="text-danger small">{{ form.password1.errors }}</div>
+            <div class="text-danger small mt-1">{{ form.password1.errors }}</div>
           {% endif %}
         </div>
 
-        <div class="mb-3">
+        <div class="mb-3 position-relative">
           <label for="{{ form.password2.id_for_label }}" class="form-label fw-semibold">
             <i class="bi bi-lock-fill me-1 text-primary"></i>{{ form.password2.label }}
           </label>
-          {{ form.password2|add_class:"form-control form-control-lg" }}
+          <div class="input-group">
+            {{ form.password2|add_class:"form-control form-control-lg" }}
+            <button type="button" class="btn btn-outline-secondary toggle-password" tabindex="-1">
+              <i class="bi bi-eye"></i>
+            </button>
+          </div>
           {% if form.password2.errors %}
-            <div class="text-danger small">{{ form.password2.errors }}</div>
+            <div class="text-danger small mt-1">{{ form.password2.errors }}</div>
           {% endif %}
         </div>
-      </div>
+
 
       <!-- Right Column -->
       <div class="col-md-6">
@@ -527,5 +537,26 @@
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const toggleButtons = document.querySelectorAll('.toggle-password');
+    toggleButtons.forEach(btn => {
+      btn.addEventListener('click', function() {
+        const input = this.closest('.input-group').querySelector('input');
+        const icon = this.querySelector('i');
+        if (input.type === 'password') {
+          input.type = 'text';
+          icon.classList.remove('bi-eye');
+          icon.classList.add('bi-eye-slash');
+        } else {
+          input.type = 'password';
+          icon.classList.remove('bi-eye-slash');
+          icon.classList.add('bi-eye');
+        }
+      });
+    });
+  });
+</script>
 
 </html>
