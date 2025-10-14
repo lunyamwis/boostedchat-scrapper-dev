@@ -3,7 +3,7 @@ import requests
 from django.dispatch import receiver
 from django.core.mail import send_mail
 from django_tenants.signals import post_schema_sync
-from api.helpers.models import Client
+from api.helpers.models import Client, Domain
 from api.workflow.models import WorkflowModel, AirflowCreds
 from django_tenants.utils import schema_context
 
@@ -16,7 +16,7 @@ def handle_tenant_created(sender, tenant, **kwargs):
     # get plan code from tenant
     # import pdb;pdb.set_trace()
     tenant = Client.objects.get(schema_name=tenant)
-
+    domain = Domain.objects.get(tenant=tenant)
     airflow_base_url = "https://airflow.lunyamwi.org"
     with schema_context(tenant.schema_name):
         acreds = AirflowCreds()
@@ -41,6 +41,7 @@ def handle_tenant_created(sender, tenant, **kwargs):
             print("Failed to get Airflow token:", resp.text)
     
     subscription_link_mapper = {
+        '0': f"https://{domain.domain}",
         '7000': 'https://paystack.shop/pay/0yiroqug8w',
         '10000': 'https://paystack.shop/pay/m43w86jxvo',
         '15000': 'https://paystack.shop/pay/gkdvhh0-1n',
@@ -63,9 +64,9 @@ def handle_tenant_created(sender, tenant, **kwargs):
         <h3 style="color: #2c3e50;">📌 Subscription Details:</h3>
         <table style="border: 1px solid #ddd; padding: 10px; margin: 10px 0;">
         <tr><td><strong>Selected Plan</strong></td><td>{tenant.subscription} KES / month</td></tr>
-        <tr><td><strong>Subscription Link</strong></td>
+        <tr><td><strong>Next Step</strong></td>
             <td><a href="{subscription_link_mapper.get(tenant.subscription, 'No subscription plan selected')}" 
-                    style="color: #1a73e8; text-decoration: none;">Complete Payment Here</a></td>
+                    style="color: #1a73e8; text-decoration: none;">Next Step</a></td>
         </tr>
         </table>
 

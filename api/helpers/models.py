@@ -42,6 +42,7 @@ class Client(TenantMixin):
     is_active = models.BooleanField(default=True)
     user = models.ForeignKey('authentication.User', on_delete=models.CASCADE, blank=True, null=True)
     subscription = models.CharField(max_length=100, blank=True, null=True, choices=[
+        ('0', 'Free'),
         ('2000', '2,000 KES'),
         ('5000', '5,000 KES'),
         ('10000', '10,000 KES'),

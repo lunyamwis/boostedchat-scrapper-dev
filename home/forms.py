@@ -4,6 +4,7 @@ from django.core.exceptions import ValidationError
 from django.contrib.auth.password_validation import validate_password
 
 SUBSCRIPTION_CHOICES = [
+    ('0', 'Free'),
     ('7000', '7,000 KES'),
     ('10000', '10,000 KES'),
     ('15000', '15,000 KES'),
