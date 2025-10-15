@@ -50,7 +50,19 @@ def handle_tenant_created(sender, tenant, **kwargs):
     # get plan code from tenant
     # import pdb;pdb.set_trace()
     tenant = wait_for_model(Client, {"schema_name": tenant})
-    domain = wait_for_model(Domain, {"tenant__schema_name": tenant})
+    # domain = wait_for_model(Domain, {"tenant__schema_name": tenant})
+    domain = None
+    if Domain.objects.filter(tenant=tenant).exists():
+        domain = Domain.objects.get(tenant=tenant)
+
+    if not Domain.objects.filter(tenant=tenant).exists():
+        domain = Domain()
+        domain.domain = f"{tenant.schema_name}.lunyamwi.org"
+        domain.tenant = tenant
+        domain.is_primary = True
+        domain.save()
+    
+
     airflow_base_url = "https://airflow.lunyamwi.org"
     with schema_context(tenant.schema_name):
         acreds = AirflowCreds()
