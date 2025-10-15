@@ -1,5 +1,5 @@
 import os
-import time
+import logging
 import requests
 from django.dispatch import receiver
 from django.core.mail import send_mail
@@ -7,39 +7,6 @@ from django_tenants.signals import post_schema_sync
 from api.helpers.models import Client, Domain
 from api.workflow.models import WorkflowModel, AirflowCreds
 from django_tenants.utils import schema_context
-
-import time
-import logging
-from django.db import models
-
-logger = logging.getLogger(__name__)
-
-@schema_context('public')
-def wait_for_model(model: models.Model, filter_kwargs: dict, interval: int = 10):
-    """
-    Wait indefinitely for a Django model instance to appear in the database.
-
-    Args:
-        model: Django model class (e.g. Client, Domain)
-        filter_kwargs: Query filter to match the object (e.g. {"schema_name": "tenant1"})
-        interval: Seconds between checks (default: 10)
-
-    Returns:
-        The model instance once found.
-    """
-    model_name = model.__name__
-    logger.info(f"⏳ Waiting for {model_name} with {filter_kwargs} (checking every {interval}s)...")
-
-    elapsed = 0
-    while True:
-        if model.objects.filter(**filter_kwargs).exists():
-            instance = model.objects.get(**filter_kwargs)
-            logger.info(f"✅ {model_name} with {filter_kwargs} found after {elapsed}s.")
-            return instance
-
-        time.sleep(interval)
-        elapsed += interval
-        logger.warning(f"⏱️ Still waiting for {model_name} ({elapsed}s elapsed)... will retry in {interval}s.")
 
 
 @receiver(post_schema_sync)
@@ -49,25 +16,38 @@ def handle_tenant_created(sender, tenant, **kwargs):
     print("Tenant created signal received for tenant:", tenant)
     # get plan code from tenant
     # import pdb;pdb.set_trace()
-    tenant = wait_for_model(Client, {"schema_name": tenant})
-    # domain = wait_for_model(Domain, {"tenant__schema_name": tenant})
-    domain = None
-    if Domain.objects.filter(tenant=tenant).exists():
-        domain = Domain.objects.get(tenant=tenant)
+    instance = None
+    if Client.objects.filter(schema_name=tenant).exists():
+        instance = Client.objects.get(schema_name=tenant)
+    else:
+        import time
+        interval = 5  # seconds
+        elapsed = 0
+        while True:
+            if Client.objects.filter(schema_name=tenant).exists():
+                instance = Client.objects.get(schema_name=tenant)
+                logging.info(f"✅ Client with schema_name={tenant} found after {elapsed}s.")
+                break
+            time.sleep(interval)
+            elapsed += interval
+            logging.warning(f"⏱️ Still waiting for Client ({elapsed}s elapsed)... will retry in {interval}s.")
 
-    if not Domain.objects.filter(tenant=tenant).exists():
-        domain = Domain()
-        domain.domain = f"{tenant.schema_name}.lunyamwi.org"
-        domain.tenant = tenant
-        domain.is_primary = True
-        domain.save()
-    
+    domain = None
+    if Domain.objects.filter(tenant=instance).exists():
+        domain = Domain.objects.get(tenant=instance)
+    else:
+        try:
+
+            domain = Domain(domain=instance.schema_name + '.lunyamwi.org', tenant=instance)
+            domain.save()
+        except Exception as e:
+            logging.warning("Error creating domain:", e)
 
     airflow_base_url = "https://airflow.lunyamwi.org"
-    with schema_context(tenant.schema_name):
+    with schema_context(instance.schema_name):
         acreds = AirflowCreds()
         acreds.airflow_base_url = airflow_base_url
-        acreds.schema_name = tenant.schema_name
+        acreds.schema_name = instance.schema_name
         acreds.username = os.getenv("AIRFLOW_USERNAME","airflow")
         acreds.password = os.getenv("AIRFLOW_PASSWORD","airflow")
         acreds.save()
@@ -97,21 +77,21 @@ def handle_tenant_created(sender, tenant, **kwargs):
 
     subject = "🎉 Welcome to Lunyamwi – Complete Your Subscription"
     from_email = "lutherlunyamwi@gmail.com"
-    to = [tenant.user.email]
+    to = [instance.user.email]
 
     html_content = f"""
     <html>
     <body style="font-family: Arial, sans-serif; color: #333; line-height: 1.6;">
-        <h2 style="color: #2c3e50;">Hello {tenant.name},</h2>
+        <h2 style="color: #2c3e50;">Hello {instance.name},</h2>
 
         <p>Welcome to <strong>Lunyamwi</strong>! 🎉<br>
         We’re thrilled to help you <strong>automate your social media</strong> and grow your brand 🚀.</p>
 
         <h3 style="color: #2c3e50;">📌 Subscription Details:</h3>
         <table style="border: 1px solid #ddd; padding: 10px; margin: 10px 0;">
-        <tr><td><strong>Selected Plan</strong></td><td>{tenant.subscription} KES / month</td></tr>
+        <tr><td><strong>Selected Plan</strong></td><td>{instance.subscription} KES / month</td></tr>
         <tr><td><strong>Next Step</strong></td>
-            <td><a href="{subscription_link_mapper.get(tenant.subscription, 'No subscription plan selected')}" 
+            <td><a href="{subscription_link_mapper.get(instance.subscription, 'No subscription plan selected')}" 
                     style="color: #1a73e8; text-decoration: none;">Next Step</a></td>
         </tr>
         </table>
