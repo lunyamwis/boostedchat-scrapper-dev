@@ -1,4 +1,5 @@
 import os
+import time
 import requests
 from django.dispatch import receiver
 from django.core.mail import send_mail
@@ -6,6 +7,39 @@ from django_tenants.signals import post_schema_sync
 from api.helpers.models import Client, Domain
 from api.workflow.models import WorkflowModel, AirflowCreds
 from django_tenants.utils import schema_context
+
+import time
+import logging
+from django.db import models
+
+logger = logging.getLogger(__name__)
+
+@schema_context('public')
+def wait_for_model(model: models.Model, filter_kwargs: dict, interval: int = 10):
+    """
+    Wait indefinitely for a Django model instance to appear in the database.
+
+    Args:
+        model: Django model class (e.g. Client, Domain)
+        filter_kwargs: Query filter to match the object (e.g. {"schema_name": "tenant1"})
+        interval: Seconds between checks (default: 10)
+
+    Returns:
+        The model instance once found.
+    """
+    model_name = model.__name__
+    logger.info(f"⏳ Waiting for {model_name} with {filter_kwargs} (checking every {interval}s)...")
+
+    elapsed = 0
+    while True:
+        if model.objects.filter(**filter_kwargs).exists():
+            instance = model.objects.get(**filter_kwargs)
+            logger.info(f"✅ {model_name} with {filter_kwargs} found after {elapsed}s.")
+            return instance
+
+        time.sleep(interval)
+        elapsed += interval
+        logger.warning(f"⏱️ Still waiting for {model_name} ({elapsed}s elapsed)... will retry in {interval}s.")
 
 
 @receiver(post_schema_sync)
@@ -15,8 +49,8 @@ def handle_tenant_created(sender, tenant, **kwargs):
     print("Tenant created signal received for tenant:", tenant)
     # get plan code from tenant
     # import pdb;pdb.set_trace()
-    tenant = Client.objects.get(schema_name=tenant)
-    domain = Domain.objects.get(tenant=tenant)
+    tenant = wait_for_model(Client, {"schema_name": tenant})
+    domain = wait_for_model(Domain, {"tenant__schema_name": tenant})
     airflow_base_url = "https://airflow.lunyamwi.org"
     with schema_context(tenant.schema_name):
         acreds = AirflowCreds()
