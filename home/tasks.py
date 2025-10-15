@@ -17,5 +17,8 @@ def create_tenant(domain_name=None, email=None, subscription=None, phone_number=
             tenant.whatsapp_channel_id = whatsapp_channel_id
             tenant.whatsapp_channel_token = whatsapp_channel_token
         tenant.save()
-        domain = Domain(domain=domain_name + '.lunyamwi.org', tenant=tenant)
-        domain.save()
+        if Domain.objects.filter(tenant=tenant).exists():
+            domain = Domain.objects.get(tenant=tenant)
+        else:
+            domain = Domain(domain=domain_name + '.lunyamwi.org', tenant=tenant)
+            domain.save()
