@@ -14,8 +14,7 @@
         <li>
             Session ID: {{ session.identifier }} - 
             Status: {% if session.stop %}Stopped{% else %}Active{% endif %}
-            Conversations: {{ session.conversation_history }} --------- Session stopped: {{session.stop}} -------
-
+            
             <a href="{% url 'stop_chat_session' provider=provider session_id=session.identifier%}">Stop Session</a>||
             <a href="{% url 'continue_chat_session' provider=provider session_id=session.identifier%}">Continue Session</a>
         </li>
@@ -24,8 +23,7 @@
         <li>
             Phone: {{ session.phone }} -
             Status: {% if session.stop %}Stopped{% else %}Active{% endif %}
-            Conversations: {{ session.conversation_history }} ----------- Session stopped: {{session.stop}} ------
-
+            
             <a href="{% url 'stop_chat_session' provider=provider session_id=session.phone%}">Stop Session</a> ||
             <a href="{% url 'continue_chat_session' provider=provider session_id=session.phone%}">Continue Session</a>
         </li>
