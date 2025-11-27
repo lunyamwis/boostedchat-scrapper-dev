@@ -68,9 +68,9 @@ def handle_tenant_created(sender, tenant, **kwargs):
     
     subscription_link_mapper = {
         '0': f"https://{domain.domain}",
-        '7000': 'https://paystack.shop/pay/0yiroqug8w',
-        '10000': 'https://paystack.shop/pay/m43w86jxvo',
-        '15000': 'https://paystack.shop/pay/gkdvhh0-1n',
+        '500': 'https://paystack.shop/pay/0yiroqug8w',
+        '1000': 'https://paystack.shop/pay/m43w86jxvo',
+        '2000': 'https://paystack.shop/pay/gkdvhh0-1n',
     }
 
     from django.core.mail import EmailMultiAlternatives
@@ -107,9 +107,9 @@ def handle_tenant_created(sender, tenant, **kwargs):
         <h3 style="color: #2c3e50;">💡 Upgrade or Switch Plans:</h3>
         <p>You can always choose a different plan anytime using the links below:</p>
         <ul>
-        <li><a href="{subscription_link_mapper['7000']}">Starter (7,000 KES)</a></li>
-        <li><a href="{subscription_link_mapper['10000']}">Basic (10,000 KES)</a></li>
-        <li><a href="{subscription_link_mapper['15000']}">Professional (15,000 KES)</a></li>
+        <li><a href="{subscription_link_mapper['500']}">Starter (500 KES)</a></li>
+        <li><a href="{subscription_link_mapper['1000']}">Basic (1,000 KES)</a></li>
+        <li><a href="{subscription_link_mapper['2000']}">Professional (2,000 KES)</a></li>
         </ul>
 
         <h3 style="color: #2c3e50;">📞 Need Help?</h3>

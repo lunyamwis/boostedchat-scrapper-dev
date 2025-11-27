@@ -5,9 +5,9 @@ from django.contrib.auth.password_validation import validate_password
 
 SUBSCRIPTION_CHOICES = [
     ('0', 'Free'),
-    ('7000', '7,000 KES'),
-    ('10000', '10,000 KES'),
-    ('15000', '15,000 KES'),
+    ('500', '5,000 KES'),
+    ('1000', '1,000 KES'),
+    ('2000', '2,000 KES'),
 ]
 
 class TenantSignupForm(forms.Form):
