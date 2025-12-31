@@ -81,3 +81,7 @@ def home(request):
 
 def privacy_gmail(request):
     return render(request, 'home/privacy_gmail.html')
+
+
+def shop(request):
+    return render(request, 'home/shop.html')
