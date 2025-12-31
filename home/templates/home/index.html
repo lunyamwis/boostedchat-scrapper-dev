@@ -119,13 +119,31 @@
       <p class="lead">
       Lunyamwi is an intelligent social media automatic responder built to revolutionize how businesses and individuals communicate on WhatsApp and beyond. We live in a fast-paced world — customers expect instant, human-like responses anytime, anywhere. Lunyamwi bridges that gap by giving every WhatsApp user the power of an AI assistant that replies instantly, warmly, and intelligently 24/7.
       </p>
-      <a href="#demo" class="btn btn-light btn-lg mt-3">Watch Demo</a>&rightarrow; 
-      <a href="#plans" class="btn btn-light btn-lg mt-3">See Plans</a>&rightarrow; 
-      <a href="#get-started" class="btn btn-light btn-lg mt-3">
-        Start With Free Trial 1 week 150 messages
-      </a>&rightarrow;
-      <a href="#get-started" class="btn btn-light btn-lg mt-3">Get Started</a>&rightarrow;
-      <a href="{% url 'shop' %}" class="btn btn-light btn-lg mt-3">Visit Our Online Shop</a>
+      <div class="d-flex flex-wrap gap-3 justify-content-center mt-4">
+
+        <a href="#demo" class="btn btn-outline-light btn-lg">
+          <i class="bi bi-play-circle me-2"></i>Watch Demo
+        </a>
+
+        <a href="#plans" class="btn btn-outline-light btn-lg">
+          <i class="bi bi-card-list me-2"></i>See Plans
+        </a>
+
+        <a href="#get-started" class="btn btn-warning btn-lg fw-bold">
+          <i class="bi bi-lightning-charge me-2"></i>
+          Free Trial · 7 Days · 150 Messages
+        </a>
+
+        <a href="#get-started" class="btn btn-success btn-lg">
+          <i class="bi bi-rocket-takeoff me-2"></i>Get Started
+        </a>
+
+        <a href="{% url 'shop' %}" class="btn btn-dark btn-lg">
+          <i class="bi bi-bag me-2"></i>Online Shop
+        </a>
+
+      </div>
+
     </div>
   </header>
 
