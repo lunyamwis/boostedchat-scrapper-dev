@@ -138,7 +138,8 @@ TENANT_APPS = [
     'api.workflow',
     'api.instagram','api.scout','api.prompt',
     'api.analyst','api.sales_rep','api.whatsapp',
-    'api.facebookautomator','api.linkedin','api.gmail','api.chat',
+    'api.facebookautomator','api.linkedin','api.gmail','api.chat','api.store',
+    'api.freelanceserviceprofiler'
 ]
 INSTALLED_APPS = SHARED_APPS + [app for app in TENANT_APPS if app not in SHARED_APPS]
 TENANT_MODEL = "helpers.Client"
@@ -251,6 +252,10 @@ EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD").strip()
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 
+
+PAYSTACK_SECRET_KEY = os.getenv('PAYSTACK_SECRET_KEY').strip()
+PAYSTACK_BASE_URL = os.getenv('PAYSTACK_BASE_URL').strip()
+PAYSTACK_PUBLIC_KEY = os.getenv('PAYSTACK_PUBLIC_KEY').strip()
 # Internationalization
 # https://docs.djangoproject.com/en/5.0/topics/i18n/
 

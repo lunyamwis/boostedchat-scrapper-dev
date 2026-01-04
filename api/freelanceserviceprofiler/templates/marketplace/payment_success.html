@@ -1,0 +1,14 @@
+{% extends 'workflows/main.html' %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-6">
+    <div class="alert alert-success text-center">
+      <h4 class="alert-heading">Payment Successful!</h4>
+      <p>You have successfully paid ₦{{ amount }} to {{ freelancer.user.username }}.</p>
+      <p><strong>Commission Deducted:</strong> ₦{{ commission }}</p>
+      <hr>
+      <a href="{% url 'freelancer_list' %}" class="btn btn-primary">Browse More Freelancers</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,8 @@
+{% extends 'workflows/main.html' %}
+<div class="container mt-5">
+  <h2>{{ freelancer.user.username }}'s Profile</h2>
+  <p>{{ freelancer.bio }}</p>
+  <p><strong>Hourly Rate:</strong> ₦{{ freelancer.hourly_rate }}</p>
+  <a href="{{ freelancer.resume.url }}" class="btn btn-secondary">Download Resume</a>
+  <a href="{% url 'paystack_payment' freelancer.id %}" class="btn btn-success">Hire & Pay</a>
+</div>

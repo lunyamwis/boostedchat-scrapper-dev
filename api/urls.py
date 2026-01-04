@@ -44,7 +44,8 @@ urlpatterns = [
     # path('accounts/<str:provider>/login/callback/', views.oauth_callback2, name='socialaccount_callback_custom'),
     path('accounts/<str:provider>/login/callback/2', OAuth2CallbackView, name='socialaccount_callback_custom'),
     path('tenant/redirect', views.tenant_login_and_redirect, name='tenant_redirect'),
-    
+    path('store/',include('api.store.urls')),
+    path('profile/',include('api.freelanceserviceprofiler.urls')),
 ]+ static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 

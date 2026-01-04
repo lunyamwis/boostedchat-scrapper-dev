@@ -1,0 +1,13 @@
+{% extends 'workflows/main.html' %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-6">
+    <div class="alert alert-danger text-center">
+      <h4 class="alert-heading">Payment Failed!</h4>
+      <p>Unfortunately, your payment could not be processed. Please try again.</p>
+      <hr>
+      <a href="{% url 'freelancer_list' %}" class="btn btn-primary">Browse Freelancers</a>
+    </div>
+  </div>
+</div>
+{% endblock %}
