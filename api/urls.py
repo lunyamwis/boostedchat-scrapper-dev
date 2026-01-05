@@ -46,6 +46,8 @@ urlpatterns = [
     path('tenant/redirect', views.tenant_login_and_redirect, name='tenant_redirect'),
     path('store/',include('api.store.urls')),
     path('profile/',include('api.freelanceserviceprofiler.urls')),
+    path('canva/',include('api.canva.urls')),
+    path('bookings/',include('api.bookings.urls')),
 ]+ static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 

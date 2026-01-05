@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Canva Plugin</title>
+<style>
+body { font-family: Arial, sans-serif; padding: 15px; background: #f7f7f7; }
+h2 { margin-bottom: 10px; }
+button { display: block; margin: 5px 0; padding: 8px 12px; border-radius: 5px; border: none; cursor: pointer; background: #00c4cc; color: white; }
+button:hover { background: #00a3a8; }
+.status { margin-top: 10px; font-size: 0.9em; color: green; }
+input { width: 100%; margin-bottom: 5px; padding: 5px; }
+</style>
+</head>
+<body>
+<h2>My Canva Plugin</h2>
+<p>Select an automation to apply:</p>
+
+{% for automation in automations %}
+    <div>
+        <input type="text" placeholder="Custom text" class="input-text" data-id="{{ automation.id }}">
+        <button class="automation-btn" data-id="{{ automation.id }}">
+            {{ automation.name }}
+        </button>
+    </div>
+{% endfor %}
+
+<div class="status" id="status"></div>
+
+<script>
+document.querySelectorAll(".automation-btn").forEach(button => {
+    button.addEventListener("click", () => {
+        const automationId = button.getAttribute("data-id");
+        const inputEl = document.querySelector(`.input-text[data-id='${automationId}']`);
+        const userInput = inputEl.value || "";
+        const designId = window.CANVA_DESIGN_ID || "dummy_design_id";
+        const statusEl = document.getElementById("status");
+
+        statusEl.textContent = "Running automation...";
+
+        fetch("/api/canva/execute/", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": "{{ csrf_token }}"
+            },
+            body: JSON.stringify({
+                automation_id: automationId,
+                design_id: designId,
+                user_inputs: { text: userInput }
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            statusEl.textContent = data.status || "Automation completed!";
+        })
+        .catch(err => {
+            console.error(err);
+            statusEl.textContent = "Error running automation.";
+        });
+    });
+});
+</script>
+</body>
+</html>

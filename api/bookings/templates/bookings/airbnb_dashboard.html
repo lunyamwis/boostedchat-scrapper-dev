@@ -1,0 +1,41 @@
+{% extends 'workflows/main.html' %}
+{% block content %}
+<h2>{{ listing.name }} Airbnb Dashboard</h2>
+
+<div class="row text-center">
+    <div class="col">Revenue<br><strong>{{ kpis.revenue }}</strong></div>
+    <div class="col">ADR<br><strong>{{ kpis.adr }}</strong></div>
+    <div class="col">Occupancy<br><strong>{{ kpis.occupancy }}%</strong></div>
+    <div class="col">RevPAR<br><strong>{{ kpis.revpar }}</strong></div>
+</div>
+
+<canvas id="revenueChart"></canvas>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+const ctx = document.getElementById('revenueChart');
+new Chart(ctx, {
+    type: 'line',
+    data: {
+        labels: {{ labels|safe }},
+        datasets: [{
+            label: 'Daily Revenue',
+            data: {{ data|safe }},
+            tension: 0.3,
+            borderColor: 'rgba(75, 192, 192, 1)',
+            backgroundColor: 'rgba(75, 192, 192, 0.2)',
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: { display: true },
+        },
+        scales: {
+            y: { beginAtZero: true }
+        }
+    }
+});
+</script>
+
+{% endblock %}

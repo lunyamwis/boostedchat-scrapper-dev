@@ -139,7 +139,8 @@ TENANT_APPS = [
     'api.instagram','api.scout','api.prompt',
     'api.analyst','api.sales_rep','api.whatsapp',
     'api.facebookautomator','api.linkedin','api.gmail','api.chat','api.store',
-    'api.freelanceserviceprofiler'
+    'api.freelanceserviceprofiler','api.bookings',
+    'api.canva'
 ]
 INSTALLED_APPS = SHARED_APPS + [app for app in TENANT_APPS if app not in SHARED_APPS]
 TENANT_MODEL = "helpers.Client"
@@ -493,10 +494,13 @@ LOGGING = {
         },
     },
 }
+
+BOOKING_API_USERNAME=os.getenv('BOOKING_API_USERNAME','').strip()
+BOOKING_API_PASSWORD=os.getenv('BOOKING_API_PASSWORD','').strip()
 # if not DEBUG:
-SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-SESSION_COOKIE_DOMAIN = ".lunyamwi.org"
-SESSION_COOKIE_SAMESITE='None'
-SESSION_COOKIE_SECURE = True
-CSRF_COOKIE_SECURE = True
-ACCOUNT_DEFAULT_HTTP_PROTOCOL = "https"
+# SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+# SESSION_COOKIE_DOMAIN = ".lunyamwi.org"
+# SESSION_COOKIE_SAMESITE='None'
+# SESSION_COOKIE_SECURE = True
+# CSRF_COOKIE_SECURE = True
+# ACCOUNT_DEFAULT_HTTP_PROTOCOL = "https"
